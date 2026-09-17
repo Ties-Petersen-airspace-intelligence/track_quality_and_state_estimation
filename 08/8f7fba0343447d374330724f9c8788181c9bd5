@@ -1,0 +1,62 @@
+src/harness/production.py
+  7815a8e19a342c8c 1-68
+src/harness/raw_plots.py
+  7815a8e19a342c8c 1-128
+src/harness/run.py
+  7815a8e19a342c8c 1-117
+src/harness/strategies/baseline.py
+  7815a8e19a342c8c 1-29
+src/harness/README.md
+  7815a8e19a342c8c 1-77
+src/harness/strategy.py
+  7815a8e19a342c8c 1-24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.5",
+  "base_commit_sha": "088f7fba0343447d374330724f9c8788181c9bd5",
+  "prompts": {
+    "7815a8e19a342c8c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9c8adca8-79b9-4752-b2c6-5004db0ff1d5",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Ties Petersen",
+      "messages": [],
+      "total_additions": 443,
+      "total_deletions": 0,
+      "accepted_lines": 443,
+      "overriden_lines": 0,
+      "messages_url": "https://uni-git-ai-cas.sre.aws.ai-internal.com//cas/44f4933f6e9ab4ab8b08670257e1103840d478a773e33669d62f3b00c2d0167d",
+      "context_window_samples": [
+        {
+          "used_tokens": 664812,
+          "timestamp": "2026-09-17T15:19:15.387Z"
+        }
+      ],
+      "skill_usages": [
+        {
+          "name": "context",
+          "timestamp": "2026-09-16T07:24:49.697Z",
+          "source": "slash_command"
+        },
+        {
+          "name": "compact",
+          "timestamp": "2026-09-17T08:07:38.750Z",
+          "source": "slash_command"
+        },
+        {
+          "name": "ties-skill-code-v3",
+          "timestamp": "2026-09-17T09:13:03.298Z",
+          "source": "skill_tool"
+        },
+        {
+          "name": "ties-skill-code-v3",
+          "timestamp": "2026-09-17T15:12:17.817Z",
+          "source": "skill_tool"
+        }
+      ]
+    }
+  }
+}
