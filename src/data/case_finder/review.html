@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Case review</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/deck.gl@9.1.0/dist.min.js"></script>
+<style>
+  /* colours and sizes taken from the Flyways design system (dark theme) */
+  :root { color-scheme: dark; --bg:#090b0c; --chrome:#111417; --panel:#1B1F22; --panel-deep:#101216; --line:#3a4148; --line-soft:#252a2f;
+          --fg:#ffffff; --muted:#b7c0ca; --accent:#ccff00; --accent-heavy:#8bad00; --interactive:#2970ff; --danger:#ff1a5e; --good:#8bad00; --bad:#ff1a5e; }
+  html { font-size: 14px; } @media (min-width: 1400px) { html { font-size: 16px; } }
+  * { box-sizing: border-box; }
+  body { margin:0; font: 0.8125rem/1.45 Inter, -apple-system, system-ui, sans-serif; color:var(--fg); background:var(--bg); display:grid; grid-template-columns: 20rem 1fr 25rem; grid-template-rows: 100vh; }
+  ::-webkit-scrollbar { width: 0.25rem; } ::-webkit-scrollbar-thumb { background: var(--line); }
+  #list { background:var(--chrome); border-right:1px solid var(--line-soft); overflow:auto; }
+  #list header { padding:0.75rem; height:auto; border-bottom:1px solid var(--line-soft); position:sticky; top:0; background:var(--chrome); }
+  #list header select, #list header label { font-size:0.75rem; }
+  select, textarea, button { font: inherit; color: var(--fg); background: var(--panel); border: 1px solid var(--line); border-radius: 0.25rem; }
+  select { padding: 0.2rem 0.4rem; }
+  .case { padding:0.5rem 0.75rem; border-bottom:1px solid var(--line-soft); cursor:pointer; border-left: 2px solid transparent; }
+  .case:hover { background:var(--panel); } .case.sel { background:var(--panel); border-left-color: var(--accent); }
+  .case .t { font-weight:600; } .case .m { color:var(--muted); font-size:0.75rem; font-family: SFMono-Regular, Consolas, monospace; }
+  .badge { display:inline-block; font-size:0.6875rem; padding:0 0.4rem; border-radius:0.25rem; border:1px solid var(--line); color:var(--muted); margin-left:0.25rem; font-weight:400; }
+  .badge.good { border-color:var(--good); color:var(--accent); } .badge.bad { border-color:var(--bad); color:var(--bad); }
+  #mapwrap { position:relative; background:var(--bg); } #map { position:absolute; inset:0; }
+  #ctl { position:absolute; left:0.75rem; right:0.75rem; bottom:0.75rem; background:var(--chrome); border:1px solid var(--line); border-radius:0.25rem; padding:0.5rem 0.75rem; display:flex; gap:0.75rem; align-items:center; box-shadow: 0 4px 24px rgb(0 0 0 / 50%); }
+  #ctl input[type=range] { flex:1; accent-color: var(--accent); }
+  #ctl label { color: var(--muted); font-size: 0.75rem; }
+  #legend { position:absolute; top:0.75rem; left:0.75rem; background:var(--chrome); border:1px solid var(--line); border-radius:0.25rem; padding:0.4rem 0.6rem; font-size:0.75rem; box-shadow: 0 4px 24px rgb(0 0 0 / 50%); }
+  #legend span.sw { display:inline-block; width:0.6rem; height:0.6rem; border-radius:50%; margin-right:0.3rem; vertical-align:middle; }
+  #side { background:var(--chrome); border-left:1px solid var(--line-soft); overflow:auto; padding:0.9rem 1rem; }
+  #side h2 { font-size:1rem; margin:0 0 0.25rem; } #side .sub { color:var(--muted); margin-bottom:0.6rem; font-family: SFMono-Regular, Consolas, monospace; font-size:0.75rem; }
+  #side p { margin:0.5rem 0; } #side table { border-collapse:collapse; width:100%; font-size:0.75rem; margin:0.5rem 0; }
+  #side td, #side th { border-bottom:1px solid var(--line-soft); padding:0.2rem 0.25rem; text-align:left; vertical-align:top; }
+  #side th { color: var(--muted); font-weight: 500; }
+  .btns { display:flex; gap:0.5rem; margin:0.75rem 0; }
+  button { padding:0.4rem 0.75rem; cursor:pointer; }
+  button:hover { border-color: var(--muted); }
+  button.good { border-color:var(--good); color:var(--accent); } button.bad { border-color:var(--bad); color:var(--bad); }
+  button.on.good { background:var(--accent); color:#090b0c; } button.on.bad { background:var(--bad); color:#fff; }
+  textarea { width:100%; height:3.75rem; padding:0.4rem; }
+  kbd { font: 0.6875rem SFMono-Regular, Consolas, monospace; border:1px solid var(--line); border-radius:0.25rem; padding:0 0.25rem; color: var(--muted); }
+  #tip { position:absolute; pointer-events:none; background:var(--chrome); border:1px solid var(--line); border-radius:0.25rem; padding:0.4rem 0.5rem; font-size:0.75rem; display:none; z-index:5; max-width:20rem; box-shadow: 0 4px 24px rgb(0 0 0 / 50%); }
+  .muted { color:var(--muted); }
+  .maplibregl-ctrl-group { background: var(--chrome) !important; border: 1px solid var(--line); } .maplibregl-ctrl-group button { background: var(--chrome) !important; border-radius: 0; } .maplibregl-ctrl-group button span { filter: invert(1); }
+  .maplibregl-ctrl-scale { background: rgba(17,20,23,.8) !important; color: var(--muted) !important; border-color: var(--line) !important; }
+  .maplibregl-ctrl-attrib { background: rgba(17,20,23,.7) !important; color: var(--muted) !important; } .maplibregl-ctrl-attrib a { color: var(--muted) !important; }
+</style>
+</head>
+<body>
+<aside id="list">
+  <header>
+    <div><b id="dayTitle"></b> <span class="muted" id="count"></span></div>
+    <div style="margin-top:6px">
+      <select id="fRule"><option value="">all rules</option></select>
+      <select id="fMark"><option value="">all</option><option value="none">unmarked</option><option value="good">good</option><option value="bad">bad</option></select>
+    </div>
+  </header>
+  <div id="cases"></div>
+</aside>
+<main id="mapwrap">
+  <div id="map"></div>
+  <div id="legend"></div>
+  <div id="tip"></div>
+  <div id="ctl">
+    <button id="play" title="space">▶</button>
+    <span id="tlabel" style="min-width:150px; font-variant-numeric:tabular-nums"></span>
+    <input type="range" id="time" min="0" max="1000" value="1000">
+    <label><input type="checkbox" id="trail" checked> fade older plots</label>
+    <label>colour by <select id="colour"><option value="track">track id</option><option value="source">source</option><option value="aircraft">aircraft (hex, else tail, else track id)</option><option value="callsign">callsign</option><option value="altitude">altitude</option><option value="delay">delay until written (written minus position time)</option><option value="rewritten">rewritten or not</option></select></label>
+    <label>other traffic <select id="ctx"><option value="grey">grey</option><option value="same">same colours as the suspect</option><option value="hide">hidden</option></select></label>
+  </div>
+</main>
+<aside id="side">
+  <div id="detail"><p class="muted">Pick a case on the left.</p></div>
+</aside>
+<script>
+const SOURCE_NAME = {1:"TFMS TI",2:"TFMS OR",3:"PlaneFinder",4:"ADS-B Exchange",5:"Alaska ACARS",6:"United",7:"Spire",8:"UDL",9:"MEIS",10:"STDDS",11:"uAvionix",12:"FAA ADS-B EDP",13:"Aireon"};
+const SOURCE_COLOR = {1:[235,141,7],2:[253,29,136],3:[80,200,120],4:[92,146,255],6:[170,130,255],10:[255,90,90],11:[40,210,220],12:[160,160,160],13:[220,180,60]};
+const PALETTE = [[204,255,0],[41,112,255],[253,29,136],[235,141,7],[40,210,220],[170,130,255],[80,200,120],[255,90,90],[220,180,60],[255,255,255]];
+let DAY, CASES = [], sel = null, plots = null, map, overlay, playing = false, timer = null;
+const $ = id => document.getElementById(id);
+
+async function init() {
+  const r = await (await fetch("/api/cases")).json();
+  DAY = r.day; CASES = r.cases;
+  $("dayTitle").textContent = "Cases for " + DAY;
+  const rules = [...new Set(CASES.map(c => c.rule))];
+  for (const ru of rules) { const o = document.createElement("option"); o.value = ru; o.textContent = CASES.find(c => c.rule === ru).title; $("fRule").appendChild(o); }
+  map = new maplibregl.Map({ container: "map", style: "https://tiles.openfreemap.org/styles/dark", center: [-40, 40], zoom: 2 });
+  map.addControl(new maplibregl.NavigationControl(), "top-right"); map.addControl(new maplibregl.ScaleControl({ unit: "metric" }));
+  overlay = new deck.MapboxOverlay({ interleaved: false, layers: [], getTooltip: null }); map.addControl(overlay);
+  renderList();
+  ["fRule", "fMark"].forEach(id => $(id).onchange = renderList);
+  $("time").oninput = draw; $("trail").onchange = draw; $("colour").onchange = draw; $("ctx").onchange = draw;
+  $("play").onclick = togglePlay;
+  document.addEventListener("keydown", e => {
+    if (e.target.tagName === "TEXTAREA") return;
+    if (e.key === "g") mark("good"); else if (e.key === "b") mark("bad"); else if (e.key === "u") mark(null);
+    else if (e.key === "j" || e.key === "ArrowDown") step(1); else if (e.key === "k" || e.key === "ArrowUp") step(-1);
+    else if (e.key === " ") { e.preventDefault(); togglePlay(); }
+  });
+  const first = visible()[0]; if (first) select(first.id);
+}
+
+function visible() {
+  const ru = $("fRule").value, mk = $("fMark").value;
+  return CASES.filter(c => (!ru || c.rule === ru) && (!mk || (mk === "none" ? !c.mark : c.mark === mk)));
+}
+function renderList() {
+  const v = visible(); const box = $("cases"); box.innerHTML = "";
+  const good = CASES.filter(c => c.mark === "good").length, bad = CASES.filter(c => c.mark === "bad").length;
+  $("count").textContent = `${v.length} shown · ${good} good · ${bad} bad · ${CASES.length - good - bad} left`;
+  for (const c of v) {
+    const d = document.createElement("div"); d.className = "case" + (sel && sel.id === c.id ? " sel" : ""); d.dataset.id = c.id;
+    d.innerHTML = `<div class="t">${c.who} <span class="badge">${c.title}</span>${c.mark ? `<span class="badge ${c.mark}">${c.mark}</span>` : ""}</div>
+      <div class="m">${c.hits[0].time} UTC · ${c.hits.length} hit${c.hits.length > 1 ? "s" : ""} · ${c.box.lat_min.toFixed(1)}, ${c.box.lon_min.toFixed(1)}</div>`;
+    d.onclick = () => select(c.id); box.appendChild(d);
+  }
+}
+function step(n) { const v = visible(); const i = v.findIndex(c => sel && c.id === sel.id); const nx = v[Math.min(v.length - 1, Math.max(0, i + n))]; if (nx) select(nx.id); }
+
+async function select(id) {
+  sel = CASES.find(c => c.id === id); plots = null; stopPlay();
+  renderList(); renderDetail();
+  const el = document.querySelector(`.case[data-id="${id}"]`); if (el) el.scrollIntoView({ block: "nearest" });
+  const b = sel.box; map.fitBounds([[b.lon_min, b.lat_min], [b.lon_max, b.lat_max]], { padding: 40, duration: 600 });
+  const r = await fetch("/api/case/" + id); const j = await r.json();
+  if (j.error) { plots = { error: j.error }; draw(); return; }
+  const C = Object.fromEntries(j.columns.map((c, i) => [c, i]));
+  plots = { C, rows: j.plots, t0: Date.parse(sel.t_start), t1: Date.parse(sel.t_end) };
+  const tids = [...new Set(j.plots.filter(p => p[C.focus]).map(p => p[C.tid]))];
+  plots.tidColor = Object.fromEntries(tids.map((t, i) => [t, PALETTE[i % PALETTE.length]]));
+  $("summary").innerHTML = summarise(j.plots, C);
+  $("charts").innerHTML = charts(j.plots, C);
+  $("time").value = 1000; draw();
+}
+
+function hashColor(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return hsl((h >>> 0) % 360, 55 + ((h >>> 9) % 35), 45 + ((h >>> 17) % 25)); }
+function hsl(h, s, l) { s /= 100; l /= 100; const k = n => (n + h / 30) % 12, a = s * Math.min(l, 1 - l), f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1))); return [255 * f(0), 255 * f(8), 255 * f(4)].map(Math.round); }
+function ramp(x, stops) { x = Math.max(0, Math.min(1, x)); const i = Math.min(stops.length - 2, Math.floor(x * (stops.length - 1))), f = x * (stops.length - 1) - i; return stops[i].map((c, k) => Math.round(c + (stops[i + 1][k] - c) * f)); }
+const ALT_STOPS = [[41, 112, 255], [40, 210, 220], [204, 255, 0], [255, 255, 255]];        // 0 to 45,000 ft
+const DELAY_STOPS = [[204, 255, 0], [235, 141, 7], [255, 26, 94], [170, 130, 255]];         // 0 to 60 s, purple beyond
+const GREY = [120, 120, 120];
+function baseColor(p, C) {
+  const mode = $("colour").value;
+  if (mode === "track") return plots.tidColor[p[C.tid]] || hashColor(p[C.tid]);
+  if (mode === "source") return SOURCE_COLOR[p[C.src]] || [180, 180, 180];
+  if (mode === "aircraft") { const k = p[C.hex] || p[C.tail] || p[C.tid]; return k ? hashColor(k) : GREY; }
+  if (mode === "callsign") return p[C.cs] ? hashColor(p[C.cs]) : GREY;
+  if (mode === "altitude") return p[C.alt] == null ? GREY : ramp(p[C.alt] / 45000, ALT_STOPS);
+  if (mode === "delay") { if (p[C.created_us] == null) return GREY; const d = (p[C.created_us] - p[C.t_us]) / 1e6; return d > 60 ? DELAY_STOPS[3] : ramp(d / 60, DELAY_STOPS); }
+  if (mode === "rewritten") return p[C.valid_to_us] != null ? [255, 26, 94] : [204, 255, 0];
+  return GREY;
+}
+function summarise(rows, C) {
+  const sus = rows.filter(p => p[C.focus]), cur = sus.filter(p => p[C.valid_to_us] == null), rew = sus.length - cur.length;
+  if (!sus.length) return "<p>No plots of the suspect track in this window.</p>";
+  const count = (arr, f) => { const m = {}; for (const x of arr) { const k = f(x); m[k] = (m[k] || 0) + 1; } return Object.entries(m).sort((a, b) => b[1] - a[1]); };
+  const bySrc = count(sus, p => SOURCE_NAME[p[C.src]] || p[C.src]).map(([k, n]) => `${n} ${k}`).join(", ");
+  const tids = new Set(sus.map(p => p[C.tid])), cs = new Set(sus.map(p => p[C.cs]).filter(Boolean)), hexes = new Set(sus.map(p => p[C.hex]).filter(Boolean));
+  const num = k => sus.map(p => p[C[k]]).filter(v => v != null);
+  const rng = (arr, unit) => arr.length ? (Math.min(...arr) === Math.max(...arr) ? `${Math.round(Math.min(...arr))} ${unit}` : `${Math.round(Math.min(...arr))} to ${Math.round(Math.max(...arr))} ${unit}`) : "unknown";
+  const lats = num("lat"), lons = num("lon");
+  const spread = Math.max(Math.max(...lats) - Math.min(...lats), Math.max(...lons) - Math.min(...lons));
+  const still = spread < 0.001 ? "All plots are at the same position." : spread < 0.02 ? "The plots stay within about a kilometre of each other." : "";
+  const others = new Set(rows.filter(p => !p[C.focus]).map(p => p[C.tid])).size;
+  const dupTimes = count(sus, p => p[C.tid] + "|" + p[C.t_us]).filter(([, n]) => n > 1).length;
+  const gs = num("gs"), alt = num("alt");
+  const late = sus.filter(p => p[C.created_us] != null && p[C.created_us] - p[C.t_us] > 3600e6);
+  const lateTxt = late.length ? ` ${late.length} plot${late.length > 1 ? "s were" : " was"} written to the table more than an hour after ${late.length > 1 ? "their" : "its"} position time, the latest ${(Math.max(...late.map(p => p[C.created_us] - p[C.t_us])) / 3600e6).toFixed(1)} h late, so ${late.length > 1 ? "they come" : "it comes"} from a late rewrite by regular fusion, not from the live stream.` : "";
+  const ground = alt.length && Math.max(...alt) <= 100 && gs.length && Math.max(...gs) < 5 ? " Altitude 0 and speed 0 throughout: this is on the ground, not flying." : "";
+  return `<p><b>What is in this window.</b> ${sus.length} plot${sus.length > 1 ? "s" : ""} of the suspect from ${fmtT(Math.min(...sus.map(p => p[C.t_us])) / 1000)} to ${fmtT(Math.max(...sus.map(p => p[C.t_us])) / 1000)} UTC, by source: ${bySrc}. `
+    + `${tids.size} fused track${tids.size > 1 ? "s" : ""}, callsign ${[...cs].join(", ") || "none"}, hex ${[...hexes].join(", ") || "none"}. `
+    + `Altitude ${rng(alt, "ft")}, speed ${rng(gs, "kt")}.${ground} ${still} `
+    + `${rew ? `${rew} of the plots were later rewritten by regular fusion${dupTimes ? `, ${dupTimes} of them exact duplicates at the same time as a current plot` : ""}. ` : ""}${lateTxt} `
+    + `${others ? `${others} other track${others > 1 ? "s" : ""} in the box, drawn thinned.` : "No other traffic in the box during this window."}</p>`;
+}
+function charts(rows, C) {
+  const sus = rows.filter(p => p[C.focus]); if (!sus.length) return "";
+  const t0 = plots.t0, t1 = plots.t1, W = 340, H = 110, L = 44, R = 6, T = 14, B = 18;
+  const x = us => L + (W - L - R) * ((us / 1000 - t0) / (t1 - t0));
+  const one = (key, unit, title) => {
+    const vals = sus.filter(p => p[C[key]] != null); if (!vals.length) return `<div class="muted" style="margin:6px 0">${title}: no values</div>`;
+    let lo = Math.min(...vals.map(p => p[C[key]])), hi = Math.max(...vals.map(p => p[C[key]])); if (hi === lo) { hi = lo + 1; } const pad = (hi - lo) * 0.08; lo -= pad; hi += pad;
+    const y = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo));
+    const ticks = [lo + pad, (lo + hi) / 2, hi - pad].map(v => `<text x="${L - 4}" y="${y(v) + 3}" text-anchor="end" fill="#b7c0ca" font-size="9">${Math.round(v).toLocaleString()}</text><line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="#252a2f"/>`).join("");
+    const dots = vals.map(p => { const c = plots.tidColor[p[C.tid]] || [180, 180, 180], rew = p[C.valid_to_us] != null; return `<circle cx="${x(p[C.t_us]).toFixed(1)}" cy="${y(p[C[key]]).toFixed(1)}" r="${rew ? 2.2 : 1.8}" fill="${rew ? "none" : `rgb(${c})`}" stroke="rgb(${c})" stroke-width="1"><title>${fmtT(p[C.t_us] / 1000)} · ${p[C[key]]} ${unit} · ${SOURCE_NAME[p[C.src]] || p[C.src]}${rew ? " · later rewritten" : ""}</title></circle>`; }).join("");
+    const hits = sel.hits.map(hh => `<line x1="${x(hh.t_us).toFixed(1)}" x2="${x(hh.t_us).toFixed(1)}" y1="${T}" y2="${H - B}" stroke="#ff1a5e" stroke-dasharray="3 3"/>`).join("");
+    const xt = [t0, (t0 + t1) / 2, t1].map(ms => `<text x="${x(ms * 1000)}" y="${H - 5}" text-anchor="middle" fill="#b7c0ca" font-size="9">${fmtT(ms)}</text>`).join("");
+    return `<div style="margin:6px 0"><div class="muted" style="font-size:0.75rem">${title} (${unit})</div><svg class="chart" viewBox="0 0 ${W} ${H}" width="100%" style="display:block">${ticks}${hits}${dots}${xt}<line class="tmark" x1="${W - R}" x2="${W - R}" y1="${T}" y2="${H - B}" stroke="#ccff00" stroke-width="1"/></svg></div>`;
+  };
+  return one("alt", "ft", "Altitude") + one("gs", "kt", "Speed");
+}
+function fmtT(ms) { return new Date(ms).toISOString().slice(11, 19); }
+
+function draw() {
+  if (!sel) return;
+  const b = sel.box; const ring = [[b.lon_min, b.lat_min], [b.lon_max, b.lat_min], [b.lon_max, b.lat_max], [b.lon_min, b.lat_max], [b.lon_min, b.lat_min]];
+  const layers = [new deck.PathLayer({ id: "box", data: [{ path: ring }], getPath: d => d.path, getColor: [183, 192, 202, 140], getWidth: 1.5, widthUnits: "pixels" })];
+  const hitPts = sel.hits.map(h => ({ pos: [h.lon, h.lat], h }));
+  if (plots && plots.rows) {
+    const { C, rows, t0, t1 } = plots;
+    const tNow = t0 + (t1 - t0) * $("time").value / 1000;
+    $("tlabel").textContent = fmtT(tNow) + " UTC";
+    const xm = 44 + (340 - 44 - 6) * ((tNow - t0) / (t1 - t0));
+    document.querySelectorAll(".tmark").forEach(el => { el.setAttribute("x1", xm); el.setAttribute("x2", xm); });
+    const fade = $("trail").checked, byTrack = $("colour").value === "track", showCtx = $("ctx").value;
+    const shown = rows.filter(p => p[C.t_us] / 1000 <= tNow && (showCtx !== "hide" || p[C.focus]));
+    const alpha = p => { if (!fade) return 220; const age = (tNow - p[C.t_us] / 1000) / 1000; return age < 120 ? 220 : age < 600 ? 120 : 50; };
+    const color = p => { const base = (p[C.focus] || showCtx === "same") ? baseColor(p, C) : [120, 120, 120]; return [...base, p[C.focus] ? alpha(p) : Math.min(alpha(p), showCtx === "same" ? 160 : 90)]; };
+    // lines per focus track, only current (not rewritten) plots
+    const paths = {};
+    const pathColor = {};
+    for (const p of shown) if ((p[C.focus] || showCtx === "same") && p[C.valid_to_us] == null) { (paths[p[C.tid]] ||= []).push([p[C.lon], p[C.lat]]); pathColor[p[C.tid]] = ["source", "altitude", "delay", "rewritten"].includes($("colour").value) ? [200, 200, 200] : baseColor(p, C); }
+    layers.push(new deck.PathLayer({ id: "paths", data: Object.entries(paths).map(([tid, path]) => ({ tid, path })), getPath: d => d.path, getColor: d => [...pathColor[d.tid], 140], getWidth: d => plots.tidColor[d.tid] ? 1.5 : 0.8, widthUnits: "pixels", updateTriggers: { getColor: [$("colour").value, showCtx, tNow] } }));
+    layers.push(new deck.ScatterplotLayer({ id: "pts", data: shown, getPosition: p => [p[C.lon], p[C.lat]], getFillColor: color, getLineColor: color,
+      filled: true, stroked: true, getRadius: p => p[C.focus] ? 4 : 2.5, radiusUnits: "pixels", lineWidthUnits: "pixels", getLineWidth: 1,
+      // rewritten plots (replaced later by regular fusion) are drawn hollow
+      getFillColor: p => p[C.valid_to_us] != null ? [0, 0, 0, 0] : color(p),
+      pickable: true, onHover: info => tip(info, C), updateTriggers: { getFillColor: [tNow, fade, $("colour").value, showCtx], getLineColor: [tNow, fade, $("colour").value, showCtx] } }));
+  } else {
+    $("tlabel").textContent = plots && plots.error ? "no plots pulled yet" : "loading…";
+  }
+  const farEnds = sel.hits.filter(h => h.other_lat != null && Math.hypot(h.other_lat - h.lat, h.other_lon - h.lon) > 0.05);
+  if (farEnds.length) {
+    layers.push(new deck.PathLayer({ id: "far-lines", data: farEnds, getPath: h => [[h.lon, h.lat], [h.other_lon, h.other_lat]], getColor: [255, 26, 94, 160], getWidth: 1.5, widthUnits: "pixels", getDashArray: [8, 6], dashJustified: true, extensions: [new deck.PathStyleExtension({ dash: true })] }));
+    layers.push(new deck.ScatterplotLayer({ id: "far-ends", data: farEnds, getPosition: h => [h.other_lon, h.other_lat], radiusUnits: "pixels", getRadius: 10, filled: false, stroked: true, getLineColor: [255, 26, 94, 160], lineWidthUnits: "pixels", getLineWidth: 2.5, getDashArray: [4, 4] }));
+  }
+  layers.push(new deck.ScatterplotLayer({ id: "hits", data: hitPts, getPosition: d => d.pos, radiusUnits: "pixels", getRadius: 10, filled: false, stroked: true, getLineColor: [255, 26, 94], lineWidthUnits: "pixels", getLineWidth: 2.5 }));
+  overlay.setProps({ layers });
+  legend();
+}
+function legend() {
+  if (!plots || !plots.rows) { $("legend").innerHTML = ""; return; }
+  const mode = $("colour").value, same = $("ctx").value === "same", C = plots.C; let h = "";
+  const sw = c => `<span class="sw" style="background:rgb(${c})"></span>`;
+  const focusRows = plots.rows.filter(p => p[C.focus] || same);
+  if (mode === "track") { const ents = Object.entries(plots.tidColor); for (const [tid, c] of ents.slice(0, 10)) h += `<div>${sw(c)}${tid}</div>`; if (ents.length > 10) h += `<div class="muted">and ${ents.length - 10} more tracks with the same hex</div>`; if (same) h += `<div class="muted">other tracks get a colour from their id</div>`; }
+  else if (mode === "source") { for (const s of [...new Set(focusRows.map(p => p[C.src]))]) h += `<div>${sw(SOURCE_COLOR[s] || [180,180,180])}${SOURCE_NAME[s] || s}</div>`; }
+  else if (mode === "aircraft" || mode === "callsign") { const keys = [...new Set(focusRows.map(p => mode === "callsign" ? p[C.cs] : (p[C.hex] || p[C.tail] || p[C.tid])).filter(Boolean))]; for (const k of keys.slice(0, 10)) h += `<div>${sw(hashColor(k))}${k}</div>`; if (keys.length > 10) h += `<div class="muted">and ${keys.length - 10} more</div>`; h += `<div>${sw(GREY)}none</div>`; }
+  else if (mode === "altitude") { for (const a of [0, 15000, 30000, 45000]) h += `<div>${sw(ramp(a / 45000, ALT_STOPS))}${a.toLocaleString()} ft</div>`; }
+  else if (mode === "delay") { for (const d of [0, 20, 40, 60]) h += `<div>${sw(ramp(d / 60, DELAY_STOPS))}${d} s</div>`; h += `<div>${sw(DELAY_STOPS[3])}over 60 s</div><div class="muted">position time to the moment the row was written</div>`; }
+  else if (mode === "rewritten") { h += `<div>${sw([204,255,0])}still the current plot</div><div>${sw([255,26,94])}later rewritten by regular fusion</div>`; }
+  if (!same && $("ctx").value !== "hide") h += `<div><span class="sw" style="background:#78787a"></span>other traffic (1 per 10 s)</div>`;
+  h += `<div><span class="sw" style="border:1.5px solid #b7c0ca; background:none"></span>later rewritten by regular fusion</div><div><span class="sw" style="border:2px solid #ff1a5e; background:none"></span>the moment a rule fired</div><div><span class="sw" style="border:2px dashed #ff1a5e; background:none"></span>the other end of a hit, outside this box (zoom out to see it)</div>`;
+  $("legend").innerHTML = h;
+}
+function tip(info, C) {
+  const el = $("tip"); if (!info.object) { el.style.display = "none"; return; }
+  const p = info.object;
+  el.style.display = "block"; el.style.left = (info.x + 12) + "px"; el.style.top = (info.y + 12) + "px";
+  el.innerHTML = `<b>${p[C.cs] || "no callsign"}</b> · hex ${p[C.hex] || "–"} · tail ${p[C.tail] || "–"}<br>track ${p[C.tid]}<br>${SOURCE_NAME[p[C.src]] || p[C.src]} · ${fmtT(p[C.t_us] / 1000)}.${String(p[C.t_us] % 1000000).padStart(6, "0").slice(0, 3)} UTC<br>alt ${p[C.alt] ?? "–"} ft · ${p[C.gs] ?? "–"} kt · hdg ${p[C.hdg] ?? "–"} · trk ${p[C.trk] ?? "–"}<br>${p[C.valid_to_us] != null ? `<span style="color:#ff1a5e">rewritten ${((p[C.valid_to_us] - p[C.t_us]) / 6e7).toFixed(1)} min after its position time</span><br>` : ""}<span class="muted">written to table ${p[C.created_us] ? ((p[C.created_us] - p[C.t_us]) / 1e6).toFixed(1) + " s after position time" : "–"}</span>`;
+}
+function togglePlay() { playing ? stopPlay() : startPlay(); }
+function startPlay() { playing = true; $("play").textContent = "❚❚"; if ($("time").value >= 1000) $("time").value = 0; timer = setInterval(() => { const v = +$("time").value + 2; if (v >= 1000) { $("time").value = 1000; stopPlay(); } else $("time").value = v; draw(); }, 60); }
+function stopPlay() { playing = false; $("play").textContent = "▶"; clearInterval(timer); }
+
+function renderDetail() {
+  const c = sel;
+  const hits = c.hits.map(h => `<tr><td>${h.time}</td><td>${h.rule.replace(/_/g, " ")}</td><td>${h.callsign || h.hex || "–"}</td><td>${h.tid}${h.prev_tid ? "<br><span class=muted>was " + h.prev_tid + "</span>" : ""}</td><td>${h.source}</td></tr>`).join("");
+  $("detail").innerHTML = `
+    <h2>${c.who} <span class="badge">${c.title}</span></h2>
+    <div class="sub">${c.id}<br>${c.t_start.slice(11, 19)} to ${c.t_end.slice(11, 19)} UTC · box ${c.box.lat_min} to ${c.box.lat_max} N, ${c.box.lon_min} to ${c.box.lon_max} E</div>
+    <p><b>Why it was picked.</b> ${c.reason}</p>
+    <div id="summary" class="muted">loading plots…</div>
+    <div id="charts"></div>
+    <p class="muted">This rule fired ${c.rule_total_that_day.toLocaleString()} times in the whole day; this is one of the strongest ${CASES.filter(x => x.rule === c.rule).length} kept.</p>
+    <table><tr><th>time</th><th>rule</th><th>who</th><th>track</th><th>source</th></tr>${hits}</table>
+    <div class="btns">
+      <button class="good ${c.mark === "good" ? "on" : ""}" onclick="mark('good')">good case <kbd>g</kbd></button>
+      <button class="bad ${c.mark === "bad" ? "on" : ""}" onclick="mark('bad')">not interesting <kbd>b</kbd></button>
+      <button onclick="mark(null)">clear <kbd>u</kbd></button>
+    </div>
+    <textarea id="note" placeholder="note (saved when you leave the box)">${c.note || ""}</textarea>
+    <p class="muted"><kbd>j</kbd>/<kbd>k</kbd> next / previous · <kbd>space</kbd> play · hover a plot for details · red rings mark where a rule fired · hollow plots were later rewritten by regular fusion · grey plots are other traffic thinned to one per 10 s</p>`;
+  $("note").onblur = () => save(c.mark, $("note").value);
+}
+async function mark(m) { if (!sel) return; await save(m, $("note") ? $("note").value : sel.note); if (m) step(1); }
+async function save(m, note) {
+  sel.mark = m; sel.note = note;
+  await fetch("/api/mark", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: sel.id, mark: m, note }) });
+  renderList(); renderDetail();
+}
+init();
+</script>
+</body>
+</html>
