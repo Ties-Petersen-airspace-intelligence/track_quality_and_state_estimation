@@ -1,0 +1,1 @@
+SELECT * FROM `flyways.uni_track_provider.fused_plots_aws` WHERE DATE(position_timestamp) = '2026-09-16' AND position_timestamp >= TIMESTAMP('2026-09-16 00:00:00') AND position_timestamp < TIMESTAMP('2026-09-16 01:00:00') AND latitude BETWEEN 32.91 AND 34.17 AND longitude BETWEEN -96.27 AND -95.03
