@@ -3,112 +3,289 @@
 <head>
 <meta charset="utf-8">
 <title>Track harness</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%224%22%20fill%3D%22%23111417%22/%3E%3Cpath%20d%3D%22M5%2024%20L27%208%22%20stroke%3D%22%238b95a1%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22/%3E%3Ccircle%20cx%3D%229%22%20cy%3D%2221%22%20r%3D%222.4%22%20fill%3D%22%234fb3ff%22/%3E%3Ccircle%20cx%3D%2216%22%20cy%3D%2216%22%20r%3D%222.4%22%20fill%3D%22%2335e0d8%22/%3E%3Ccircle%20cx%3D%2223%22%20cy%3D%2211%22%20r%3D%223.6%22%20fill%3D%22none%22%20stroke%3D%22%23ccff00%22%20stroke-width%3D%222.2%22/%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uplot@1.6.31/dist/uPlot.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/deck.gl@9.1.0/dist.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/uplot@1.6.31/dist/uPlot.iife.min.js"></script>
 <style>
-  /* colours and sizes follow the Flyways design system, dark theme */
-  :root { color-scheme: dark; --bg:#090b0c; --chrome:#111417; --panel:#1B1F22; --line:#3a4148; --line-soft:#252a2f; --fg:#fff; --muted:#b7c0ca; --accent:#ccff00; --danger:#ff1a5e; --pin1:#ff1a5e; --pin2:#ffffff; }
-  html { font-size: 14px; } @media (min-width: 1400px) { html { font-size: 16px; } }
+  /* Flyways dark theme: near black page, dark chrome, thin borders, lime accent, mono uppercase labels */
+  :root { color-scheme: dark;
+    --bg:#090b0c; --chrome:#111417; --panel:#15191d; --raised:#1b1f22; --line:#2a3037; --line-strong:#3a4148;
+    --fg:#eef1f4; --muted:#8b95a1; --dim:#5d6772; --accent:#ccff00; --accent-heavy:#8bad00; --interactive:#2970ff; --danger:#ff1a5e;
+    --sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --mono: "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+    --left: 23rem; --right: 34rem; }
+  html { font-size: 14px; } @media (min-width: 1400px) { html { font-size: 15px; } }
   * { box-sizing: border-box; }
-  body { margin:0; font: 0.8125rem/1.45 Inter, -apple-system, system-ui, sans-serif; color:var(--fg); background:var(--bg); display:grid; grid-template-columns: 21rem 1fr var(--right, 34rem); grid-template-rows: 100vh; }
-  ::-webkit-scrollbar { width:0.25rem; height:0.25rem; } ::-webkit-scrollbar-thumb { background:var(--line); }
-  aside { background:var(--chrome); overflow:auto; padding:0.75rem; }
-  #left { border-right:1px solid var(--line-soft); } #right { border-left:1px solid var(--line-soft); position:relative; }
-  #grip { position:absolute; left:0; top:0; bottom:0; width:6px; cursor:col-resize; }
-  #grip:hover { background:var(--line); }
-  h1 { font-size:0.9375rem; margin:0 0 0.25rem; } h2 { font-size:0.75rem; color:var(--muted); font-weight:500; text-transform:uppercase; letter-spacing:0.04em; margin:1rem 0 0.4rem; }
-  .row { display:flex; align-items:center; gap:0.5rem; padding:0.2rem 0; } .row label { flex:1; cursor:pointer; }
-  .sw { display:inline-block; width:0.6rem; height:0.6rem; border-radius:50%; } .sw.line { width:1rem; height:0.2rem; border-radius:1px; }
-  .muted { color:var(--muted); } .mono { font-family: SFMono-Regular, Consolas, monospace; font-size:0.75rem; }
-  #left select { max-width:100%; }
-  select, input[type=text], button { font:inherit; color:var(--fg); background:var(--panel); border:1px solid var(--line); border-radius:0.25rem; padding:0.25rem 0.5rem; }
-  button:hover { border-color:var(--muted); } button.small { padding:0.1rem 0.4rem; font-size:0.75rem; }
+  body { margin:0; font: 0.8125rem/1.4 var(--sans); color:var(--fg); background:var(--bg);
+    display:grid; grid-template-columns: var(--left) 1fr var(--right); grid-template-rows: 2.5rem 1fr; grid-template-areas: "top top top" "left map right"; height:100vh; }
+  ::-webkit-scrollbar { width:0.25rem; height:0.25rem; } ::-webkit-scrollbar-thumb { background:var(--line-strong); }
+
+  /* type */
+  .label { font: 0.6875rem/1 var(--mono); text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); }
+  .mono { font-family: var(--mono); font-size:0.75rem; } .muted { color:var(--muted); } .dim { color:var(--dim); }
+  h1 { font: 600 0.8125rem/1.2 var(--mono); text-transform:uppercase; letter-spacing:0.06em; margin:0; color:var(--fg); }
+  h2 { font: 0.6875rem/1 var(--mono); text-transform:uppercase; letter-spacing:0.1em; color:var(--muted); margin:0; }
+  kbd { font: 0.625rem var(--mono); border:1px solid var(--line-strong); border-radius:2px; padding:0 0.3rem; color:var(--muted); background:var(--panel); }
+
+  /* loading screen */
+  #splash { position:fixed; inset:0; z-index:100; background:#0b0d10; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0.9rem; transition:opacity 0.35s ease; }
+  #splash.gone { opacity:0; pointer-events:none; }
+  #splash .logo { width:7.7rem; height:7.7rem; margin-bottom:0.9rem; } #splash .logo svg { width:100%; height:100%; }
+  #splash .wordmark { font: 700 1.7rem/1 "DIN Alternate", "Bahnschrift", "Helvetica Neue", var(--mono); letter-spacing:0.14em; text-transform:uppercase; color:#c3cad3; }
+  #splash .wordmark span { color:var(--accent); margin-left:0.45rem; font-weight:500; }
+  #splash .bar { position:relative; width:11.5rem; height:3px; overflow:hidden; }
+  #splash .dots { position:absolute; inset:0; background: repeating-linear-gradient(to right, #3a434d 0 3px, transparent 3px 6px); }
+  /* a bright head with a long soft tail, gliding back and forth over the dashes */
+  #splash .block { position:absolute; top:0; width:4.5rem; height:3px; background: linear-gradient(to right, rgba(238,241,244,0) 0%, rgba(238,241,244,0.25) 55%, rgba(238,241,244,0.7) 85%, #eef1f4 100%); animation: slide 1.6s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate; }
+  #splash .block::after { content:""; position:absolute; right:0; top:-3px; width:1.2rem; height:9px; background: radial-gradient(ellipse at center, rgba(204,255,0,0.35), transparent 70%); }
+  @keyframes slide { from { left:-3rem; transform:scaleX(1); } to { left:calc(100% - 1.5rem); transform:scaleX(1); } }
+  #splash .block.back { transform:scaleX(-1); }
+  #splash .what { color:var(--dim); font-size:0.625rem; text-transform:uppercase; letter-spacing:0.12em; margin-top:0.1rem; }
+
+  /* top bar */
+  #top { grid-area:top; display:flex; align-items:center; gap:1rem; padding:0 0.9rem; background:var(--chrome); border-bottom:1px solid var(--line); }
+  #top select { background:transparent; border-color:transparent; color:var(--muted); font-size:0.75rem; text-transform:none; letter-spacing:0; max-width:24rem; } #top select:hover { border-color:var(--line-strong); }
+  #top .mark { width:1.4rem; height:1.4rem; display:grid; place-items:center; } #top .mark svg { width:100%; height:100%; }
+  #top .right { margin-left:auto; display:flex; gap:1.25rem; font-family:var(--mono); font-size:0.75rem; color:var(--muted); }
+  #top .right b { color:var(--fg); font-weight:500; }
+
+  /* side panels */
+  aside { background:var(--chrome); overflow:hidden; position:relative; } aside .scroll { position:absolute; inset:0; overflow:auto; }
+  #left { grid-area:left; border-right:1px solid var(--line); }
+  #gripLeft { position:absolute; right:0; top:0; bottom:0; width:10px; cursor:col-resize; z-index:5; } #gripLeft:hover, #gripLeft.on { background:var(--line-strong); }
+  body.dragging { user-select:none; cursor:col-resize; } body.dragging #map { pointer-events:none; } #right { grid-area:right; border-left:1px solid var(--line); } #right .scroll { padding-bottom:1rem; }
+  .panel-head { display:flex; align-items:center; gap:0.6rem; padding:0.7rem 0.9rem; border-bottom:1px solid var(--line); position:sticky; top:0; background:var(--chrome); z-index:2; }
+  .panel-head .spacer { flex:1; }
+  section { padding:0.7rem 0.9rem 0.8rem; }
+  section + section { border-top:1px solid var(--line); }
+  .hatch { height:6px; background: repeating-linear-gradient(-45deg, var(--line) 0 1px, transparent 1px 5px); opacity:0.7; }
+  .kv { display:grid; grid-template-columns: 1fr auto; gap:0.25rem 1rem; margin-top:0.55rem; }
+  .kv .k { font: 0.625rem/1.6 var(--mono); text-transform:uppercase; letter-spacing:0.06em; color:var(--dim); }
+  .kv .v { font: 0.75rem/1.4 var(--mono); color:var(--fg); text-align:right; }
+  .row { display:flex; align-items:center; gap:0.5rem; padding:0.22rem 0; } .row label { flex:1; cursor:pointer; }
+  .row .label { flex:none; min-width:6rem; }
+  .field { margin-top:0.55rem; display:flex; align-items:center; gap:0.6rem; }
+  .field .label { min-width:7.5rem; }
+  .sw { display:inline-block; width:0.55rem; height:0.55rem; border-radius:50%; flex:none; } .sw.line { width:0.9rem; height:2px; border-radius:1px; }
+  input[type=checkbox], input[type=radio] { accent-color: var(--accent); margin:0 0.3rem 0 0; }
+  select, input[type=text], button { font: 0.75rem var(--mono); color:var(--fg); background:var(--panel); border:1px solid var(--line-strong); border-radius:2px; padding:0.3rem 0.5rem; }
+  #left select { flex:1; min-width:0; max-width:100%; text-overflow:ellipsis; }
+  .field { min-width:0; }
+  button { text-transform:uppercase; letter-spacing:0.06em; font-size:0.6875rem; cursor:pointer; } button:hover { border-color:var(--muted); color:#fff; }
+  button.accent { background:var(--accent); color:#090b0c; border-color:var(--accent); font-weight:600; }
   input[type=range] { accent-color: var(--accent); }
-  #mapwrap { position:relative; } #map { position:absolute; inset:0; }
-  #ctl { position:absolute; z-index:10; left:0.75rem; right:0.75rem; bottom:0.75rem; background:#111417; border:1px solid var(--line); border-radius:0.25rem; padding:0.6rem 0.9rem; display:flex; gap:0.9rem; align-items:center; box-shadow:0 4px 24px rgb(0 0 0 / 60%); }
-  #timeline { position:relative; flex:1; height:2.1rem; }
-  #timeline .bar { position:absolute; left:0; right:0; top:0.85rem; height:0.4rem; background:var(--line-soft); border-radius:2px; }
-  #timeline .hl { position:absolute; top:0.25rem; height:1.6rem; background:rgba(204,255,0,0.14); border-left:1px solid var(--accent); border-right:1px solid var(--accent); display:none; }
-  #timeline .nowmark { position:absolute; top:0.2rem; width:3px; height:1.7rem; background:var(--accent); margin-left:-1.5px; border-radius:1px; }
-  #timeline .tick { position:absolute; top:1.4rem; font-size:0.6875rem; color:var(--muted); transform:translateX(-50%); }
-  #timeline input[type=range] { position:absolute; left:0; right:0; top:0; width:100%; height:2.1rem; margin:0; opacity:0; cursor:pointer; }
+  .help { font-size:0.75rem; color:var(--muted); line-height:1.5; }
+  /* one grid for every control row, so the two columns line up through the whole section */
+  .keys { display:grid; grid-template-columns: 9.5rem 1fr; gap:0.2rem 0.6rem; align-items:baseline; margin-top:0.5rem; }
+  .keys .g { grid-column: 1 / -1; font: 0.625rem/1 var(--mono); text-transform:uppercase; letter-spacing:0.1em; color:var(--dim); margin-top:0.6rem; padding-bottom:0.25rem; border-bottom:1px solid var(--line); }
+  .keys .g:first-child { margin-top:0; }
+  .keys .k { font: 0.6875rem/1.5 var(--mono); color:var(--muted); white-space:nowrap; }
+  .keys .v { font: 0.75rem/1.5 var(--sans); color:var(--fg); }
+  .keys kbd { font-size:0.625rem; }
+
+  /* map */
+  #mapwrap { grid-area:map; position:relative; background:var(--bg); } #map { position:absolute; inset:0; }
+  #toolbar { position:absolute; top:0.75rem; left:0.75rem; right:0.75rem; z-index:10; display:flex; justify-content:center; flex-wrap:wrap; gap:1.5rem; pointer-events:none; } #toolbar .tbgroup { pointer-events:auto; }
+  .tbinner { display:flex; } .tbdivider { width:1px; background:var(--line-strong); margin:0 0.15rem; }
+  .tb.master { background:var(--raised); color:var(--fg); border-right:1px solid var(--line-strong); padding-right:0.9rem; }
+  .tb.master.static { cursor:default; color:var(--muted); } .tb.master.static:hover { background:var(--raised); color:var(--muted); }
+  .tb.master:has(input:checked) { box-shadow: inset 0 -2px 0 var(--accent); } .tb.master:has(input:not(:checked)) { color:var(--muted); box-shadow:none; }
+  /* a group whose master switch is off: items half dimmed, the master label struck through so the cause is visible */
+  #rawGroup:has(#rawOn:not(:checked)) .tbinner, #runGroup:has(#runsOn:not(:checked)) .tbinner, #runGroup:has(#runsOn:not(:checked)) .tb:not(.master) { opacity:0.55; }
+  .tb.master:has(input:not(:checked)) { text-decoration:line-through; text-decoration-color:var(--dim); }
+  .tbinner .tb:last-child { border-right:1px solid var(--line); }
+  .tbgroup { display:flex; background:rgba(17,20,23,0.96); border:1px solid var(--line-strong); border-radius:3px; overflow:hidden; box-shadow:0 4px 24px rgb(0 0 0 / 50%); }
+  .tb { display:flex; align-items:center; gap:0.4rem; padding:0.5rem 0.65rem; font: 0.625rem var(--mono); text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); cursor:pointer; border-right:1px solid var(--line); white-space:nowrap; user-select:none; }
+  .tb:last-child { border-right:none; } .tb:hover { color:var(--fg); background:var(--raised); }
+  .tb input { display:none; } .tb .sw { opacity:0.35; } .tb .n { color:var(--dim); margin-left:0.1rem; }
+  .tb:has(input:checked) { color:var(--fg); background:var(--raised); box-shadow: inset 0 -2px 0 var(--accent); } .tb:has(input:checked) .sw { opacity:1; }
+  #dbg { position:absolute; right:0.75rem; bottom:8rem; z-index:10; background:rgba(17,20,23,0.92); border:1px solid var(--line); border-radius:3px; padding:0.45rem 0.6rem; font: 0.625rem/1.55 var(--mono); color:var(--muted); min-width:13rem; }
+  #dbg .kv { margin:0; gap:0 1rem; } #dbg .kv .k { color:var(--dim); font-size:0.625rem; } #dbg .kv .v { color:var(--fg); font-size:0.625rem; }
+  #tip { position:absolute; z-index:11; pointer-events:none; background:rgba(17,20,23,0.97); border:1px solid var(--line-strong); border-radius:3px; padding:0.45rem 0.6rem; font: 0.6875rem/1.5 var(--mono); display:none; max-width:24rem; box-shadow:0 4px 24px rgb(0 0 0 / 50%); }
+  #tip b { color:var(--accent); font-weight:600; }
+  #pick { position:absolute; display:none; z-index:12; background:var(--chrome); border:1px solid var(--line-strong); border-radius:3px; box-shadow:0 4px 24px rgb(0 0 0 / 60%); min-width:17rem; max-width:26rem; }
+  #pick .head { padding:0.5rem 0.7rem; font: 0.6875rem var(--mono); text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); border-bottom:1px solid var(--line); }
+  #pick .item { display:flex; align-items:center; gap:0.55rem; padding:0.5rem 0.7rem; cursor:pointer; border-bottom:1px solid var(--line); font: 0.75rem var(--mono); }
+  #pick .item:last-child { border-bottom:none; } #pick .item:hover { background:var(--raised); } #pick .item .muted { margin-left:auto; white-space:nowrap; font-size:0.6875rem; text-transform:uppercase; letter-spacing:0.06em; }
+  #pick .item .muted::after { content:" ›"; color:var(--dim); }
+  #selbox { position:absolute; display:none; z-index:9; pointer-events:none; border:1px solid var(--accent); background:rgba(204,255,0,0.08); }
+  #selbox.remove { border-color:var(--danger); background:rgba(255,26,94,0.08); }
+  #map canvas, .maplibregl-canvas:focus, .maplibregl-canvas:focus-visible { outline:none !important; }
+  .maplibregl-ctrl-group { background:var(--chrome) !important; border:1px solid var(--line-strong); border-radius:3px !important; box-shadow:none !important; }
+  .maplibregl-ctrl-group button { background:var(--chrome) !important; border-radius:0 !important; } .maplibregl-ctrl-group button + button { border-top:1px solid var(--line) !important; } .maplibregl-ctrl-group button span { filter: invert(0.8); }
+  .maplibregl-ctrl-scale { background:rgba(17,20,23,.85) !important; color:var(--muted) !important; border-color:var(--line-strong) !important; font: 0.625rem var(--mono) !important; }
+  .maplibregl-ctrl-attrib { background:rgba(17,20,23,.7) !important; font-size:0.625rem !important; } .maplibregl-ctrl-attrib, .maplibregl-ctrl-attrib a { color:var(--dim) !important; }
+
+  /* timeline, Flyways style: header line, played part in lime, NOW chip under the marker */
+  #ctl { position:absolute; z-index:10; left:0; right:0; bottom:0; background:var(--chrome); border-top:1px solid var(--line); padding:0.55rem 0.9rem 0.9rem; }
+  #ctl .head { display:flex; align-items:center; gap:0.9rem; font: 0.75rem var(--mono); color:var(--muted); margin-bottom:0.45rem; }
+  #ctl .head .sep { color:var(--dim); } #ctl .head b { color:var(--fg); font-weight:500; } #ctl .head .zulu { color:var(--dim); font-size:0.625rem; text-transform:uppercase; letter-spacing:0.08em; margin-left:-0.5rem; }
+  #ctl .head .tools { margin-left:auto; display:flex; gap:0.5rem; align-items:center; }
+  #ctl .head select { padding:0.2rem 0.4rem; }
+  #play { width:1.9rem; height:1.9rem; padding:0; display:grid; place-items:center; font-size:0.7rem; }
+  #timeline { position:relative; flex:1; height:3.3rem; }
+  #timeline .bar { position:absolute; left:0; right:0; top:0.3rem; height:0.75rem; background:var(--panel); border:1px solid var(--line); }
+  #timeline .played { position:absolute; left:0; top:0.3rem; height:0.75rem; background:var(--accent); opacity:0.85; }
+  #timeline .hl { position:absolute; top:0; height:1.35rem; background:rgba(255,255,255,0.06); border-left:1px solid var(--fg); border-right:1px solid var(--fg); display:none; }
+  #timeline .nowmark { position:absolute; top:0; width:2px; height:1.35rem; background:var(--fg); margin-left:-1px; }
+  #timeline .tick { position:absolute; top:1.25rem; font: 0.625rem var(--mono); color:var(--dim); transform:translateX(-50%); }
+  #timeline .tick.first { transform:none; } #timeline .tick.last { transform:translateX(-100%); }
+  #timeline .tick::before { content:""; position:absolute; left:50%; top:-0.2rem; width:1px; height:0.2rem; background:var(--line-strong); }
+  #timeline .tick.first::before { left:0; } #timeline .tick.last::before { left:100%; }
+  #timeline .nowchip { position:absolute; top:2.25rem; transform:translateX(-50%); background:var(--accent); color:#090b0c; font: 600 0.625rem/1 var(--mono); padding:0.2rem 0.4rem; border-radius:2px; letter-spacing:0.04em; }
+  #timeline input[type=range] { position:absolute; left:0; right:0; top:0; width:100%; height:1.35rem; margin:0; opacity:0; cursor:pointer; }
   #resetZoom { display:none; }
-  #selbox { position:absolute; display:none; z-index:9; pointer-events:none; border:1px solid var(--accent); background:rgba(204,255,0,0.10); }
-  #selbox.remove { border-color:var(--danger); background:rgba(255,26,94,0.10); }
-  #tip { position:absolute; z-index:11; pointer-events:none; background:var(--chrome); border:1px solid var(--line); border-radius:0.25rem; padding:0.4rem 0.5rem; font-size:0.75rem; display:none; z-index:5; max-width:22rem; box-shadow:0 4px 24px rgb(0 0 0 / 50%); }
-  #status { position:absolute; z-index:10; top:0.75rem; left:0.75rem; background:var(--chrome); border:1px solid var(--line); border-radius:0.25rem; padding:0.3rem 0.6rem; font-size:0.75rem; color:var(--muted); }
-  .chart { margin:0.4rem 0 0.2rem; } .chart-head { display:flex; align-items:center; gap:0.5rem; font-size:0.75rem; color:var(--muted); }
-  .chart-head b { color:var(--fg); font-weight:500; }
-  .chart-head .legend span.item { cursor:pointer; user-select:none; } .chart-head .legend span.item.off { opacity:0.35; text-decoration:line-through; }
-  .chip { display:inline-flex; align-items:center; gap:0.4rem; background:var(--panel); border:1px solid var(--line); border-radius:0.25rem; padding:0.15rem 0.5rem; margin:0.15rem 0.3rem 0.15rem 0; font-size:0.75rem; cursor:pointer; } .chip:hover { border-color:var(--danger); } .chip .x { color:var(--muted); } .chart-head .legend { display:flex; gap:0.6rem; flex-wrap:wrap; margin-left:auto; }
-  .chart .hgrip { height:8px; cursor:row-resize; border-bottom:1px solid var(--line-soft); margin-bottom:0.2rem; } .chart .hgrip:hover { background:var(--line); }
-  .uplot { font-family: inherit !important; } .u-legend { display:none; }
-  .u-select { background: rgba(204,255,0,0.16) !important; border-left:1px solid var(--accent); border-right:1px solid var(--accent); }
-  #pins .pin { border-left:3px solid var(--pin1); padding:0.3rem 0.5rem; margin:0.4rem 0; background:var(--panel); border-radius:0 0.25rem 0.25rem 0; font-size:0.75rem; cursor:pointer; } #pins .pin:hover { outline:1px solid var(--danger); }
-  #pins .pin.two { border-left-color:var(--pin2); } #pins .diff { padding:0.3rem 0.5rem; font-size:0.75rem; color:var(--muted); }
-  #pick { position:absolute; display:none; z-index:12; background:var(--chrome); border:1px solid var(--line); border-radius:0.25rem; box-shadow:0 4px 24px rgb(0 0 0 / 50%); font-size:0.75rem; min-width:16rem; max-width:24rem; }
-  #pick .head { padding:0.35rem 0.6rem; color:var(--muted); border-bottom:1px solid var(--line-soft); }
-  #pick .item { display:flex; align-items:center; gap:0.5rem; padding:0.35rem 0.6rem; cursor:pointer; border-bottom:1px solid var(--line-soft); }
-  #pick .item:last-child { border-bottom:none; } #pick .item:hover { background:var(--panel); } #pick .item .muted { margin-left:auto; white-space:nowrap; }
-  kbd { font:0.6875rem SFMono-Regular, Consolas, monospace; border:1px solid var(--line); border-radius:0.25rem; padding:0 0.25rem; color:var(--muted); }
+  .tlrow { display:flex; align-items:flex-start; gap:0.75rem; }
+
+  /* right panel: compare list and charts */
+  #grip { position:absolute; left:0; top:0; bottom:0; width:10px; cursor:col-resize; z-index:5; } #grip:hover, #grip.on { background:var(--line-strong); }
+  .chips { display:flex; flex-wrap:wrap; gap:0.35rem; margin-top:0.5rem; }
+  .chip { display:inline-flex; align-items:center; gap:0.45rem; background:var(--panel); border:1px solid var(--line-strong); border-left-width:3px; border-radius:2px; padding:0.3rem 0.55rem; font: 0.6875rem var(--mono); cursor:pointer; }
+  .chip:hover { border-color:var(--danger); } .chip .muted { font-size:0.625rem; } .chip .x { color:var(--dim); margin-left:0.2rem; }
+  table.nums { width:100%; border-collapse:collapse; margin-top:0.6rem; font: 0.6875rem var(--mono); }
+  table.nums th, table.nums td { padding:0.2rem 0.4rem; text-align:right; border-bottom:1px solid var(--line); white-space:nowrap; }
+  table.nums td.k, table.nums th.k { text-align:left; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; font-size:0.625rem; }
+  table.nums th { padding-bottom:0.3rem; }
+  #pins .pin { border-left:3px solid var(--danger); padding:0.45rem 0.6rem; margin:0.4rem 0 0; background:var(--panel); border-radius:0 2px 2px 0; font: 0.6875rem/1.5 var(--mono); cursor:pointer; }
+  #pins .pin:hover { outline:1px solid var(--danger); } #pins .pin.two { border-left-color:#fff; } #pins .pin b { color:var(--fg); }
+  #pins .diff { padding:0.45rem 0.6rem; font: 0.6875rem/1.5 var(--mono); color:var(--muted); border:1px dashed var(--line-strong); margin-top:0.4rem; }
+  .chart { margin:0 0 0.2rem; padding:0.6rem 0.9rem 0; border-top:1px solid var(--line); }
+  .chart-head { display:flex; align-items:baseline; gap:0.5rem; margin-bottom:0.3rem; }
+  .chart-head b { font: 0.6875rem var(--mono); text-transform:uppercase; letter-spacing:0.08em; color:var(--fg); font-weight:500; }
+  .chart-head .unit { font: 0.625rem var(--mono); color:var(--dim); }
+  .chart-head .legend { display:flex; gap:0.7rem; flex-wrap:wrap; margin-left:auto; font: 0.625rem var(--mono); color:var(--muted); }
+  .chart-head .legend span.item { cursor:pointer; user-select:none; display:inline-flex; align-items:center; gap:0.3rem; } .chart-head .legend span.item.off { opacity:0.35; text-decoration:line-through; }
+  .chart .hgrip { height:7px; cursor:row-resize; margin-top:0.2rem; background: repeating-linear-gradient(-45deg, var(--line) 0 1px, transparent 1px 5px); opacity:0.6; } .chart .hgrip:hover { opacity:1; background: repeating-linear-gradient(-45deg, var(--line-strong) 0 1px, transparent 1px 5px); }
+  .uplot { font-family: var(--mono) !important; } .u-legend { display:none; }
+  .u-select { background: rgba(204,255,0,0.14) !important; border-left:1px solid var(--accent); border-right:1px solid var(--accent); }
 </style>
 </head>
 <body>
+<div id="splash">
+  <div class="logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="1.5" fill="#111417"/><path d="M5 24 L27 8" stroke="#8b95a1" stroke-width="2" stroke-linecap="round"/><circle cx="9" cy="21" r="2.4" fill="#4fb3ff"/><circle cx="16" cy="16" r="2.4" fill="#35e0d8"/><circle cx="23" cy="11" r="3.6" fill="none" stroke="#ccff00" stroke-width="2.2"/></svg></div>
+  <div class="wordmark">Track<span>harness</span></div>
+  <div class="bar"><div class="dots"></div><div class="block"></div></div>
+  <div class="what mono" id="splashWhat">loading case</div>
+</div>
+<header id="top">
+  <div class="mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="1.5" fill="#111417"/><path d="M5 24 L27 8" stroke="#8b95a1" stroke-width="2" stroke-linecap="round"/><circle cx="9" cy="21" r="2.4" fill="#4fb3ff"/><circle cx="16" cy="16" r="2.4" fill="#35e0d8"/><circle cx="23" cy="11" r="3.6" fill="none" stroke="#ccff00" stroke-width="2.2"/></svg></div>
+  <h1>Track harness</h1>
+  <select id="caseSel" title="switch case"><option>loading…</option></select>
+  <button id="resetView" title="back to the default view of this case: nothing compared, timeline at the start, all toggles as they open">reset view</button>
+  <div class="right"><span id="sub"></span><span class="dim">viewer build 2026-09-17 18:39</span></div>
+</header>
+
 <aside id="left">
-  <h1 id="title">loading…</h1>
-  <div class="muted mono" id="sub"></div>
-  <div class="muted mono" style="font-size:0.6875rem">viewer build 2026-09-17 15:16</div>
-  <h2>Raw plots</h2>
-  <div id="sources"></div>
-  <div class="row"><label><input type="checkbox" id="rawOn" checked> show raw plots</label></div>
-  <h2>Strategy runs</h2>
-  <div id="runs"></div>
-  <div class="row"><label><input type="checkbox" id="runLines" checked> lines between the plots</label></div>
-  <div class="row"><label><input type="checkbox" id="runRings"> rings on the plots</label></div>
-  <h2>Display</h2>
-  <div class="row"><label>raw colour <select id="rawColour"><option value="source">by source</option><option value="key">by hex, else tail, else source track id</option><option value="lateness">by lateness</option></select></label></div>
-  <div class="row"><label>fade to 0 over <select id="fadeWin"><option value="10">10 s</option><option value="30">30 s</option><option value="60">1 min</option><option value="120">2 min</option><option value="300">5 min</option><option value="900" selected>15 min</option><option value="0">never</option><option value="custom">custom…</option></select></label><input type="text" id="fadeCustom" placeholder="seconds" style="width:5rem; display:none"></div>
-  <div class="row"><label><input type="checkbox" id="greyOthers" checked> grey out tracks not being compared</label></div>
-  <div class="row" style="align-items:flex-start"><span class="muted" style="padding-top:0.15rem">map shows</span>
-    <div id="filterMode" style="flex:1">
-      <label class="row" style="padding:0.1rem 0"><input type="radio" name="filterMode" value="all" checked> everything</label>
-      <label class="row" style="padding:0.1rem 0"><input type="radio" name="filterMode" value="only"> only the compared tracks</label>
-      <label class="row" style="padding:0.1rem 0"><input type="radio" name="filterMode" value="others"> everything except the compared tracks</label>
-    </div></div>
-  <div class="muted" style="margin-top:0.75rem">Click a raw plot to add that source's track, click a fused plot to add that run's track. Click again to remove. Pin a plot with <kbd>shift</kbd> click or a click in a chart. <kbd>space</kbd> play, <kbd>←</kbd> <kbd>→</kbd> step 1 s, <kbd>shift</kbd> 10 s, <kbd>esc</kbd> clear pins. Drag in a chart to zoom, double click to reset.</div>
+  <div id="gripLeft" title="drag to resize"></div>
+  <div class="scroll">
+  <div class="panel-head"><h2>Case</h2><span class="spacer"></span></div>
+  <section>
+    <div class="kv" id="caseKv"></div>
+  </section>
+  <div class="hatch"></div>
+  <section>
+    <h2>Display</h2>
+    <div class="field"><span class="label">raw plot colour</span><select id="rawColour"><option value="source">by source</option><option value="key">by hex, else tail, else source track id</option><option value="lateness">by lateness</option></select></div>
+    <div class="field"><span class="label">strategy colour</span><select id="runColour"><option value="run">by strategy</option><option value="track">by track id (TOID)</option></select></div>
+    <div class="field"><span class="label">fade over</span><select id="fadeWin"><option value="10">10 s</option><option value="30">30 s</option><option value="60">1 min</option><option value="120">2 min</option><option value="300">5 min</option><option value="900" selected>15 min</option><option value="0">never</option><option value="custom">custom…</option></select><input type="text" id="fadeCustom" placeholder="seconds" style="width:5rem; display:none"></div>
+    <div class="row" style="margin-top:0.4rem"><label><input type="checkbox" id="greyOthers" checked> grey out tracks not being compared</label></div>
+  </section>
+  <div class="hatch"></div>
+  <section>
+    <h2>Map shows</h2>
+    <div id="filterMode" style="margin-top:0.4rem">
+      <label class="row"><input type="radio" name="filterMode" value="all" checked> everything</label>
+      <label class="row"><input type="radio" name="filterMode" value="only"> only the compared tracks</label>
+      <label class="row"><input type="radio" name="filterMode" value="others"> everything except the compared tracks</label>
+    </div>
+  </section>
+  <div class="hatch"></div>
+  <section>
+    <h2>Controls</h2>
+    <div class="keys">
+      <div class="g">map</div>
+      <span class="k">click plot</span><span class="v">add or remove its track</span>
+      <span class="k"><kbd>shift</kbd> click</span><span class="v">pin the plot</span>
+      <span class="k"><kbd>shift</kbd> left drag</span><span class="v">add every track in the box</span>
+      <span class="k"><kbd>shift</kbd> right drag</span><span class="v">remove every track in the box</span>
+      <span class="k">hover</span><span class="v">details, marked in the charts</span>
+      <div class="g">timeline</div>
+      <span class="k"><kbd>space</kbd></span><span class="v">play or pause</span>
+      <span class="k"><kbd>←</kbd> <kbd>→</kbd></span><span class="v">step 1 s, with <kbd>shift</kbd> 10 s</span>
+      <span class="k">drag bar</span><span class="v">set now</span>
+      <div class="g">charts</div>
+      <span class="k">drag</span><span class="v">zoom all charts and the map</span>
+      <span class="k">double click</span><span class="v">reset zoom</span>
+      <span class="k">click point</span><span class="v">pin the plot</span>
+      <span class="k">click legend</span><span class="v">hide or show a series</span>
+      <span class="k"><kbd>shift</kbd> legend</span><span class="v">only that series, again for all</span>
+      <span class="k">drag bar below</span><span class="v">chart height</span>
+      <div class="g">panels</div>
+      <span class="k">click chip</span><span class="v">remove the track</span>
+      <span class="k">click pin card</span><span class="v">remove the pin</span>
+      <span class="k"><kbd>esc</kbd></span><span class="v">clear pins</span>
+      <span class="k">drag panel edge</span><span class="v">panel width</span>
+      <span class="k">address bar</span><span class="v">holds the whole view, copy to share</span>
+    </div>
+  </section>
+  </div>
 </aside>
+
 <main id="mapwrap">
   <div id="map"></div>
-  <div id="status"></div>
+  <div id="toolbar">
+    <div class="tbgroup" id="rawGroup">
+      <label class="tb master" title="show raw plots at all"><input type="checkbox" id="rawOn" checked>raw plots</label>
+      <span class="tbinner" id="sources"></span>
+    </div>
+    <div class="tbgroup" id="runGroup">
+      <label class="tb master" title="show strategy output at all"><input type="checkbox" id="runsOn" checked>strategies</label>
+      <span class="tbinner" id="runs"></span>
+      <span class="tbdivider"></span>
+      <label class="tb" title="lines between the plots of a strategy"><input type="checkbox" id="runLines" checked>lines</label>
+      <label class="tb" title="rings on the plots of a strategy"><input type="checkbox" id="runRings">rings</label>
+    </div>
+  </div>
+  <div id="dbg"><div class="kv"><span class="k">raw plots</span><span class="v" id="status"></span><span class="k">now</span><span class="v" id="dbgNow"></span><span class="k">lat (mouse)</span><span class="v" id="dbgLat">–</span><span class="k">lon (mouse)</span><span class="v" id="dbgLon">–</span><span class="k">zoom</span><span class="v" id="dbgZoom">–</span></div></div>
   <div id="tip"></div>
   <div id="pick"></div>
   <div id="selbox"></div>
   <div id="ctl">
-    <button id="play">▶</button>
-    <span class="mono" id="now" style="min-width:9rem"></span>
-    <div id="timeline"><div class="bar"></div><div class="hl" id="winHL"></div><div class="nowmark" id="nowMark"></div><input type="range" id="time" min="0" max="1000" value="0"></div>
-    <button id="resetZoom" class="small" title="show the whole hour again">reset zoom</button>
-    <label class="muted">speed <select id="speed"><option value="1">1x</option><option value="5">5x</option><option value="20" selected>20x</option><option value="60">60x</option></select></label>
+    <div class="head"><b id="ctlDay"></b><span class="sep">/</span><b id="now"></b><span class="zulu">zulu</span><span class="sep">/</span><span id="ctlSpan"></span>
+      <div class="tools"><button id="resetZoom" title="show the whole hour again">reset zoom</button><label class="label">speed</label><select id="speed"><option value="1">1x</option><option value="5">5x</option><option value="20" selected>20x</option><option value="60">60x</option></select></div></div>
+    <div class="tlrow">
+      <button id="play" title="play / pause (space)">▶</button>
+      <div id="timeline"><div class="bar"></div><div class="played" id="played"></div><div class="hl" id="winHL"></div><div class="nowmark" id="nowMark"></div><div class="nowchip" id="nowChip">now</div><input type="range" id="time" min="0" max="1000" value="0"></div>
+    </div>
   </div>
 </main>
+
 <aside id="right">
   <div id="grip" title="drag to resize"></div>
-  <h2 style="margin-top:0.2rem">Compare tracks</h2>
-  <div class="row"><input type="text" id="find" placeholder="add by hex, callsign or tail" style="flex:1"><button id="clear">clear all</button></div>
-  <div id="sel"><p class="muted">Nothing to compare yet. Click plots on the map, or type a hex, callsign or tail above.</p></div>
-  <div id="pins"></div>
+  <div class="scroll">
+  <div class="panel-head"><h2>Compare tracks</h2><span class="spacer"></span><button id="clear">clear all</button></div>
+  <section>
+    <div class="row" style="padding:0"><input type="text" id="find" placeholder="ADD BY HEX, CALLSIGN OR TAIL" style="flex:1; text-transform:uppercase"></div>
+    <div id="sel"><p class="help" style="margin:0.6rem 0 0">Nothing to compare yet. Click plots on the map, or type a hex, callsign or tail above.</p></div>
+    <div id="pins"></div>
+  </section>
   <div id="charts"></div>
+  </div>
 </aside>
 <script>
 const SOURCE_NAME = {1:"TFMS TI",2:"TFMS OR",3:"PlaneFinder",4:"ADS-B Exchange",5:"Alaska ACARS",6:"United",7:"Spire",8:"UDL",9:"MEIS",10:"STDDS",11:"uAvionix",12:"FAA ADS-B EDP",13:"Aireon"};
 const SRC_ID = {adsbx:4, planefinder:3, uavionix:11, stdds:10, tfms_ti:1, tfms_or:2, ual:6, asa:5};
-const SOURCE_COLOR = {adsbx:[92,146,255], planefinder:[80,200,120], uavionix:[40,210,220], stdds:[255,90,90], tfms_ti:[235,141,7], tfms_or:[253,29,136], ual:[170,130,255], asa:[220,180,60]};
-const RUN_COLORS = [[204,255,0],[253,29,136],[255,140,0],[170,130,255],[255,255,255]];
+const SOURCE_COLOR = {adsbx:[79,179,255], planefinder:[123,216,143], uavionix:[53,224,216], stdds:[255,90,90], tfms_ti:[242,178,51], tfms_or:[253,29,136], ual:[170,130,255], asa:[220,180,60]};
+const RUN_COLORS = [[204,255,0],[253,29,136],[235,141,7],[170,130,255],[255,255,255]];
+const SHORT_SOURCE = {adsbx:"ADS-B X", planefinder:"PlaneFinder", uavionix:"uAvionix", stdds:"STDDS", tfms_ti:"TFMS TI", tfms_or:"TFMS OR", ual:"United", asa:"Alaska"};
+const shortRun = r => r.replace(/^prod_fusion_/, "prod ").replace(/_/g, " ");
 const rgb = c => `rgb(${c})`;
-let CASE, RAW, RUNS = {}, runColor = {}, map, overlay, now = 0, playing = false, lastTick = 0;
+let CASE, RAW, RUNS = {}, USED = {}, runColor = {}, map, overlay, now = 0, playing = false, lastTick = 0;
+const CASE_NAME = new URLSearchParams(location.search).get("case");
+const api = path => fetch(`/api/${path}`).then(r => r.json());
 let baseLayers = [], hover = null, pins = [], win = null;   // hover/pins: {kind:"raw"|runName, i}; win: zoomed time window [ms, ms] or null
 let compare = [];                                            // tracks to compare: {kind:"raw", src, tid} or {kind:runName, track}, each with a colour
 let charts = [], chartData = null, derived = {};
@@ -126,24 +303,40 @@ function trackOf(kind, i) { const d = table(kind); return kind === "raw" ? compa
 const trackLabel = c => c.kind === "raw" ? `${SOURCE_NAME[SRC_ID[c.src]]} ${c.tid}` : `${c.kind} ${c.track}`;
 
 async function init() {
-  CASE = await (await fetch("/api/case")).json();
-  $("title").textContent = CASE.case.name; $("sub").textContent = `${CASE.case.t_start} to ${CASE.case.t_end} UTC`;
+  const all = (await api("cases")).cases, complete = all.filter(c => c.complete);
+  const name = CASE_NAME && all.some(c => c.name === CASE_NAME) ? CASE_NAME : (complete[0] || {}).name;
+  $("caseSel").innerHTML = all.map(c => `<option value="${c.name}" ${c.name === name ? "selected" : ""} ${c.complete ? "" : "disabled"}>${c.name}${c.complete ? "" : " (no strategy output yet)"}</option>`).join("");
+  $("caseSel").onchange = () => { location.search = "?case=" + encodeURIComponent($("caseSel").value); };
+  $("resetView").onclick = () => { location.search = "?case=" + encodeURIComponent(CASE.name); };   // a clean load: only the case in the address
+  if (!name) { $("splashWhat").textContent = "no complete case in the cases folder"; return; }
+  CASE = await api("case/" + name); CASE.name = name;
+  $("sub").innerHTML = `<b>${CASE.case.t_start.slice(0, 10)}</b> ${CASE.case.t_start.slice(11, 16)} to ${CASE.case.t_end.slice(11, 16)} UTC`;
+  const b0 = CASE.case.box, sus = CASE.case.suspect || {};
+  $("caseKv").innerHTML = [["day", CASE.case.day], ["window", `${CASE.case.t_start.slice(11, 16)} – ${CASE.case.t_end.slice(11, 16)} Z`], ["box lat", `${b0.lat_min} … ${b0.lat_max}`], ["box lon", `${b0.lon_min} … ${b0.lon_max}`], ["suspect", sus.callsign || "–"], ["hex", sus.hex || "–"], ["found by", (CASE.case.found_by || "").split(",")[0].replace("case finder rule ", "") || "–"]].map(([k, v]) => `<span class="k">${k}</span><span class="v">${v}</span>`).join("");
+  $("ctlDay").textContent = new Date(CASE.t0_us / 1000).toUTCString().slice(5, 11).toUpperCase(); $("ctlSpan").textContent = `${CASE.case.t_start.slice(11, 16)} – ${CASE.case.t_end.slice(11, 16)} Z`;
+  map && null;
   $("time").max = CASE.span_ms;
-  for (const f of [0, 0.25, 0.5, 0.75, 1]) { const t = document.createElement("div"); t.className = "tick"; t.style.left = (f * 100) + "%"; t.textContent = fmt(f * CASE.span_ms); $("timeline").appendChild(t); }
+  for (const f of [0, 0.25, 0.5, 0.75, 1]) { const t = document.createElement("div"); t.className = "tick" + (f === 0 ? " first" : f === 1 ? " last" : ""); t.style.left = (f * 100) + "%"; t.textContent = fmt(f * CASE.span_ms).slice(0, 5); $("timeline").appendChild(t); }
   map = new maplibregl.Map({ container:"map", style:"https://tiles.openfreemap.org/styles/dark", center:[(CASE.case.box.lon_min + CASE.case.box.lon_max) / 2, (CASE.case.box.lat_min + CASE.case.box.lat_max) / 2], zoom: 8.3, boxZoom:false, dragRotate:false, pitchWithRotate:false, touchPitch:false });
   $("mapwrap").addEventListener("contextmenu", e => e.preventDefault());
   map.addControl(new maplibregl.NavigationControl(), "top-right"); map.addControl(new maplibregl.ScaleControl({ unit:"metric" }));
   overlay = new deck.MapboxOverlay({ interleaved:false, layers:[], onClick:(info, ev) => mapClickAt(info, ev) }); map.addControl(overlay);
+  const placeDbg = () => { $("dbg").style.bottom = ($("ctl").offsetHeight + 12) + "px"; }; placeDbg(); new ResizeObserver(placeDbg).observe($("ctl"));
+  new ResizeObserver(() => map.resize()).observe($("mapwrap")); requestAnimationFrame(() => map.resize());
+  map.on("load", dimBasemap);
   document.addEventListener("mousedown", e => { if (!$("pick").contains(e.target)) closePick(); });
   boxSelect();
-  $("status").textContent = "loading raw plots…";
-  RAW = await (await fetch("/api/raw")).json(); RAW.n = RAW.t.length;
+  $("status").textContent = "loading…"; $("splashWhat").textContent = "loading raw plots";
+  RAW = await api("raw/" + CASE.name); RAW.n = RAW.t.length;
+  $("splashWhat").textContent = `${RAW.n.toLocaleString()} raw plots · drawing`;
   const srcs = [...new Set(RAW.src)];
-  $("sources").innerHTML = srcs.map(s => `<div class="row"><span class="sw" style="background:${rgb(SOURCE_COLOR[s])}"></span><label><input type="checkbox" class="srcOn" value="${s}" checked> ${SOURCE_NAME[SRC_ID[s]]} <span class="muted">${RAW.src.filter(x => x === s).length.toLocaleString()}</span></label></div>`).join("");
-  $("runs").innerHTML = CASE.runs.map((r, i) => { runColor[r] = RUN_COLORS[i % RUN_COLORS.length]; return `<div class="row"><span class="sw line" style="background:${rgb(runColor[r])}"></span><label><input type="checkbox" class="runOn" value="${r}"> ${r} <span class="muted" id="runcount-${r}"></span></label></div>`; }).join("");
+  $("sources").innerHTML = srcs.map(s => `<label class="tb" title="${RAW.src.filter(x => x === s).length.toLocaleString()} plots"><input type="checkbox" class="srcOn" value="${s}" checked><span class="sw" style="background:${rgb(SOURCE_COLOR[s])}"></span>${SHORT_SOURCE[s] || s}</label>`).join("");
+  $("runs").innerHTML = CASE.runs.map((r, i) => { runColor[r] = RUN_COLORS[i % RUN_COLORS.length]; return `<label class="tb" id="runlabel-${r}"><input type="checkbox" class="runOn" value="${r}"><span class="sw line" style="background:${rgb(runColor[r])}"></span>${shortRun(r)}<span class="n" id="runcount-${r}"></span></label>`; }).join("");
+  map.on("mousemove", e => { $("dbgLat").textContent = e.lngLat.lat.toFixed(4); $("dbgLon").textContent = e.lngLat.lng.toFixed(4); });
+  map.on("move", () => { $("dbgZoom").textContent = map.getZoom().toFixed(2); }); $("dbgZoom").textContent = map.getZoom().toFixed(2);
   document.querySelectorAll(".runOn").forEach(cb => cb.onchange = async () => { if (cb.checked && !RUNS[cb.value]) await loadRun(cb.value); rebuildCharts(); draw(); });
   document.querySelectorAll(".srcOn").forEach(cb => cb.onchange = () => { rebuildCharts(); draw(); });
-  ["rawOn", "rawColour", "greyOthers", "runLines", "runRings"].forEach(id => $(id).onchange = draw);
+  ["rawOn", "runsOn", "rawColour", "runColour", "greyOthers", "runLines", "runRings"].forEach(id => $(id).onchange = draw);
   document.querySelectorAll('input[name="filterMode"]').forEach(r => r.onchange = draw);
   $("fadeWin").onchange = () => { $("fadeCustom").style.display = $("fadeWin").value === "custom" ? "inline-block" : "none"; draw(); };
   $("fadeCustom").oninput = draw;
@@ -153,16 +346,28 @@ async function init() {
   document.addEventListener("keydown", e => { if (e.target.tagName === "INPUT") return;
     if (e.key === " ") { e.preventDefault(); togglePlay(); } else if (e.key === "ArrowRight") { now = clampNow(now + (e.shiftKey ? 10000 : 1000)); sync(); } else if (e.key === "ArrowLeft") { now = clampNow(now - (e.shiftKey ? 10000 : 1000)); sync(); } else if (e.key === "Escape") { closePick(); pins = []; renderCompare(); drawHighlight(); redrawCharts(); } });
   grip();
-  $("status").textContent = `${RAW.n.toLocaleString()} raw plots`;
+  $("status").textContent = RAW.n.toLocaleString();
   now = Math.min(CASE.span_ms, 12 * 60000);
-  renderCompare(); rebuildCharts(); sync();
+  await restoreUrlState();   // after the toolbar exists and the defaults are set, so a shared link wins
+  renderCompare(); rebuildCharts(); applyWindow(); sync();
+  map.on("moveend", pushUrl);
+  const done = () => { const el = $("splash"); if (!el) return; el.classList.add("gone"); setTimeout(() => el.remove(), 400); };
+  map.loaded() ? done() : map.once("idle", done); setTimeout(done, 4000);
 }
-async function loadRun(name) { $("status").textContent = `loading ${name}…`; const r = await (await fetch("/api/run/" + name)).json(); r.n = r.t.length; RUNS[name] = r; $(`runcount-${name}`).textContent = `${r.n.toLocaleString()} plots, ${new Set(r.track).size} tracks`; $("status").textContent = `${RAW.n.toLocaleString()} raw plots`; }
+async function loadRun(name) {
+  $("status").textContent = `loading ${name}…`;
+  const r = await api(`run/${CASE.name}/${name}`); r.n = r.t.length; RUNS[name] = r;
+  $(`runlabel-${name}`).title = `${r.n.toLocaleString()} plots, ${new Set(r.track).size} tracks emitted by this strategy`;
+  // the raw colour menu gains "used by <strategy>"
+  if (![...$("rawColour").options].some(o => o.value === "used:" + name)) { const o = document.createElement("option"); o.value = "used:" + name; o.textContent = `used by ${shortRun(name)}`; $("rawColour").appendChild(o); }
+  $("status").textContent = RAW.n.toLocaleString();
+}
+async function loadUsed(name) { if (USED[name]) return USED[name]; USED[name] = await api(`used/${CASE.name}/${name}`); renderCompare(); return USED[name]; }
 const clampNow = v => win ? Math.max(win[0], Math.min(win[1], v)) : Math.max(0, Math.min(CASE.span_ms, v));
 function sync() { $("time").value = now; draw(); }
 function togglePlay() { playing = !playing; $("play").textContent = playing ? "❚❚" : "▶"; if (playing) { lastTick = performance.now(); requestAnimationFrame(tick); } }
 function tick(ts) { if (!playing) return; const end = win ? win[1] : CASE.span_ms; now = Math.min(end, now + (ts - lastTick) * +$("speed").value); lastTick = ts; if (now >= end) playing = false, $("play").textContent = "▶"; sync(); requestAnimationFrame(tick); }
-function activeRuns() { return [...document.querySelectorAll(".runOn:checked")].map(c => c.value).filter(n => RUNS[n]); }
+function activeRuns() { return $("runsOn").checked ? [...document.querySelectorAll(".runOn:checked")].map(c => c.value).filter(n => RUNS[n]) : []; }
 function activeSources() { return new Set([...document.querySelectorAll(".srcOn:checked")].map(c => c.value)); }
 function fadeWindowMs() { const v = $("fadeWin").value; if (v === "custom") return Math.max(1, +$("fadeCustom").value || 120) * 1000; return +v * 1000; }
 
@@ -176,7 +381,7 @@ function toggleTrack(kind, i, silent) {
   }
   if (!silent) { renderCompare(); rebuildCharts(); draw(); }
 }
-// every source track and loaded run track whose plots carry this hex, callsign or tail
+// every source track and loaded strategy track whose plots carry this hex, callsign or tail
 function findTracks(q, silent) {
   if (!q) return;
   const seen = new Set();
@@ -186,11 +391,23 @@ function findTracks(q, silent) {
 }
 
 // the panel can be dragged wider or narrower
-function grip() { let drag = false; $("grip").onmousedown = e => { drag = true; e.preventDefault(); }; document.addEventListener("mousemove", e => { if (!drag) return; const w = Math.max(320, Math.min(window.innerWidth * 0.6, window.innerWidth - e.clientX)); document.documentElement.style.setProperty("--right", w + "px"); }); document.addEventListener("mouseup", () => { if (drag) { drag = false; for (const c of charts) c.u.setSize({ width: chartWidth(), height: c.u.height }); } }); }
-const chartWidth = () => $("charts").clientWidth - 2;
+function grip() {
+  let drag = null;   // "left" or "right" while a handle is held
+  $("grip").onmousedown = e => { drag = "right"; e.preventDefault(); document.body.classList.add("dragging"); $("grip").classList.add("on"); };
+  $("gripLeft").onmousedown = e => { drag = "left"; e.preventDefault(); document.body.classList.add("dragging"); $("gripLeft").classList.add("on"); };
+  document.addEventListener("mousemove", e => {
+    if (!drag) return;
+    if (drag === "right") document.documentElement.style.setProperty("--right", Math.max(320, Math.min(window.innerWidth * 0.6, window.innerWidth - e.clientX)) + "px");
+    else document.documentElement.style.setProperty("--left", Math.max(240, Math.min(window.innerWidth * 0.4, e.clientX)) + "px");
+  });
+  document.addEventListener("mouseup", () => { if (drag) { drag = null; document.body.classList.remove("dragging"); $("grip").classList.remove("on"); $("gripLeft").classList.remove("on"); for (const c of charts) c.u.setSize({ width: chartWidth(), height: c.u.height }); } });
+}
+const chartWidth = () => $("charts").clientWidth - 30;
 
 // ---------- colours ----------
+const DROPPED = [62, 68, 76];
 function rawColor(i, mode) {
+  if (mode.startsWith("used:")) { const u = USED[mode.slice(5)]; if (!u || !u.track) return SOURCE_COLOR[RAW.src[i]]; return u.track[i] == null ? DROPPED : SOURCE_COLOR[RAW.src[i]]; }
   if (mode === "key") return hashColor(displayKey(RAW, i));
   if (mode === "lateness") { const late = (RAW.r[i] - RAW.t[i]) / 1000; return late < 2 ? [204,255,0] : late < 5 ? [235,141,7] : late < 15 ? [255,26,94] : [170,130,255]; }
   return SOURCE_COLOR[RAW.src[i]];
@@ -199,13 +416,25 @@ function hashColor(str) { let h = 2166136261; for (let i = 0; i < str.length; i+
 function hsl(h, s, l) { s /= 100; l /= 100; const k = n => (n + h / 30) % 12, a = s * Math.min(l, 1 - l), f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1))); return [255 * f(0), 255 * f(8), 255 * f(4)].map(Math.round); }
 
 // ---------- map ----------
+// the OpenFreeMap dark style is too bright for plots on top; pull roads, fills and labels back
+function dimBasemap() {
+  for (const layer of map.getStyle().layers) {
+    try {
+      if (layer.type === "line") map.setPaintProperty(layer.id, "line-opacity", 0.28);
+      else if (layer.type === "fill") map.setPaintProperty(layer.id, "fill-opacity", 0.55);
+      else if (layer.type === "symbol") { map.setPaintProperty(layer.id, "text-opacity", 0.55); map.setPaintProperty(layer.id, "icon-opacity", 0.4); }
+      else if (layer.type === "background") map.setPaintProperty(layer.id, "background-color", "#0b0d10");
+    } catch (e) {}
+  }
+}
 function draw() {
   if (!RAW) return;
-  $("now").textContent = fmt(now) + " UTC";
-  $("nowMark").style.left = (now / CASE.span_ms * 100) + "%";
+  $("now").textContent = fmt(now); $("dbgNow").textContent = fmt(now);
+  const pct = (now / CASE.span_ms * 100) + "%"; $("nowMark").style.left = pct; $("played").style.width = pct; $("nowChip").style.left = `clamp(1.2rem, ${pct}, calc(100% - 1.2rem))`; $("nowChip").textContent = fmt(now).slice(0, 5);
   const layers = [], b = CASE.case.box;
   layers.push(new deck.PathLayer({ id:"box", data:[{ path:[[b.lon_min,b.lat_min],[b.lon_max,b.lat_min],[b.lon_max,b.lat_max],[b.lon_min,b.lat_max],[b.lon_min,b.lat_min]] }], getPath:d => d.path, getColor:[183,192,202,90], getWidth:1, widthUnits:"pixels" }));
   const mode = $("rawColour").value, fadeMs = fadeWindowMs();
+  if (mode.startsWith("used:") && !USED[mode.slice(5)]) { loadUsed(mode.slice(5)).then(draw); }
   const inWin = t => !win || (t >= win[0] && t <= win[1]);
   // opacity falls in a straight line from full at the plot's position time to zero at the end of the fade window
   const alpha = t => { if (!fadeMs) return 210; const age = now - t; return age >= fadeMs ? 0 : Math.round(210 * (1 - age / fadeMs)); };
@@ -228,8 +457,10 @@ function draw() {
       pickable:true, onHover:info => mapHover(info, "raw"),
       updateTriggers:{ getFillColor:[now, fadeMs, mode, grey, compare], getLineColor:[now, fadeMs, compare, mode2], getRadius:[compare], getLineWidth:[compare] } }));
   }
+  const runMode = $("runColour").value;
   for (const name of activeRuns()) {
     const run = RUNS[name], color = runColor[name], idx = [], paths = {};
+    const runBase = i => runMode === "track" ? hashColor(run.track[i]) : color;   // a compared track keeps its own colour either way
     for (let i = 0; i < run.n && run.created[i] <= now; i++) {              // sorted by created
       const vt = run.valid_to[i]; if (vt != null && vt <= now) continue;      // already replaced by a later event
       if (!inWin(run.t[i]) || alpha(run.t[i]) <= 0) continue;
@@ -237,16 +468,17 @@ function draw() {
       idx.push(i); (paths[run.track[i]] ||= []).push(i);
     }
     visible.runs[name] = idx;
-    const lines = Object.entries(paths).map(([track, ids]) => { ids.sort((a, b) => run.t[a] - run.t[b]); const c = compare.find(x => x.kind === name && x.track === track); return { track, cmp:c, newest:run.t[ids[ids.length - 1]], path: ids.map(i => [run.lon[i], run.lat[i]]) }; });
-    if ($("runLines").checked) layers.push(new deck.PathLayer({ id:"run-lines-" + name, data:lines, getPath:d => d.path, getColor:d => [...(d.cmp ? d.cmp.color : grey ? GREY : color), Math.max(40, alpha(d.newest))], getWidth:d => d.cmp ? 3 : 1.2, widthUnits:"pixels", updateTriggers:{ getColor:[now, fadeMs, compare, grey], getWidth:[compare] } }));
+    const lines = Object.entries(paths).map(([track, ids]) => { ids.sort((a, b) => run.t[a] - run.t[b]); const c = compare.find(x => x.kind === name && x.track === track); return { track, cmp:c, first:ids[0], newest:run.t[ids[ids.length - 1]], path: ids.map(i => [run.lon[i], run.lat[i]]) }; });
+    if ($("runLines").checked) layers.push(new deck.PathLayer({ id:"run-lines-" + name, data:lines, getPath:d => d.path, getColor:d => [...(d.cmp ? d.cmp.color : grey ? GREY : runBase(d.first)), Math.max(40, alpha(d.newest))], getWidth:d => d.cmp ? 3 : 1.2, widthUnits:"pixels", updateTriggers:{ getColor:[now, fadeMs, compare, grey, runMode], getWidth:[compare] } }));
     if ($("runRings").checked) ringLayers.push(new deck.ScatterplotLayer({ id:"run-dots-" + name, data:idx, getPosition:i => [run.lon[i], run.lat[i]], radiusUnits:"pixels", getRadius:i => emph(name, i) ? 6 : 4.5,
-      filled:false, stroked:true, lineWidthUnits:"pixels", getLineWidth:i => emph(name, i) ? 2 : 1.2, getLineColor:i => { const c = emph(name, i); return [...(c ? c.color : grey ? GREY : color), alpha(run.t[i])]; },
+      filled:false, stroked:true, lineWidthUnits:"pixels", getLineWidth:i => emph(name, i) ? 2 : 1.2, getLineColor:i => { const c = emph(name, i); return [...(c ? c.color : grey ? GREY : runBase(i)), alpha(run.t[i])]; },
       pickable:true, onHover:info => mapHover(info, name),
-      updateTriggers:{ getLineColor:[now, fadeMs, compare, grey], getRadius:[compare], getLineWidth:[compare] } }));
+      updateTriggers:{ getLineColor:[now, fadeMs, compare, grey, runMode], getRadius:[compare], getLineWidth:[compare] } }));
   }
   baseLayers = [...layers, ...rawLayers, ...ringLayers];
   drawHighlight();
   redrawCharts();
+  pushUrl();
 }
 // the hover point and the pins, drawn on top without rebuilding everything else
 function drawHighlight() {
@@ -290,7 +522,7 @@ function boxSelect() {
     const work = found.filter(f => removing ? !!trackOf(f.kind, f.i) : !trackOf(f.kind, f.i));
     for (const f of work) toggleTrack(f.kind, f.i, true);
     renderCompare(); rebuildCharts(); draw();
-    $("status").textContent = `${RAW.n.toLocaleString()} raw plots · ${work.length} track${work.length === 1 ? "" : "s"} ${removing ? "removed from" : "added to"} the comparison`;
+    $("status").textContent = `${RAW.n.toLocaleString()} · ${work.length} ${removing ? "removed" : "added"}`;
   });
 }
 
@@ -331,7 +563,11 @@ function setHover(h, x, y) {
 }
 function describe(p) {
   const d = table(p.kind), i = p.i, raw = p.kind === "raw";
-  return `<b>${d.cs[i] || "no callsign"}</b> · hex ${d.hex[i] || "–"} · tail ${d.tail[i] || "–"}<br>${raw ? "raw plot" : p.kind + " · track " + d.track[i] + " · " + d.quality[i]} · ${srcName(p.kind, i)}<br>position ${fmtMs(d.t[i])} · received ${fmt(d.r[i])} (${((d.r[i] - d.t[i]) / 1000).toFixed(2)} s late)${!raw ? `<br>emitted ${fmt(d.created[i])}${d.valid_to[i] != null ? ` · replaced ${fmt(d.valid_to[i])}` : ""}` : ""}<br>alt ${d.alt[i] ?? "–"} ft · ${d.gs[i] ?? "–"} kt · trk ${d.trk[i] ?? "–"} · hdg ${d.hdg[i] ?? "–"}${raw ? ` · source track ${d.tid[i]}` : ""}`;
+  return `<b>${d.cs[i] || "no callsign"}</b> · hex ${d.hex[i] || "–"} · tail ${d.tail[i] || "–"}<br>${raw ? "raw plot" : p.kind + " · track " + d.track[i] + " · " + d.quality[i]} · ${srcName(p.kind, i)}<br>position ${fmtMs(d.t[i])} · received ${fmt(d.r[i])} (${((d.r[i] - d.t[i]) / 1000).toFixed(2)} s late)${!raw ? `<br>emitted ${fmt(d.created[i])}${d.valid_to[i] != null ? ` · replaced ${fmt(d.valid_to[i])}` : ""}` : ""}<br>alt ${d.alt[i] ?? "–"} ft · ${d.gs[i] ?? "–"} kt · trk ${d.trk[i] ?? "–"} · hdg ${d.hdg[i] ?? "–"}${raw ? ` · source track ${d.tid[i]}` : ""}${raw ? usedLine(i) : ""}`;
+}
+function usedLine(i) {
+  const parts = Object.entries(USED).filter(([n, u]) => u.track && activeRuns().includes(n)).map(([n, u]) => `${shortRun(n)}: ${u.track[i] == null ? "dropped" : "used" + (u.track[i] ? " by " + u.track[i] : "")}`);
+  return parts.length ? `<br><span class="muted">${parts.join(" · ")}</span>` : "";
 }
 
 // ---------- compare list and pins ----------
@@ -341,12 +577,52 @@ function renderCompare() {
     const chips = compare.map((c, k) => {
       const d = table(c.kind); let n = 0, cs = new Set(), hex = new Set(), t0 = Infinity, t1 = -Infinity;
       for (let i = 0; i < d.n; i++) { const hit = c.kind === "raw" ? (d.src[i] === c.src && d.tid[i] === c.tid) : d.track[i] === c.track; if (!hit) continue; n++; if (d.cs[i]) cs.add(d.cs[i]); if (d.hex[i]) hex.add(d.hex[i]); t0 = Math.min(t0, d.t[i]); t1 = Math.max(t1, d.t[i]); }
-      return `<span class="chip" data-k="${k}" title="click to remove · ${[...cs].join(", ")} · hex ${[...hex].join(", ") || "–"}"><span class="sw${c.kind === "raw" ? "" : " line"}" style="background:${rgb(c.color)}"></span>${trackLabel(c)} <span class="muted">${n} plots · ${fmt(t0)} to ${fmt(t1)}${cs.size ? " · " + [...cs].join(", ") : ""}</span><span class="x">×</span></span>`;
+      return `<span class="chip" data-k="${k}" style="border-left-color:${rgb(c.color)}" title="click to remove · ${[...cs].join(", ")} · hex ${[...hex].join(", ") || "–"}">${trackLabel(c)} <span class="muted">${n} · ${fmt(t0).slice(0, 5)}–${fmt(t1).slice(0, 5)}${cs.size ? " · " + [...cs].join(", ") : ""}</span><span class="x">×</span></span>`;
     }).join("");
-    $("sel").innerHTML = `<div class="muted" style="margin:0.3rem 0 0.2rem">${compare.length} track${compare.length > 1 ? "s" : ""}, click one to remove it</div><div>${chips}</div>`;
+    $("sel").innerHTML = `<div class="label" style="margin-top:0.7rem">${compare.length} track${compare.length > 1 ? "s" : ""} · click one to remove</div><div class="chips">${chips}</div>${numbersTable()}`;
     $("sel").querySelectorAll(".chip").forEach(b => b.onclick = () => { compare.splice(+b.dataset.k, 1); renderCompare(); rebuildCharts(); draw(); });
   }
   renderPins();
+}
+// per compared track: a few numbers that say how it behaved
+const pct = (arr, q) => { if (!arr.length) return null; const a = [...arr].sort((x, y) => x - y); return a[Math.min(a.length - 1, Math.floor(q * (a.length - 1)))]; };
+function trackNumbers(c) {
+  const d = table(c.kind), ids = [];
+  for (let i = 0; i < d.n; i++) if (c.kind === "raw" ? (d.src[i] === c.src && d.tid[i] === c.tid) : d.track[i] === c.track) ids.push(i);
+  const current = c.kind === "raw" ? ids : ids.filter(i => d.valid_to[i] == null);   // for a strategy: the versions that survived
+  current.sort((a, b) => d.t[a] - d.t[b]);
+  let jump = 0, step = 0;
+  for (let k = 1; k < current.length; k++) {
+    const a = current[k - 1], b = current[k], dt = (d.t[b] - d.t[a]) / 1000;
+    if (dt > 0.2) jump = Math.max(jump, haversine(d.lat[a], d.lon[a], d.lat[b], d.lon[b]) / dt * 1.943844);
+    if (d.alt[a] != null && d.alt[b] != null) step = Math.max(step, Math.abs(d.alt[b] - d.alt[a]));
+  }
+  const late = c.kind === "raw" ? ids.map(i => (d.r[i] - d.t[i]) / 1000) : ids.map(i => (d.created[i] - d.t[i]) / 1000);
+  const out = { plots: ids.length, jump: Math.round(jump), step: Math.round(step), late50: pct(late, 0.5), late99: pct(late, 0.99) };
+  if (c.kind !== "raw") {
+    const rew = ids.filter(i => d.valid_to[i] != null), after = rew.map(i => (d.valid_to[i] - d.t[i]) / 60000);
+    out.rewritten = rew.length; out.rew50 = pct(after, 0.5); out.rewMax = after.length ? Math.max(...after) : null;
+    const u = USED[c.kind]; if (u && u.track) { const bySrc = {}; let n = 0; for (let i = 0; i < RAW.n; i++) if (u.track[i] === c.track) { n++; bySrc[RAW.src[i]] = (bySrc[RAW.src[i]] || 0) + 1; } out.used = n; out.usedBySrc = bySrc; }
+  } else {
+    out.usedBy = {}; for (const [n, u] of Object.entries(USED)) if (u.track) out.usedBy[n] = ids.filter(i => u.track[i] != null).length;
+  }
+  return out;
+}
+function numbersTable() {
+  if (!compare.length) return "";
+  const nums = compare.map(trackNumbers), f1 = v => v == null ? "–" : (Math.abs(v) >= 100 ? Math.round(v).toLocaleString() : (+v).toFixed(1));
+  const head = compare.map(c => `<th><span class="sw${c.kind === "raw" ? "" : " line"}" style="background:${rgb(c.color)}"></span></th>`).join("");
+  const row = (label, get) => `<tr><td class="k">${label}</td>${nums.map(n => `<td>${get(n)}</td>`).join("")}</tr>`;
+  const anyStrat = compare.some(c => c.kind !== "raw"), anyRaw = compare.some(c => c.kind === "raw");
+  const usedNames = Object.keys(USED).filter(n => USED[n].track);
+  return `<table class="nums"><tr><th class="k"></th>${head}</tr>` +
+    row("plots", n => n.plots.toLocaleString()) +
+    (anyStrat ? row("later rewritten", n => n.rewritten == null ? "" : `${n.rewritten}${n.rewritten ? ` · ${f1(n.rew50)} / ${f1(n.rewMax)} min` : ""}`) : "") +
+    row("largest jump kt", n => f1(n.jump)) + row("largest alt step ft", n => f1(n.step)) +
+    row("late p50 / p99 s", n => `${f1(n.late50)} / ${f1(n.late99)}`) +
+    (anyStrat ? row("raw plots used", n => n.used == null ? "" : `${n.used.toLocaleString()}${Object.keys(n.usedBySrc || {}).length ? " · " + Object.entries(n.usedBySrc).map(([k, v]) => `${SHORT_SOURCE[k] || k} ${v}`).join(", ") : ""}`) : "") +
+    (anyRaw ? usedNames.map(name => row(`used by ${shortRun(name)}`, n => n.usedBy && n.usedBy[name] != null ? `${n.usedBy[name]} / ${n.plots}` : "")).join("") : "") +
+    `</table>` + (anyRaw && !usedNames.length ? `<div class="help" style="margin-top:0.3rem">Pick a "used by" raw plot colour to see how many of these plots each strategy took.</div>` : "");
 }
 function renderPins() {
   if (!pins.length) { $("pins").innerHTML = ""; return; }
@@ -392,8 +668,8 @@ function crossTrack(lat1, lon1, lat2, lon2, lat, lon) {
 }
 
 // ---------- charts ----------
-// each chart: how to get a value for a raw plot and for a run plot
-const CHARTS = [   // raw: value for a raw plot index; run: value for a run plot index
+// each chart: how to get a value for a raw plot and for a strategy plot
+const CHARTS = [   // raw: value for a raw plot index; run: value for a strategy plot index
   { id:"alt", title:"Altitude", unit:"ft", raw:i => RAW.alt[i], run:(r, i) => r.alt[i] },
   { id:"gs", title:"Ground speed", unit:"kt", raw:i => RAW.gs[i], run:(r, i) => r.gs[i] },
   { id:"trk", title:"Track angle", unit:"deg", raw:i => RAW.trk[i] ?? RAW.hdg[i], run:(r, i) => r.trk[i] ?? r.hdg[i] },
@@ -401,7 +677,7 @@ const CHARTS = [   // raw: value for a raw plot index; run: value for a run plot
   { id:"xtrack", title:"Cross track distance to the other source", unit:"m", raw:i => derived.xtrack[i], run:null, zero:true },
   { id:"gap", title:"Time since previous plot of the same source", unit:"s", raw:i => derived.gap[i], run:null },
   { id:"vrate", title:"Vertical rate from altitude changes", unit:"ft/min", raw:i => derived.vrate[i], run:null, zero:true },
-  { id:"used", title:"Which source each run track used", unit:"source", raw:null, run:(r, i) => r.src[i], categorical:true },
+  { id:"used", title:"Which source each strategy track used", unit:"source", raw:null, run:(r, i) => r.src[i], categorical:true },
 ];
 const chartHeight = {};   // chart id -> height in px, kept when the charts are rebuilt
 const hiddenSeries = {};  // chart id -> set of series labels switched off in the legend, kept when the charts are rebuilt
@@ -426,10 +702,11 @@ function rebuildCharts() {
   chartData = { points, xs };
   for (const spec of CHARTS) charts.push(makeChart(spec, points, xs));
   applyWindow();
+  if (win) setTimeout(applyWindow, 80);   // new charts apply their initial full range a tick later; put the window back after that
 }
 
 function makeChart(spec, points, xs) {
-  // one series per compared track: dots for a source track, a line for a run track plus hollow dots for its later rewritten plots
+  // one series per compared track: dots for a source track, a line for a strategy track
   const series = [{}], full = [], legend = [], allVals = [];
   const addSeries = (label, color, filter, getter, asLine) => {
     const ys = points.map(p => filter(p) ? (getter(p) ?? null) : null);
@@ -446,17 +723,18 @@ function makeChart(spec, points, xs) {
   const yLo = allVals.length ? Math.min(...allVals) : 0, yHi = allVals.length ? Math.max(...allVals) : 1;
   const data = maskData(full, points, spec, legend.map(l => l.match(/data-label="([^"]*)"/)[1]));
   const box = document.createElement("div"); box.className = "chart";
-  box.innerHTML = `<div class="chart-head"><b>${spec.title}</b> <span>(${spec.unit})</span><span class="legend">${legend.join("")}</span></div>`;
+  box.innerHTML = `<div class="chart-head"><b>${spec.title}</b><span class="unit">${spec.unit}</span><span class="legend">${legend.join("")}</span></div>`;
   const holder = document.createElement("div"); box.appendChild(holder); $("charts").appendChild(box);
   const hgrip = document.createElement("div"); hgrip.className = "hgrip"; hgrip.title = "drag to change the height"; box.appendChild(hgrip);
-  const axisStyle = { stroke:"#b7c0ca", grid:{ stroke:"#252a2f", width:1 }, ticks:{ stroke:"#3a4148", width:1 }, font:"10px Inter, sans-serif" };
+  const axisStyle = { stroke:"#8b95a1", grid:{ stroke:"#1f2429", width:1, dash:[2, 4] }, ticks:{ stroke:"#2a3037", width:1, size:4 }, font:'10px "SF Mono", SFMono-Regular, Menlo, monospace' };
   const opts = {
     width: chartWidth(), height: chartHeight[spec.id] || 260, cursor:{ drag:{ x:true, y:false }, focus:{ prox:16 }, points:{ show:false } }, legend:{ show:false },
     scales:{ x:{ time:false, range:(u, min, max) => (u.scales.x.min == null || syncing === "init") ? [0, CASE.span_ms / 1000] : [min, max] }, y:{ range:() => { const min = yLo, max = yHi; return spec.categorical ? [0, 14] : spec.zero ? [Math.min(0, min) - (max - min) * 0.05 - 1, Math.max(0, max) + (max - min) * 0.05 + 1] : [min - (max - min) * 0.08 - 0.5, max + (max - min) * 0.08 + 0.5]; } } },
-    axes:[ { ...axisStyle, values:(u, vals) => vals.map(v => fmt(v * 1000)) }, { ...axisStyle, size:52, values:spec.categorical ? (u, vals) => vals.map(v => SOURCE_NAME[v] ? SOURCE_NAME[v].split(" ")[0] : "") : undefined, splits:spec.categorical ? () => [1, 3, 4, 10, 11] : undefined } ],
+    axes:[ { ...axisStyle, space:90, values:(u, vals) => vals.map(v => fmt(v * 1000).slice(0, 5)) }, { ...axisStyle, size:52, values:spec.categorical ? (u, vals) => vals.map(v => SOURCE_NAME[v] ? SOURCE_NAME[v].split(" ")[0] : "") : undefined, splits:spec.categorical ? () => [1, 3, 4, 10, 11] : undefined } ],
     series,
     hooks:{
-      setScale:[(u, key) => { if (key === "x" && !syncing) onZoom(u); }],
+      // uPlot fires setScale once more after construction with the initial full range; only a user zoom counts
+      setScale:[(u, key) => { if (key === "x" && !syncing && u._userScale) onZoom(u); }],
       setCursor:[u => onChartCursor(u, spec)],
       draw:[u => drawMarks(u, spec)],
     },
@@ -476,9 +754,9 @@ function makeChart(spec, points, xs) {
   });
   // uPlot swallows clicks on its overlay, so listen on the overlay itself in the capture phase
   let downAt = null;
-  u.over.addEventListener("mousedown", e => { downAt = [e.clientX, e.clientY]; }, true);
+  u.over.addEventListener("mousedown", e => { downAt = [e.clientX, e.clientY]; u._userScale = true; }, true);
   u.over.addEventListener("mouseup", e => { if (downAt && Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) < 4) { const p = nearestPoint(u, spec); if (p) pin({ kind:p.kind, i:p.i }); } downAt = null; }, true);
-  u.over.addEventListener("dblclick", resetZoom, true);
+  u.over.addEventListener("dblclick", () => { u._userScale = true; resetZoom(); }, true);
   u.over.addEventListener("mouseleave", () => setHover(null));
   // drag the bar under the chart up or down to change its height
   hgrip.onmousedown = e => {
@@ -489,7 +767,7 @@ function makeChart(spec, points, xs) {
   };
   return { u, spec, full, points, labels };
 }
-// keep only what is valid at time now: raw plots we have received, run plots emitted and not yet replaced
+// keep only what is valid at time now: raw plots we have received, strategy plots emitted and not yet replaced
 function maskData(full, points, spec, labels) {
   const validAt = p => p.known <= now && (p.until == null || p.until > now), hidden = hiddenSeries[spec.id] || new Set();
   return [chartData.xs, ...full.map((ys, k) => hidden.has(labels[k]) ? ys.map(() => null) : ys.map((v, j) => v != null && validAt(points[j]) ? v : null))];
@@ -507,7 +785,7 @@ function onZoom(u) {
 function resetZoom() { win = null; applyWindow(); }
 function applyWindow() {
   const hl = $("winHL");
-  $("resetZoom").style.display = win ? "inline-block" : "none";
+  $("resetZoom").style.display = win ? "inline-block" : "none"; $("resetZoom").className = win ? "accent" : "";
   if (win) { hl.style.display = "block"; hl.style.left = (win[0] / CASE.span_ms * 100) + "%"; hl.style.width = ((win[1] - win[0]) / CASE.span_ms * 100) + "%"; hl.title = `${fmt(win[0])} to ${fmt(win[1])}`; now = clampNow(now); $("time").value = now; }
   else hl.style.display = "none";
   draw();
@@ -549,11 +827,51 @@ function drawMarks(u, spec) {
     if (v == null) return;
     const py = u.valToPos(v, "y", true);
     ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.stroke();
-    if (label) { ctx.fillStyle = color; ctx.font = "bold 11px Inter, sans-serif"; ctx.fillText(label, px + r + 2, py - r); }
+    if (label) { ctx.fillStyle = color; ctx.font = 'bold 10px "SF Mono", Menlo, monospace'; ctx.fillText(label, px + r + 2, py - r); }
   };
   pins.forEach((p, k) => mark(p, k === 0 ? "#ff1a5e" : "#ffffff", 6, String(k + 1)));
   if (hover) mark(hover, "#ccff00", 7, "");
   ctx.restore();
+}
+// ---------- the view in the address bar ----------
+let urlTimer = null;
+function pushUrl() {
+  clearTimeout(urlTimer);
+  urlTimer = setTimeout(() => {
+    if (!CASE || !RAW) return;
+    const q = new URLSearchParams();
+    q.set("case", CASE.name);
+    q.set("t", String(Math.round(now)));
+    if (win) q.set("win", `${Math.round(win[0])}-${Math.round(win[1])}`);
+    const c = map.getCenter(); q.set("map", `${c.lng.toFixed(4)},${c.lat.toFixed(4)},${map.getZoom().toFixed(2)}`);
+    if (compare.length) q.set("cmp", compare.map(x => x.kind === "raw" ? `raw:${x.src}:${x.tid}` : `${x.kind}:${x.track}`).join(";"));
+    q.set("src", [...document.querySelectorAll(".srcOn:checked")].map(x => x.value).join(","));
+    q.set("strat", [...document.querySelectorAll(".runOn:checked")].map(x => x.value).join(","));
+    const flags = ["rawOn", "runsOn", "runLines", "runRings", "greyOthers"].filter(id => $(id).checked); q.set("on", flags.join(","));
+    q.set("rc", $("rawColour").value); q.set("sc", $("runColour").value); q.set("fade", $("fadeWin").value === "custom" ? String(fadeWindowMs() / 1000) : $("fadeWin").value);
+    q.set("show", document.querySelector('input[name="filterMode"]:checked').value);
+    history.replaceState(null, "", "?" + q.toString());
+  }, 150);
+}
+async function restoreUrlState() {
+  const q = new URLSearchParams(location.search);
+  if (!q.has("t")) return;
+  const list = (k) => (q.get(k) || "").split(",").filter(Boolean);
+  if (q.has("src")) { const on = new Set(list("src")); document.querySelectorAll(".srcOn").forEach(x => x.checked = on.has(x.value)); }
+  if (q.has("strat")) { for (const name of list("strat")) { const cb = document.querySelector(`.runOn[value="${name}"]`); if (cb) { cb.checked = true; if (!RUNS[name]) await loadRun(name); } } }
+  if (q.has("on")) { const on = new Set(list("on")); for (const id of ["rawOn", "runsOn", "runLines", "runRings", "greyOthers"]) $(id).checked = on.has(id); }
+  if (q.has("rc")) { const v = q.get("rc"); if ([...$("rawColour").options].some(o => o.value === v)) { $("rawColour").value = v; if (v.startsWith("used:")) await loadUsed(v.slice(5)); } }
+  if (q.has("sc")) $("runColour").value = q.get("sc");
+  if (q.has("fade")) { const v = q.get("fade"); if ([...$("fadeWin").options].some(o => o.value === v)) $("fadeWin").value = v; else { $("fadeWin").value = "custom"; $("fadeCustom").value = v; $("fadeCustom").style.display = "inline-block"; } }
+  if (q.has("show")) { const r = document.querySelector(`input[name="filterMode"][value="${q.get("show")}"]`); if (r) r.checked = true; }
+  if (q.has("map")) { const [lng, lat, z] = q.get("map").split(",").map(Number); map.jumpTo({ center:[lng, lat], zoom:z }); }
+  if (q.has("cmp")) for (const item of q.get("cmp").split(";")) {
+    const [kind, ...rest] = item.split(":");
+    if (kind === "raw") { const [src, tid] = [rest[0], rest.slice(1).join(":")]; let i = -1; for (let k = 0; k < RAW.n; k++) if (RAW.src[k] === src && RAW.tid[k] === tid) { i = k; break; } if (i >= 0) toggleTrack("raw", i, true); }
+    else { const track = rest.join(":"); if (!RUNS[kind]) { const cb = document.querySelector(`.runOn[value="${kind}"]`); if (!cb) continue; cb.checked = true; await loadRun(kind); } const r = RUNS[kind]; let i = -1; for (let k = 0; k < r.n; k++) if (r.track[k] === track) { i = k; break; } if (i >= 0) toggleTrack(kind, i, true); }
+  }
+  if (q.has("win")) { const [a, b] = q.get("win").split("-").map(Number); if (b > a) win = [a, b]; }
+  now = clampNow(+q.get("t") || 0);
 }
 function redrawCharts() {
   for (const c of charts) {
