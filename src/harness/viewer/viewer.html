@@ -1,0 +1,575 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Track harness</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uplot@1.6.31/dist/uPlot.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/deck.gl@9.1.0/dist.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/uplot@1.6.31/dist/uPlot.iife.min.js"></script>
+<style>
+  /* colours and sizes follow the Flyways design system, dark theme */
+  :root { color-scheme: dark; --bg:#090b0c; --chrome:#111417; --panel:#1B1F22; --line:#3a4148; --line-soft:#252a2f; --fg:#fff; --muted:#b7c0ca; --accent:#ccff00; --danger:#ff1a5e; --pin1:#ff1a5e; --pin2:#ffffff; }
+  html { font-size: 14px; } @media (min-width: 1400px) { html { font-size: 16px; } }
+  * { box-sizing: border-box; }
+  body { margin:0; font: 0.8125rem/1.45 Inter, -apple-system, system-ui, sans-serif; color:var(--fg); background:var(--bg); display:grid; grid-template-columns: 21rem 1fr var(--right, 34rem); grid-template-rows: 100vh; }
+  ::-webkit-scrollbar { width:0.25rem; height:0.25rem; } ::-webkit-scrollbar-thumb { background:var(--line); }
+  aside { background:var(--chrome); overflow:auto; padding:0.75rem; }
+  #left { border-right:1px solid var(--line-soft); } #right { border-left:1px solid var(--line-soft); position:relative; }
+  #grip { position:absolute; left:0; top:0; bottom:0; width:6px; cursor:col-resize; }
+  #grip:hover { background:var(--line); }
+  h1 { font-size:0.9375rem; margin:0 0 0.25rem; } h2 { font-size:0.75rem; color:var(--muted); font-weight:500; text-transform:uppercase; letter-spacing:0.04em; margin:1rem 0 0.4rem; }
+  .row { display:flex; align-items:center; gap:0.5rem; padding:0.2rem 0; } .row label { flex:1; cursor:pointer; }
+  .sw { display:inline-block; width:0.6rem; height:0.6rem; border-radius:50%; } .sw.line { width:1rem; height:0.2rem; border-radius:1px; }
+  .muted { color:var(--muted); } .mono { font-family: SFMono-Regular, Consolas, monospace; font-size:0.75rem; }
+  #left select { max-width:100%; }
+  select, input[type=text], button { font:inherit; color:var(--fg); background:var(--panel); border:1px solid var(--line); border-radius:0.25rem; padding:0.25rem 0.5rem; }
+  button:hover { border-color:var(--muted); } button.small { padding:0.1rem 0.4rem; font-size:0.75rem; }
+  input[type=range] { accent-color: var(--accent); }
+  #mapwrap { position:relative; } #map { position:absolute; inset:0; }
+  #ctl { position:absolute; z-index:10; left:0.75rem; right:0.75rem; bottom:0.75rem; background:#111417; border:1px solid var(--line); border-radius:0.25rem; padding:0.6rem 0.9rem; display:flex; gap:0.9rem; align-items:center; box-shadow:0 4px 24px rgb(0 0 0 / 60%); }
+  #timeline { position:relative; flex:1; height:2.1rem; }
+  #timeline .bar { position:absolute; left:0; right:0; top:0.85rem; height:0.4rem; background:var(--line-soft); border-radius:2px; }
+  #timeline .hl { position:absolute; top:0.25rem; height:1.6rem; background:rgba(204,255,0,0.14); border-left:1px solid var(--accent); border-right:1px solid var(--accent); display:none; }
+  #timeline .nowmark { position:absolute; top:0.2rem; width:3px; height:1.7rem; background:var(--accent); margin-left:-1.5px; border-radius:1px; }
+  #timeline .tick { position:absolute; top:1.4rem; font-size:0.6875rem; color:var(--muted); transform:translateX(-50%); }
+  #timeline input[type=range] { position:absolute; left:0; right:0; top:0; width:100%; height:2.1rem; margin:0; opacity:0; cursor:pointer; }
+  #resetZoom { display:none; }
+  #selbox { position:absolute; display:none; z-index:9; pointer-events:none; border:1px solid var(--accent); background:rgba(204,255,0,0.10); }
+  #selbox.remove { border-color:var(--danger); background:rgba(255,26,94,0.10); }
+  #tip { position:absolute; z-index:11; pointer-events:none; background:var(--chrome); border:1px solid var(--line); border-radius:0.25rem; padding:0.4rem 0.5rem; font-size:0.75rem; display:none; z-index:5; max-width:22rem; box-shadow:0 4px 24px rgb(0 0 0 / 50%); }
+  #status { position:absolute; z-index:10; top:0.75rem; left:0.75rem; background:var(--chrome); border:1px solid var(--line); border-radius:0.25rem; padding:0.3rem 0.6rem; font-size:0.75rem; color:var(--muted); }
+  .chart { margin:0.4rem 0 0.2rem; } .chart-head { display:flex; align-items:center; gap:0.5rem; font-size:0.75rem; color:var(--muted); }
+  .chart-head b { color:var(--fg); font-weight:500; }
+  .chart-head .legend span.item { cursor:pointer; user-select:none; } .chart-head .legend span.item.off { opacity:0.35; text-decoration:line-through; }
+  .chip { display:inline-flex; align-items:center; gap:0.4rem; background:var(--panel); border:1px solid var(--line); border-radius:0.25rem; padding:0.15rem 0.5rem; margin:0.15rem 0.3rem 0.15rem 0; font-size:0.75rem; cursor:pointer; } .chip:hover { border-color:var(--danger); } .chip .x { color:var(--muted); } .chart-head .legend { display:flex; gap:0.6rem; flex-wrap:wrap; margin-left:auto; }
+  .chart .hgrip { height:8px; cursor:row-resize; border-bottom:1px solid var(--line-soft); margin-bottom:0.2rem; } .chart .hgrip:hover { background:var(--line); }
+  .uplot { font-family: inherit !important; } .u-legend { display:none; }
+  .u-select { background: rgba(204,255,0,0.16) !important; border-left:1px solid var(--accent); border-right:1px solid var(--accent); }
+  #pins .pin { border-left:3px solid var(--pin1); padding:0.3rem 0.5rem; margin:0.4rem 0; background:var(--panel); border-radius:0 0.25rem 0.25rem 0; font-size:0.75rem; cursor:pointer; } #pins .pin:hover { outline:1px solid var(--danger); }
+  #pins .pin.two { border-left-color:var(--pin2); } #pins .diff { padding:0.3rem 0.5rem; font-size:0.75rem; color:var(--muted); }
+  #pick { position:absolute; display:none; z-index:12; background:var(--chrome); border:1px solid var(--line); border-radius:0.25rem; box-shadow:0 4px 24px rgb(0 0 0 / 50%); font-size:0.75rem; min-width:16rem; max-width:24rem; }
+  #pick .head { padding:0.35rem 0.6rem; color:var(--muted); border-bottom:1px solid var(--line-soft); }
+  #pick .item { display:flex; align-items:center; gap:0.5rem; padding:0.35rem 0.6rem; cursor:pointer; border-bottom:1px solid var(--line-soft); }
+  #pick .item:last-child { border-bottom:none; } #pick .item:hover { background:var(--panel); } #pick .item .muted { margin-left:auto; white-space:nowrap; }
+  kbd { font:0.6875rem SFMono-Regular, Consolas, monospace; border:1px solid var(--line); border-radius:0.25rem; padding:0 0.25rem; color:var(--muted); }
+</style>
+</head>
+<body>
+<aside id="left">
+  <h1 id="title">loading…</h1>
+  <div class="muted mono" id="sub"></div>
+  <div class="muted mono" style="font-size:0.6875rem">viewer build 2026-09-17 15:16</div>
+  <h2>Raw plots</h2>
+  <div id="sources"></div>
+  <div class="row"><label><input type="checkbox" id="rawOn" checked> show raw plots</label></div>
+  <h2>Strategy runs</h2>
+  <div id="runs"></div>
+  <div class="row"><label><input type="checkbox" id="runLines" checked> lines between the plots</label></div>
+  <div class="row"><label><input type="checkbox" id="runRings"> rings on the plots</label></div>
+  <h2>Display</h2>
+  <div class="row"><label>raw colour <select id="rawColour"><option value="source">by source</option><option value="key">by hex, else tail, else source track id</option><option value="lateness">by lateness</option></select></label></div>
+  <div class="row"><label>fade to 0 over <select id="fadeWin"><option value="10">10 s</option><option value="30">30 s</option><option value="60">1 min</option><option value="120">2 min</option><option value="300">5 min</option><option value="900" selected>15 min</option><option value="0">never</option><option value="custom">custom…</option></select></label><input type="text" id="fadeCustom" placeholder="seconds" style="width:5rem; display:none"></div>
+  <div class="row"><label><input type="checkbox" id="greyOthers" checked> grey out tracks not being compared</label></div>
+  <div class="row" style="align-items:flex-start"><span class="muted" style="padding-top:0.15rem">map shows</span>
+    <div id="filterMode" style="flex:1">
+      <label class="row" style="padding:0.1rem 0"><input type="radio" name="filterMode" value="all" checked> everything</label>
+      <label class="row" style="padding:0.1rem 0"><input type="radio" name="filterMode" value="only"> only the compared tracks</label>
+      <label class="row" style="padding:0.1rem 0"><input type="radio" name="filterMode" value="others"> everything except the compared tracks</label>
+    </div></div>
+  <div class="muted" style="margin-top:0.75rem">Click a raw plot to add that source's track, click a fused plot to add that run's track. Click again to remove. Pin a plot with <kbd>shift</kbd> click or a click in a chart. <kbd>space</kbd> play, <kbd>←</kbd> <kbd>→</kbd> step 1 s, <kbd>shift</kbd> 10 s, <kbd>esc</kbd> clear pins. Drag in a chart to zoom, double click to reset.</div>
+</aside>
+<main id="mapwrap">
+  <div id="map"></div>
+  <div id="status"></div>
+  <div id="tip"></div>
+  <div id="pick"></div>
+  <div id="selbox"></div>
+  <div id="ctl">
+    <button id="play">▶</button>
+    <span class="mono" id="now" style="min-width:9rem"></span>
+    <div id="timeline"><div class="bar"></div><div class="hl" id="winHL"></div><div class="nowmark" id="nowMark"></div><input type="range" id="time" min="0" max="1000" value="0"></div>
+    <button id="resetZoom" class="small" title="show the whole hour again">reset zoom</button>
+    <label class="muted">speed <select id="speed"><option value="1">1x</option><option value="5">5x</option><option value="20" selected>20x</option><option value="60">60x</option></select></label>
+  </div>
+</main>
+<aside id="right">
+  <div id="grip" title="drag to resize"></div>
+  <h2 style="margin-top:0.2rem">Compare tracks</h2>
+  <div class="row"><input type="text" id="find" placeholder="add by hex, callsign or tail" style="flex:1"><button id="clear">clear all</button></div>
+  <div id="sel"><p class="muted">Nothing to compare yet. Click plots on the map, or type a hex, callsign or tail above.</p></div>
+  <div id="pins"></div>
+  <div id="charts"></div>
+</aside>
+<script>
+const SOURCE_NAME = {1:"TFMS TI",2:"TFMS OR",3:"PlaneFinder",4:"ADS-B Exchange",5:"Alaska ACARS",6:"United",7:"Spire",8:"UDL",9:"MEIS",10:"STDDS",11:"uAvionix",12:"FAA ADS-B EDP",13:"Aireon"};
+const SRC_ID = {adsbx:4, planefinder:3, uavionix:11, stdds:10, tfms_ti:1, tfms_or:2, ual:6, asa:5};
+const SOURCE_COLOR = {adsbx:[92,146,255], planefinder:[80,200,120], uavionix:[40,210,220], stdds:[255,90,90], tfms_ti:[235,141,7], tfms_or:[253,29,136], ual:[170,130,255], asa:[220,180,60]};
+const RUN_COLORS = [[204,255,0],[253,29,136],[255,140,0],[170,130,255],[255,255,255]];
+const rgb = c => `rgb(${c})`;
+let CASE, RAW, RUNS = {}, runColor = {}, map, overlay, now = 0, playing = false, lastTick = 0;
+let baseLayers = [], hover = null, pins = [], win = null;   // hover/pins: {kind:"raw"|runName, i}; win: zoomed time window [ms, ms] or null
+let compare = [];                                            // tracks to compare: {kind:"raw", src, tid} or {kind:runName, track}, each with a colour
+let charts = [], chartData = null, derived = {};
+let visible = { raw: [], runs: {} };                          // plot indices the map is drawing right now
+let shiftDown = false;                                        // shift held at the last mouse down on the map
+const TRACK_COLORS = [[204,255,0],[92,146,255],[253,29,136],[40,210,220],[235,141,7],[170,130,255],[80,200,120],[255,255,255],[255,90,90],[220,180,60]];
+const $ = id => document.getElementById(id);
+const fmt = ms => new Date(CASE.t0_us / 1000 + ms).toISOString().slice(11, 19);
+const fmtMs = ms => fmt(ms) + "." + String(Math.round(ms) % 1000).padStart(3, "0");
+const table = kind => kind === "raw" ? RAW : RUNS[kind];
+const srcName = (kind, i) => kind === "raw" ? SOURCE_NAME[SRC_ID[RAW.src[i]]] : SOURCE_NAME[RUNS[kind].src[i]];
+const displayKey = (d, i) => d.hex[i] || d.tail[i] || (d.tid ? d.src[i] + ":" + d.tid[i] : d.track[i]);
+// which compare entry a plot belongs to, if any
+function trackOf(kind, i) { const d = table(kind); return kind === "raw" ? compare.find(c => c.kind === "raw" && c.src === d.src[i] && c.tid === d.tid[i]) : compare.find(c => c.kind === kind && c.track === d.track[i]); }
+const trackLabel = c => c.kind === "raw" ? `${SOURCE_NAME[SRC_ID[c.src]]} ${c.tid}` : `${c.kind} ${c.track}`;
+
+async function init() {
+  CASE = await (await fetch("/api/case")).json();
+  $("title").textContent = CASE.case.name; $("sub").textContent = `${CASE.case.t_start} to ${CASE.case.t_end} UTC`;
+  $("time").max = CASE.span_ms;
+  for (const f of [0, 0.25, 0.5, 0.75, 1]) { const t = document.createElement("div"); t.className = "tick"; t.style.left = (f * 100) + "%"; t.textContent = fmt(f * CASE.span_ms); $("timeline").appendChild(t); }
+  map = new maplibregl.Map({ container:"map", style:"https://tiles.openfreemap.org/styles/dark", center:[(CASE.case.box.lon_min + CASE.case.box.lon_max) / 2, (CASE.case.box.lat_min + CASE.case.box.lat_max) / 2], zoom: 8.3, boxZoom:false, dragRotate:false, pitchWithRotate:false, touchPitch:false });
+  $("mapwrap").addEventListener("contextmenu", e => e.preventDefault());
+  map.addControl(new maplibregl.NavigationControl(), "top-right"); map.addControl(new maplibregl.ScaleControl({ unit:"metric" }));
+  overlay = new deck.MapboxOverlay({ interleaved:false, layers:[], onClick:(info, ev) => mapClickAt(info, ev) }); map.addControl(overlay);
+  document.addEventListener("mousedown", e => { if (!$("pick").contains(e.target)) closePick(); });
+  boxSelect();
+  $("status").textContent = "loading raw plots…";
+  RAW = await (await fetch("/api/raw")).json(); RAW.n = RAW.t.length;
+  const srcs = [...new Set(RAW.src)];
+  $("sources").innerHTML = srcs.map(s => `<div class="row"><span class="sw" style="background:${rgb(SOURCE_COLOR[s])}"></span><label><input type="checkbox" class="srcOn" value="${s}" checked> ${SOURCE_NAME[SRC_ID[s]]} <span class="muted">${RAW.src.filter(x => x === s).length.toLocaleString()}</span></label></div>`).join("");
+  $("runs").innerHTML = CASE.runs.map((r, i) => { runColor[r] = RUN_COLORS[i % RUN_COLORS.length]; return `<div class="row"><span class="sw line" style="background:${rgb(runColor[r])}"></span><label><input type="checkbox" class="runOn" value="${r}"> ${r} <span class="muted" id="runcount-${r}"></span></label></div>`; }).join("");
+  document.querySelectorAll(".runOn").forEach(cb => cb.onchange = async () => { if (cb.checked && !RUNS[cb.value]) await loadRun(cb.value); rebuildCharts(); draw(); });
+  document.querySelectorAll(".srcOn").forEach(cb => cb.onchange = () => { rebuildCharts(); draw(); });
+  ["rawOn", "rawColour", "greyOthers", "runLines", "runRings"].forEach(id => $(id).onchange = draw);
+  document.querySelectorAll('input[name="filterMode"]').forEach(r => r.onchange = draw);
+  $("fadeWin").onchange = () => { $("fadeCustom").style.display = $("fadeWin").value === "custom" ? "inline-block" : "none"; draw(); };
+  $("fadeCustom").oninput = draw;
+  $("time").oninput = () => { now = clampNow(+$("time").value); draw(); };
+  $("play").onclick = togglePlay; $("resetZoom").onclick = resetZoom; $("clear").onclick = () => { compare = []; pins = []; renderCompare(); rebuildCharts(); draw(); };
+  $("find").onkeydown = e => { if (e.key === "Enter") { findTracks($("find").value.trim().toUpperCase()); } };
+  document.addEventListener("keydown", e => { if (e.target.tagName === "INPUT") return;
+    if (e.key === " ") { e.preventDefault(); togglePlay(); } else if (e.key === "ArrowRight") { now = clampNow(now + (e.shiftKey ? 10000 : 1000)); sync(); } else if (e.key === "ArrowLeft") { now = clampNow(now - (e.shiftKey ? 10000 : 1000)); sync(); } else if (e.key === "Escape") { closePick(); pins = []; renderCompare(); drawHighlight(); redrawCharts(); } });
+  grip();
+  $("status").textContent = `${RAW.n.toLocaleString()} raw plots`;
+  now = Math.min(CASE.span_ms, 12 * 60000);
+  renderCompare(); rebuildCharts(); sync();
+}
+async function loadRun(name) { $("status").textContent = `loading ${name}…`; const r = await (await fetch("/api/run/" + name)).json(); r.n = r.t.length; RUNS[name] = r; $(`runcount-${name}`).textContent = `${r.n.toLocaleString()} plots, ${new Set(r.track).size} tracks`; $("status").textContent = `${RAW.n.toLocaleString()} raw plots`; }
+const clampNow = v => win ? Math.max(win[0], Math.min(win[1], v)) : Math.max(0, Math.min(CASE.span_ms, v));
+function sync() { $("time").value = now; draw(); }
+function togglePlay() { playing = !playing; $("play").textContent = playing ? "❚❚" : "▶"; if (playing) { lastTick = performance.now(); requestAnimationFrame(tick); } }
+function tick(ts) { if (!playing) return; const end = win ? win[1] : CASE.span_ms; now = Math.min(end, now + (ts - lastTick) * +$("speed").value); lastTick = ts; if (now >= end) playing = false, $("play").textContent = "▶"; sync(); requestAnimationFrame(tick); }
+function activeRuns() { return [...document.querySelectorAll(".runOn:checked")].map(c => c.value).filter(n => RUNS[n]); }
+function activeSources() { return new Set([...document.querySelectorAll(".srcOn:checked")].map(c => c.value)); }
+function fadeWindowMs() { const v = $("fadeWin").value; if (v === "custom") return Math.max(1, +$("fadeCustom").value || 120) * 1000; return +v * 1000; }
+
+// add or remove a track from the compare list
+function toggleTrack(kind, i, silent) {
+  const d = table(kind), existing = trackOf(kind, i);
+  if (existing) compare = compare.filter(c => c !== existing);
+  else {
+    const used = new Set(compare.map(c => c.color)), color = TRACK_COLORS.find(c => !used.has(c)) || TRACK_COLORS[compare.length % TRACK_COLORS.length];
+    compare.push(kind === "raw" ? { kind, src:d.src[i], tid:d.tid[i], color } : { kind, track:d.track[i], color });
+  }
+  if (!silent) { renderCompare(); rebuildCharts(); draw(); }
+}
+// every source track and loaded run track whose plots carry this hex, callsign or tail
+function findTracks(q, silent) {
+  if (!q) return;
+  const seen = new Set();
+  for (let i = 0; i < RAW.n; i++) if ((RAW.hex[i] || "").toUpperCase() === q || (RAW.cs[i] || "").toUpperCase() === q || (RAW.tail[i] || "").toUpperCase() === q) { const k = RAW.src[i] + "|" + RAW.tid[i]; if (!seen.has(k)) { seen.add(k); if (!trackOf("raw", i)) toggleTrack("raw", i, true); } }
+  for (const name of activeRuns()) { const r = RUNS[name]; for (let i = 0; i < r.n; i++) if ((r.hex[i] || "").toUpperCase() === q || (r.cs[i] || "").toUpperCase() === q || (r.tail[i] || "").toUpperCase() === q) { const k = name + "|" + r.track[i]; if (!seen.has(k)) { seen.add(k); if (!trackOf(name, i)) toggleTrack(name, i, true); } } }
+  if (!silent) { renderCompare(); rebuildCharts(); draw(); }
+}
+
+// the panel can be dragged wider or narrower
+function grip() { let drag = false; $("grip").onmousedown = e => { drag = true; e.preventDefault(); }; document.addEventListener("mousemove", e => { if (!drag) return; const w = Math.max(320, Math.min(window.innerWidth * 0.6, window.innerWidth - e.clientX)); document.documentElement.style.setProperty("--right", w + "px"); }); document.addEventListener("mouseup", () => { if (drag) { drag = false; for (const c of charts) c.u.setSize({ width: chartWidth(), height: c.u.height }); } }); }
+const chartWidth = () => $("charts").clientWidth - 2;
+
+// ---------- colours ----------
+function rawColor(i, mode) {
+  if (mode === "key") return hashColor(displayKey(RAW, i));
+  if (mode === "lateness") { const late = (RAW.r[i] - RAW.t[i]) / 1000; return late < 2 ? [204,255,0] : late < 5 ? [235,141,7] : late < 15 ? [255,26,94] : [170,130,255]; }
+  return SOURCE_COLOR[RAW.src[i]];
+}
+function hashColor(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return hsl((h >>> 0) % 360, 55 + ((h >>> 9) % 35), 45 + ((h >>> 17) % 25)); }
+function hsl(h, s, l) { s /= 100; l /= 100; const k = n => (n + h / 30) % 12, a = s * Math.min(l, 1 - l), f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1))); return [255 * f(0), 255 * f(8), 255 * f(4)].map(Math.round); }
+
+// ---------- map ----------
+function draw() {
+  if (!RAW) return;
+  $("now").textContent = fmt(now) + " UTC";
+  $("nowMark").style.left = (now / CASE.span_ms * 100) + "%";
+  const layers = [], b = CASE.case.box;
+  layers.push(new deck.PathLayer({ id:"box", data:[{ path:[[b.lon_min,b.lat_min],[b.lon_max,b.lat_min],[b.lon_max,b.lat_max],[b.lon_min,b.lat_max],[b.lon_min,b.lat_min]] }], getPath:d => d.path, getColor:[183,192,202,90], getWidth:1, widthUnits:"pixels" }));
+  const mode = $("rawColour").value, fadeMs = fadeWindowMs();
+  const inWin = t => !win || (t >= win[0] && t <= win[1]);
+  // opacity falls in a straight line from full at the plot's position time to zero at the end of the fade window
+  const alpha = t => { if (!fadeMs) return 210; const age = now - t; return age >= fadeMs ? 0 : Math.round(210 * (1 - age / fadeMs)); };
+  const emph = (kind, i) => trackOf(kind, i);
+  // which plots the map shows: all, only those on a compared track, or only those that are not
+  const mode2 = compare.length ? document.querySelector('input[name="filterMode"]:checked').value : "all";
+  const shown = (kind, i) => mode2 === "all" ? true : mode2 === "only" ? !!emph(kind, i) : !emph(kind, i);
+  const grey = $("greyOthers").checked && compare.length > 0, GREY = [110, 116, 122];
+
+  const rawLayers = [], ringLayers = [];
+  visible = { raw: [], runs: {} };
+  if ($("rawOn").checked) {
+    const on = activeSources(), idx = [];
+    for (let i = 0; i < RAW.n && RAW.r[i] <= now; i++) if (on.has(RAW.src[i]) && inWin(RAW.t[i]) && alpha(RAW.t[i]) > 0 && shown("raw", i)) idx.push(i);   // RAW is sorted by receipt time
+    visible.raw = idx;
+    rawLayers.push(new deck.ScatterplotLayer({ id:"raw", data:idx, getPosition:i => [RAW.lon[i], RAW.lat[i]], radiusUnits:"pixels",
+      getRadius:i => emph("raw", i) ? 3.5 : 2.2,
+      getFillColor:i => [...(grey && !emph("raw", i) ? GREY : rawColor(i, mode)), alpha(RAW.t[i])],
+      getLineColor:i => { const c = emph("raw", i); return c ? [...c.color, alpha(RAW.t[i])] : [0, 0, 0, 0]; }, stroked:true, lineWidthUnits:"pixels", getLineWidth:i => emph("raw", i) ? 1.5 : 0,
+      pickable:true, onHover:info => mapHover(info, "raw"),
+      updateTriggers:{ getFillColor:[now, fadeMs, mode, grey, compare], getLineColor:[now, fadeMs, compare, mode2], getRadius:[compare], getLineWidth:[compare] } }));
+  }
+  for (const name of activeRuns()) {
+    const run = RUNS[name], color = runColor[name], idx = [], paths = {};
+    for (let i = 0; i < run.n && run.created[i] <= now; i++) {              // sorted by created
+      const vt = run.valid_to[i]; if (vt != null && vt <= now) continue;      // already replaced by a later event
+      if (!inWin(run.t[i]) || alpha(run.t[i]) <= 0) continue;
+      if (!shown(name, i)) continue;
+      idx.push(i); (paths[run.track[i]] ||= []).push(i);
+    }
+    visible.runs[name] = idx;
+    const lines = Object.entries(paths).map(([track, ids]) => { ids.sort((a, b) => run.t[a] - run.t[b]); const c = compare.find(x => x.kind === name && x.track === track); return { track, cmp:c, newest:run.t[ids[ids.length - 1]], path: ids.map(i => [run.lon[i], run.lat[i]]) }; });
+    if ($("runLines").checked) layers.push(new deck.PathLayer({ id:"run-lines-" + name, data:lines, getPath:d => d.path, getColor:d => [...(d.cmp ? d.cmp.color : grey ? GREY : color), Math.max(40, alpha(d.newest))], getWidth:d => d.cmp ? 3 : 1.2, widthUnits:"pixels", updateTriggers:{ getColor:[now, fadeMs, compare, grey], getWidth:[compare] } }));
+    if ($("runRings").checked) ringLayers.push(new deck.ScatterplotLayer({ id:"run-dots-" + name, data:idx, getPosition:i => [run.lon[i], run.lat[i]], radiusUnits:"pixels", getRadius:i => emph(name, i) ? 6 : 4.5,
+      filled:false, stroked:true, lineWidthUnits:"pixels", getLineWidth:i => emph(name, i) ? 2 : 1.2, getLineColor:i => { const c = emph(name, i); return [...(c ? c.color : grey ? GREY : color), alpha(run.t[i])]; },
+      pickable:true, onHover:info => mapHover(info, name),
+      updateTriggers:{ getLineColor:[now, fadeMs, compare, grey], getRadius:[compare], getLineWidth:[compare] } }));
+  }
+  baseLayers = [...layers, ...rawLayers, ...ringLayers];
+  drawHighlight();
+  redrawCharts();
+}
+// the hover point and the pins, drawn on top without rebuilding everything else
+function drawHighlight() {
+  const marks = [];
+  if (hover) marks.push({ ...hover, color:[204,255,0], r:9, label:"" });
+  pins.forEach((p, k) => marks.push({ ...p, color:k === 0 ? [255,26,94] : [255,255,255], r:8, label:String(k + 1) }));
+  const layers = [...baseLayers];
+  if (marks.length) {
+    const pos = m => { const d = table(m.kind); return [d.lon[m.i], d.lat[m.i]]; };
+    layers.push(new deck.ScatterplotLayer({ id:"marks", data:marks, getPosition:pos, radiusUnits:"pixels", getRadius:m => m.r, filled:false, stroked:true, lineWidthUnits:"pixels", getLineWidth:2.5, getLineColor:m => m.color }));
+    layers.push(new deck.TextLayer({ id:"mark-labels", data:marks.filter(m => m.label), getPosition:pos, getText:m => m.label, getColor:m => m.color, getSize:13, getPixelOffset:[0, -16], fontFamily:"Inter, sans-serif", fontWeight:600 }));
+    if (pins.length === 2) layers.push(new deck.PathLayer({ id:"pin-line", data:[{ path:[pos(pins[0]), pos(pins[1])] }], getPath:d => d.path, getColor:[255,255,255,140], getWidth:1.5, widthUnits:"pixels", getDashArray:[6,4], dashJustified:true, extensions:[new deck.PathStyleExtension({ dash:true })] }));
+  }
+  overlay.setProps({ layers });
+}
+function mapHover(info, kind) { setHover(info.object == null ? null : { kind, i: info.object }, info.x, info.y); }
+// shift and drag on the map draws a box: left button adds every track with a visible plot inside it, right button removes them
+function boxSelect() {
+  const wrap = $("mapwrap"), box = $("selbox"); let start = null, removing = false;
+  const rect = (a, b) => ({ x:Math.min(a[0], b[0]), y:Math.min(a[1], b[1]), w:Math.abs(a[0] - b[0]), h:Math.abs(a[1] - b[1]) });
+  const pos = e => { const r = wrap.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  wrap.addEventListener("mousedown", e => {
+    shiftDown = e.shiftKey;
+    if (!e.shiftKey || (e.button !== 0 && e.button !== 2) || e.target.closest("#ctl, #pick, .maplibregl-ctrl")) return;
+    start = pos(e); removing = e.button === 2; box.classList.toggle("remove", removing); map.dragPan.disable();
+  }, true);
+  document.addEventListener("mousemove", e => { if (!start) return; const r = rect(start, pos(e)); box.style.display = "block"; box.style.left = r.x + "px"; box.style.top = r.y + "px"; box.style.width = r.w + "px"; box.style.height = r.h + "px"; });
+  document.addEventListener("mouseup", e => {
+    if (!start) return;
+    const r = rect(start, pos(e)); start = null; box.style.display = "none"; map.dragPan.enable();
+    if (r.w < 4 && r.h < 4) return;   // a plain shift click, handled as a pin by mapClickAt
+    // the box in degrees, then every visible plot inside it, grouped by track
+    const nw = map.unproject([r.x, r.y]), se = map.unproject([r.x + r.w, r.y + r.h]);
+    const latMin = Math.min(nw.lat, se.lat), latMax = Math.max(nw.lat, se.lat), lonMin = Math.min(nw.lng, se.lng), lonMax = Math.max(nw.lng, se.lng);
+    const inside = (d, i) => d.lat[i] >= latMin && d.lat[i] <= latMax && d.lon[i] >= lonMin && d.lon[i] <= lonMax;
+    const found = [], seen = new Set();
+    const consider = (kind, idx) => { const d = table(kind); for (const i of idx) { if (!inside(d, i)) continue; const key = kind === "raw" ? `raw|${d.src[i]}|${d.tid[i]}` : `${kind}|${d.track[i]}`; if (!seen.has(key)) { seen.add(key); found.push({ kind, i }); } } };
+    consider("raw", visible.raw);
+    for (const [name, idx] of Object.entries(visible.runs)) consider(name, idx);
+    // left button: add the ones not compared yet; right button: remove the ones that are
+    const work = found.filter(f => removing ? !!trackOf(f.kind, f.i) : !trackOf(f.kind, f.i));
+    for (const f of work) toggleTrack(f.kind, f.i, true);
+    renderCompare(); rebuildCharts(); draw();
+    $("status").textContent = `${RAW.n.toLocaleString()} raw plots · ${work.length} track${work.length === 1 ? "" : "s"} ${removing ? "removed from" : "added to"} the comparison`;
+  });
+}
+
+// a click on the map: every plot within a few pixels is picked, so overlapping plots can be told apart
+function mapClickAt(info, ev) {
+  closePick();
+  const picks = overlay.pickMultipleObjects({ x:info.x, y:info.y, radius:7, depth:40 });
+  const items = picks.filter(pk => pk.layer && (pk.layer.id === "raw" || pk.layer.id.startsWith("run-dots-"))).map(pk => ({ kind: pk.layer.id === "raw" ? "raw" : pk.layer.id.slice("run-dots-".length), i: pk.object }));
+  if (!items.length) return;
+  const shift = shiftDown || !!(ev && ev.srcEvent && ev.srcEvent.shiftKey);
+  if (shift) {   // pin one plot
+    if (items.length === 1) return pin(items[0]);
+    return openPick(info.x, info.y, `${items.length} plots here, pin which one?`, items.map(it => { const d = table(it.kind); return { color: it.kind === "raw" ? SOURCE_COLOR[d.src[it.i]] : runColor[it.kind], text: `${srcName(it.kind, it.i)} · ${d.cs[it.i] || d.hex[it.i] || "–"}${it.kind !== "raw" ? " · " + it.kind : ""}`, note: fmtMs(d.t[it.i]), action: () => pin(it) }; }));
+  }
+  // distinct tracks under the cursor
+  const tracks = [], seen = new Set();
+  for (const it of items) { const d = table(it.kind); const key = it.kind === "raw" ? `raw|${d.src[it.i]}|${d.tid[it.i]}` : `${it.kind}|${d.track[it.i]}`; if (seen.has(key)) continue; seen.add(key); tracks.push(it); }
+  if (tracks.length === 1) return toggleTrack(tracks[0].kind, tracks[0].i);
+  openPick(info.x, info.y, `${tracks.length} tracks here, which one?`, tracks.map(it => { const d = table(it.kind), inList = trackOf(it.kind, it.i); const label = it.kind === "raw" ? `${SOURCE_NAME[SRC_ID[d.src[it.i]]]} ${d.tid[it.i]}` : `${it.kind} ${d.track[it.i]}`; return { color: inList ? inList.color : (it.kind === "raw" ? SOURCE_COLOR[d.src[it.i]] : runColor[it.kind]), text: label + (d.cs[it.i] ? ` · ${d.cs[it.i]}` : ""), note: inList ? "remove" : "add", action: () => toggleTrack(it.kind, it.i) }; }));
+}
+function openPick(x, y, title, items) {
+  const el = $("pick");
+  el.innerHTML = `<div class="head">${title}</div>` + items.map((it, k) => `<div class="item" data-k="${k}"><span class="sw" style="background:${rgb(it.color)}"></span>${it.text}<span class="muted">${it.note}</span></div>`).join("");
+  el.querySelectorAll(".item").forEach(div => div.onclick = () => { closePick(); items[+div.dataset.k].action(); });
+  el.style.display = "block";
+  const w = $("mapwrap").clientWidth, h = $("mapwrap").clientHeight;
+  el.style.left = Math.min(x + 8, w - el.offsetWidth - 8) + "px"; el.style.top = Math.min(y + 8, h - el.offsetHeight - 8) + "px";
+}
+function closePick() { $("pick").style.display = "none"; }
+function pin(p) { if (pins.some(q => q.kind === p.kind && q.i === p.i)) pins = pins.filter(q => !(q.kind === p.kind && q.i === p.i)); else pins = [...pins.slice(-1), p]; renderCompare(); drawHighlight(); redrawCharts(); }
+function setHover(h, x, y) {
+  const same = (hover && h && hover.kind === h.kind && hover.i === h.i) || (!hover && !h);
+  hover = h;
+  if (!same) { drawHighlight(); redrawCharts(); }
+  const el = $("tip");
+  if (!h || x == null) { el.style.display = "none"; return; }
+  el.style.display = "block"; el.style.left = Math.min(x + 12, $("mapwrap").clientWidth - 360) + "px"; el.style.top = (y + 12) + "px"; el.innerHTML = describe(h);
+}
+function describe(p) {
+  const d = table(p.kind), i = p.i, raw = p.kind === "raw";
+  return `<b>${d.cs[i] || "no callsign"}</b> · hex ${d.hex[i] || "–"} · tail ${d.tail[i] || "–"}<br>${raw ? "raw plot" : p.kind + " · track " + d.track[i] + " · " + d.quality[i]} · ${srcName(p.kind, i)}<br>position ${fmtMs(d.t[i])} · received ${fmt(d.r[i])} (${((d.r[i] - d.t[i]) / 1000).toFixed(2)} s late)${!raw ? `<br>emitted ${fmt(d.created[i])}${d.valid_to[i] != null ? ` · replaced ${fmt(d.valid_to[i])}` : ""}` : ""}<br>alt ${d.alt[i] ?? "–"} ft · ${d.gs[i] ?? "–"} kt · trk ${d.trk[i] ?? "–"} · hdg ${d.hdg[i] ?? "–"}${raw ? ` · source track ${d.tid[i]}` : ""}`;
+}
+
+// ---------- compare list and pins ----------
+function renderCompare() {
+  if (!compare.length) { $("sel").innerHTML = `<p class="muted">Nothing to compare yet. Click plots on the map, or type a hex, callsign or tail on the left.</p>`; }
+  else {
+    const chips = compare.map((c, k) => {
+      const d = table(c.kind); let n = 0, cs = new Set(), hex = new Set(), t0 = Infinity, t1 = -Infinity;
+      for (let i = 0; i < d.n; i++) { const hit = c.kind === "raw" ? (d.src[i] === c.src && d.tid[i] === c.tid) : d.track[i] === c.track; if (!hit) continue; n++; if (d.cs[i]) cs.add(d.cs[i]); if (d.hex[i]) hex.add(d.hex[i]); t0 = Math.min(t0, d.t[i]); t1 = Math.max(t1, d.t[i]); }
+      return `<span class="chip" data-k="${k}" title="click to remove · ${[...cs].join(", ")} · hex ${[...hex].join(", ") || "–"}"><span class="sw${c.kind === "raw" ? "" : " line"}" style="background:${rgb(c.color)}"></span>${trackLabel(c)} <span class="muted">${n} plots · ${fmt(t0)} to ${fmt(t1)}${cs.size ? " · " + [...cs].join(", ") : ""}</span><span class="x">×</span></span>`;
+    }).join("");
+    $("sel").innerHTML = `<div class="muted" style="margin:0.3rem 0 0.2rem">${compare.length} track${compare.length > 1 ? "s" : ""}, click one to remove it</div><div>${chips}</div>`;
+    $("sel").querySelectorAll(".chip").forEach(b => b.onclick = () => { compare.splice(+b.dataset.k, 1); renderCompare(); rebuildCharts(); draw(); });
+  }
+  renderPins();
+}
+function renderPins() {
+  if (!pins.length) { $("pins").innerHTML = ""; return; }
+  let h = pins.map((p, k) => `<div class="pin ${k ? "two" : ""}" data-k="${k}" title="click to remove this pin"><b>Pin ${k + 1}</b> · ${describe(p)}</div>`).join("");
+  if (pins.length === 2) {
+    const a = table(pins[0].kind), b = table(pins[1].kind), i = pins[0].i, j = pins[1].i;
+    const dt = (b.t[j] - a.t[i]) / 1000, dist = haversine(a.lat[i], a.lon[i], b.lat[j], b.lon[j]);
+    const dalt = (a.alt[i] != null && b.alt[j] != null) ? b.alt[j] - a.alt[i] : null, dgs = (a.gs[i] != null && b.gs[j] != null) ? b.gs[j] - a.gs[i] : null;
+    h += `<div class="diff">Pin 2 minus pin 1: ${dt.toFixed(2)} s in position time · ${dist.toFixed(0)} m apart${dt ? ` (${(dist / Math.abs(dt) * 1.943844).toFixed(0)} kt if the same aircraft)` : ""}${dalt != null ? ` · ${dalt > 0 ? "+" : ""}${dalt} ft` : ""}${dgs != null ? ` · ${dgs > 0 ? "+" : ""}${dgs.toFixed(0)} kt` : ""} · received ${((b.r[j] - a.r[i]) / 1000).toFixed(2)} s apart</div>`;
+  }
+  $("pins").innerHTML = h;
+  $("pins").querySelectorAll(".pin").forEach(el => el.onclick = () => { pins.splice(+el.dataset.k, 1); renderPins(); drawHighlight(); redrawCharts(); });
+}
+function haversine(lat1, lon1, lat2, lon2) { const R = 6371000, toR = Math.PI / 180, dLat = (lat2 - lat1) * toR, dLon = (lon2 - lon1) * toR, a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * toR) * Math.cos(lat2 * toR) * Math.sin(dLon / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(a)); }
+
+// ---------- derived values for the compared raw tracks ----------
+function computeDerived(rawTracks) {
+  derived = { gap:{}, vrate:{}, xtrack:{} };
+  // time since the previous plot of the same track, and vertical rate from the altitude change
+  for (const ids of rawTracks) for (let k = 1; k < ids.length; k++) {
+    const i = ids[k], p = ids[k - 1], dt = (RAW.t[i] - RAW.t[p]) / 1000;
+    derived.gap[i] = dt;
+    if (dt >= 1 && RAW.alt[i] != null && RAW.alt[p] != null) derived.vrate[i] = (RAW.alt[i] - RAW.alt[p]) / dt * 60;
+  }
+  // cross track distance: how far a plot sits sideways from the line through the neighbouring plots of another compared raw track
+  const ordered = [...rawTracks].sort((a, b) => b.length - a.length);
+  for (const ids of ordered) {
+    const R = ordered.find(o => o !== ids); if (!R) break;
+    let k = 0;
+    for (const i of ids) {
+      while (k < R.length - 1 && RAW.t[R[k + 1]] <= RAW.t[i]) k++;
+      const a = R[k], b = R[Math.min(k + 1, R.length - 1)];
+      if (a === b || RAW.t[i] < RAW.t[a] || RAW.t[i] > RAW.t[b] || RAW.t[b] - RAW.t[a] > 15000) continue;   // need neighbours within 15 s either side
+      derived.xtrack[i] = crossTrack(RAW.lat[a], RAW.lon[a], RAW.lat[b], RAW.lon[b], RAW.lat[i], RAW.lon[i]);
+    }
+  }
+}
+function crossTrack(lat1, lon1, lat2, lon2, lat, lon) {
+  // flat earth is fine over a few km: metres east/north from point a, then distance from the line a to b
+  const toR = Math.PI / 180, kx = 111320 * Math.cos(lat1 * toR), ky = 110540;
+  const bx = (lon2 - lon1) * kx, by = (lat2 - lat1) * ky, px = (lon - lon1) * kx, py = (lat - lat1) * ky, L = Math.hypot(bx, by);
+  return L ? (bx * py - by * px) / L : Math.hypot(px, py);
+}
+
+// ---------- charts ----------
+// each chart: how to get a value for a raw plot and for a run plot
+const CHARTS = [   // raw: value for a raw plot index; run: value for a run plot index
+  { id:"alt", title:"Altitude", unit:"ft", raw:i => RAW.alt[i], run:(r, i) => r.alt[i] },
+  { id:"gs", title:"Ground speed", unit:"kt", raw:i => RAW.gs[i], run:(r, i) => r.gs[i] },
+  { id:"trk", title:"Track angle", unit:"deg", raw:i => RAW.trk[i] ?? RAW.hdg[i], run:(r, i) => r.trk[i] ?? r.hdg[i] },
+  { id:"late", title:"Lateness, received minus position time", unit:"s", raw:i => (RAW.r[i] - RAW.t[i]) / 1000, run:(r, i) => (r.r[i] - r.t[i]) / 1000 },
+  { id:"xtrack", title:"Cross track distance to the other source", unit:"m", raw:i => derived.xtrack[i], run:null, zero:true },
+  { id:"gap", title:"Time since previous plot of the same source", unit:"s", raw:i => derived.gap[i], run:null },
+  { id:"vrate", title:"Vertical rate from altitude changes", unit:"ft/min", raw:i => derived.vrate[i], run:null, zero:true },
+  { id:"used", title:"Which source each run track used", unit:"source", raw:null, run:(r, i) => r.src[i], categorical:true },
+];
+const chartHeight = {};   // chart id -> height in px, kept when the charts are rebuilt
+const hiddenSeries = {};  // chart id -> set of series labels switched off in the legend, kept when the charts are rebuilt
+
+function rebuildCharts() {
+  for (const c of charts) c.u.destroy(); charts = []; chartData = null;
+  $("charts").innerHTML = "";
+  if (!compare.length) return;
+  // every plot of every compared track as {kind, i, t, track}
+  const points = [], rawTracks = [];
+  for (const c of compare) {
+    const d = table(c.kind), ids = [];
+    for (let i = 0; i < d.n; i++) if (c.kind === "raw" ? (d.src[i] === c.src && d.tid[i] === c.tid) : d.track[i] === c.track) ids.push(i);
+    ids.sort((a, b) => d.t[a] - d.t[b]);
+    if (c.kind === "raw") rawTracks.push(ids);
+    for (const i of ids) points.push({ kind:c.kind, i, t:d.t[i], track:c, rewritten:c.kind !== "raw" && d.valid_to[i] != null,
+                                        known:c.kind === "raw" ? d.r[i] : d.created[i], until:c.kind === "raw" ? null : d.valid_to[i] });
+  }
+  computeDerived(rawTracks);
+  points.sort((a, b) => a.t - b.t);
+  const xs = points.map(p => p.t / 1000);   // seconds after case start
+  chartData = { points, xs };
+  for (const spec of CHARTS) charts.push(makeChart(spec, points, xs));
+  applyWindow();
+}
+
+function makeChart(spec, points, xs) {
+  // one series per compared track: dots for a source track, a line for a run track plus hollow dots for its later rewritten plots
+  const series = [{}], full = [], legend = [], allVals = [];
+  const addSeries = (label, color, filter, getter, asLine) => {
+    const ys = points.map(p => filter(p) ? (getter(p) ?? null) : null);
+    if (!ys.some(v => v != null)) return;
+    for (const v of ys) if (v != null) allVals.push(v);
+    const off = (hiddenSeries[spec.id] || new Set()).has(label);
+    series.push({ label, stroke:rgb(color), width:asLine ? 1.3 : 0, paths:asLine ? uPlot.paths.linear() : () => null, spanGaps:true, points:{ show:true, size:asLine ? 3 : 4, width:1, stroke:rgb(color), fill:rgb(color) } });
+    full.push(ys); legend.push(`<span class="item${off ? " off" : ""}" data-label="${label}" title="click to hide or show, shift click to show only this one"><span class="sw${asLine ? " line" : ""}" style="background:${rgb(color)}"></span> ${label}</span>`);
+  };
+  for (const c of compare) {
+    if (c.kind === "raw") { if (spec.raw) addSeries(trackLabel(c), c.color, p => p.track === c, p => spec.raw(p.i), false); }
+    else if (spec.run) addSeries(trackLabel(c), c.color, p => p.track === c, p => spec.run(RUNS[c.kind], p.i), !spec.categorical);
+  }
+  const yLo = allVals.length ? Math.min(...allVals) : 0, yHi = allVals.length ? Math.max(...allVals) : 1;
+  const data = maskData(full, points, spec, legend.map(l => l.match(/data-label="([^"]*)"/)[1]));
+  const box = document.createElement("div"); box.className = "chart";
+  box.innerHTML = `<div class="chart-head"><b>${spec.title}</b> <span>(${spec.unit})</span><span class="legend">${legend.join("")}</span></div>`;
+  const holder = document.createElement("div"); box.appendChild(holder); $("charts").appendChild(box);
+  const hgrip = document.createElement("div"); hgrip.className = "hgrip"; hgrip.title = "drag to change the height"; box.appendChild(hgrip);
+  const axisStyle = { stroke:"#b7c0ca", grid:{ stroke:"#252a2f", width:1 }, ticks:{ stroke:"#3a4148", width:1 }, font:"10px Inter, sans-serif" };
+  const opts = {
+    width: chartWidth(), height: chartHeight[spec.id] || 260, cursor:{ drag:{ x:true, y:false }, focus:{ prox:16 }, points:{ show:false } }, legend:{ show:false },
+    scales:{ x:{ time:false, range:(u, min, max) => (u.scales.x.min == null || syncing === "init") ? [0, CASE.span_ms / 1000] : [min, max] }, y:{ range:() => { const min = yLo, max = yHi; return spec.categorical ? [0, 14] : spec.zero ? [Math.min(0, min) - (max - min) * 0.05 - 1, Math.max(0, max) + (max - min) * 0.05 + 1] : [min - (max - min) * 0.08 - 0.5, max + (max - min) * 0.08 + 0.5]; } } },
+    axes:[ { ...axisStyle, values:(u, vals) => vals.map(v => fmt(v * 1000)) }, { ...axisStyle, size:52, values:spec.categorical ? (u, vals) => vals.map(v => SOURCE_NAME[v] ? SOURCE_NAME[v].split(" ")[0] : "") : undefined, splits:spec.categorical ? () => [1, 3, 4, 10, 11] : undefined } ],
+    series,
+    hooks:{
+      setScale:[(u, key) => { if (key === "x" && !syncing) onZoom(u); }],
+      setCursor:[u => onChartCursor(u, spec)],
+      draw:[u => drawMarks(u, spec)],
+    },
+  };
+  syncing = "init"; const u = new uPlot(opts, data, holder); syncing = false;
+  // legend items: click hides or shows a series, shift click shows only that one (shift click again brings all back).
+  // hiding blanks the series' data in maskData, so uPlot itself never toggles anything
+  const items = [...box.querySelectorAll(".legend .item")], labels = items.map(it => it.dataset.label);
+  items.forEach((item, k) => item.onclick = e => {
+    const hidden = hiddenSeries[spec.id] ||= new Set();
+    if (e.shiftKey) {
+      const onlyThisShown = labels.every((l, j) => j === k ? !hidden.has(l) : hidden.has(l));
+      labels.forEach((l, j) => { const hide = onlyThisShown ? false : j !== k; hide ? hidden.add(l) : hidden.delete(l); });
+    } else hidden.has(labels[k]) ? hidden.delete(labels[k]) : hidden.add(labels[k]);
+    items.forEach((it, j) => it.classList.toggle("off", hidden.has(labels[j])));
+    redrawCharts();
+  });
+  // uPlot swallows clicks on its overlay, so listen on the overlay itself in the capture phase
+  let downAt = null;
+  u.over.addEventListener("mousedown", e => { downAt = [e.clientX, e.clientY]; }, true);
+  u.over.addEventListener("mouseup", e => { if (downAt && Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) < 4) { const p = nearestPoint(u, spec); if (p) pin({ kind:p.kind, i:p.i }); } downAt = null; }, true);
+  u.over.addEventListener("dblclick", resetZoom, true);
+  u.over.addEventListener("mouseleave", () => setHover(null));
+  // drag the bar under the chart up or down to change its height
+  hgrip.onmousedown = e => {
+    e.preventDefault(); const startY = e.clientY, startH = u.height;
+    const move = ev => { const h = Math.max(80, Math.min(900, startH + ev.clientY - startY)); chartHeight[spec.id] = h; u.setSize({ width:u.width, height:h }); };
+    const up = () => { document.removeEventListener("mousemove", move); document.removeEventListener("mouseup", up); };
+    document.addEventListener("mousemove", move); document.addEventListener("mouseup", up);
+  };
+  return { u, spec, full, points, labels };
+}
+// keep only what is valid at time now: raw plots we have received, run plots emitted and not yet replaced
+function maskData(full, points, spec, labels) {
+  const validAt = p => p.known <= now && (p.until == null || p.until > now), hidden = hiddenSeries[spec.id] || new Set();
+  return [chartData.xs, ...full.map((ys, k) => hidden.has(labels[k]) ? ys.map(() => null) : ys.map((v, j) => v != null && validAt(points[j]) ? v : null))];
+}
+let syncing = false;
+function onZoom(u) {
+  const min = u.scales.x.min, max = u.scales.x.max;
+  const xs = chartData.xs, full = (min <= 0.001 && max >= CASE.span_ms / 1000 - 0.001) || (xs.length && min <= xs[0] + 0.001 && max >= xs[xs.length - 1] - 0.001);
+  const next = full ? null : [min * 1000, max * 1000];
+  const same = (next == null && win == null) || (next && win && Math.abs(next[0] - win[0]) < 1 && Math.abs(next[1] - win[1]) < 1);
+  if (same) return;
+  win = next;
+  applyWindow();   // redrawCharts inside sets every chart's time axis to the window
+}
+function resetZoom() { win = null; applyWindow(); }
+function applyWindow() {
+  const hl = $("winHL");
+  $("resetZoom").style.display = win ? "inline-block" : "none";
+  if (win) { hl.style.display = "block"; hl.style.left = (win[0] / CASE.span_ms * 100) + "%"; hl.style.width = ((win[1] - win[0]) / CASE.span_ms * 100) + "%"; hl.title = `${fmt(win[0])} to ${fmt(win[1])}`; now = clampNow(now); $("time").value = now; }
+  else hl.style.display = "none";
+  draw();
+}
+// the point closest to the cursor in this chart, in pixels
+function nearestPoint(u, spec) {
+  const { left, top } = u.cursor; if (left == null || left < 0) return null;
+  let best = null, bestD = 14;
+  const hidden = hiddenSeries[spec.id] || new Set();
+  chartData.points.forEach((p, k) => {
+    if (!(p.known <= now && (p.until == null || p.until > now))) return;
+    if (hidden.has(trackLabel(p.track))) return;
+    const v = valueOf(spec, p); if (v == null) return;
+    const dx = u.valToPos(chartData.xs[k], "x") - left, dy = u.valToPos(v, "y") - top, d = Math.hypot(dx, dy);
+    if (d < bestD) { bestD = d; best = p; }
+  });
+  return best;
+}
+function valueOf(spec, p) { if (p.kind === "raw") return spec.raw ? spec.raw(p.i) : null; return spec.run ? spec.run(RUNS[p.kind], p.i) : null; }
+function onChartCursor(u, spec) {
+  if (u.cursor.left == null || u.cursor.left < 0) return;
+  const p = nearestPoint(u, spec);
+  setHover(p ? { kind:p.kind, i:p.i } : null);
+  // tooltip near the chart cursor
+  const el = $("tip"); if (!p) return;
+  const rect = u.over.getBoundingClientRect(), mw = $("mapwrap").getBoundingClientRect();
+  el.style.display = "block"; el.innerHTML = describe({ kind:p.kind, i:p.i });
+  el.style.left = (mw.width - 372) + "px"; el.style.top = Math.max(8, rect.top - mw.top + u.cursor.top - 30) + "px";
+}
+// hover point, pins and the now line, drawn on every chart
+function drawMarks(u, spec) {
+  const ctx = u.ctx; ctx.save();
+  const x = ms => u.valToPos(ms / 1000, "x", true);
+  const line = (px, color, width) => { if (px < u.bbox.left || px > u.bbox.left + u.bbox.width) return; ctx.strokeStyle = color; ctx.lineWidth = width; ctx.beginPath(); ctx.moveTo(px, u.bbox.top); ctx.lineTo(px, u.bbox.top + u.bbox.height); ctx.stroke(); };
+  line(x(now), "#ccff00", 1);
+  const mark = (p, color, r, label) => {
+    const d = table(p.kind), v = valueOf(spec, p); const px = x(d.t[p.i]);
+    line(px, color + "66", 1);
+    if (v == null) return;
+    const py = u.valToPos(v, "y", true);
+    ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.stroke();
+    if (label) { ctx.fillStyle = color; ctx.font = "bold 11px Inter, sans-serif"; ctx.fillText(label, px + r + 2, py - r); }
+  };
+  pins.forEach((p, k) => mark(p, k === 0 ? "#ff1a5e" : "#ffffff", 6, String(k + 1)));
+  if (hover) mark(hover, "#ccff00", 7, "");
+  ctx.restore();
+}
+function redrawCharts() {
+  for (const c of charts) {
+    // setData with resetScales=false keeps the zoom but does not repaint on its own, so ask for the repaint
+    try {
+      // new data, repaint at the current axis, then move the axis to the window if it differs
+      // (redraw re-applies the current axis, so it has to come before setScale, whose change is applied on the next tick)
+      c.u.setData(maskData(c.full, c.points, c.spec, c.labels), false);
+      c.u.redraw(true, false);
+      const [mn, mx] = win ? [win[0] / 1000, win[1] / 1000] : [0, CASE.span_ms / 1000];
+      if (Math.abs(c.u.scales.x.min - mn) > 0.001 || Math.abs(c.u.scales.x.max - mx) > 0.001) { syncing = true; c.u.setScale("x", { min:mn, max:mx }); syncing = false; }
+    }
+    catch (err) { console.error("chart update failed", c.spec.id, err); $("status").textContent = "chart update failed: " + err.message; }
+  }
+}
+init();
+</script>
+</body>
+</html>
