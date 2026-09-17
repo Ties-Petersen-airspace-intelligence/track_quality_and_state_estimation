@@ -3,8 +3,9 @@
 usage: uv run -m harness.run --case src/data/cases/<name> --strategy baseline
 
 Output goes to <case>/runs/<strategy>/: events.bin holds every FusionChangedEvent as
-length-prefixed protobuf bytes, and fused_plots.parquet holds one row per fused plot with the
-event it came from, which is what the viewer reads.
+length-prefixed protobuf bytes, fused_plots.parquet holds one row per fused plot with the
+event it came from, and used_raw.parquet says for every raw plot which track took it in, or
+that it was dropped. The viewer reads the last two.
 """
 from __future__ import annotations
 
@@ -37,9 +38,12 @@ def main():
     # feed them to the strategy one by one
     strategy = STRATEGIES[a.strategy]()
     t0 = time.time()
-    events = []
+    events, used = [], []
+    asks = hasattr(strategy, "used")
     for plot in plots:
         events += strategy.on_plot(plot)
+        track = strategy.used(plot) if asks else ""     # "" means used, track unknown
+        used.append(dict(source=plot.source, position_us=plot.position_us, source_track_identifier=plot.proto.common.track_identifier, track_id=track))
     events += strategy.finish()
     print(f"{len(events)} events emitted in {time.time() - t0:.1f} s")
 
@@ -48,7 +52,9 @@ def main():
     rows = flatten(events)
     frame = with_valid_to(pd.DataFrame(rows))
     frame.to_parquet(out / "fused_plots.parquet", index=False)
-    print(f"{len(rows)} fused plots written to {out}")
+    # which raw plots the strategy took in, and into which track; track_id None means dropped
+    pd.DataFrame(used).to_parquet(out / "used_raw.parquet", index=False)
+    print(f"{len(rows)} fused plots written to {out}, {sum(1 for u in used if u['track_id'] is None)} raw plots dropped")
 
 
 def write_events(events: list[FusionChangedEvent], path: pathlib.Path) -> None:
