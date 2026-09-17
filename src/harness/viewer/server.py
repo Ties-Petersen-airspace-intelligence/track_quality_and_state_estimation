@@ -1,6 +1,9 @@
-"""Local viewer for one case: raw plots underneath, strategy runs replayed on top.
+"""Local viewer: raw plots underneath, strategy output replayed on top, one case at a time.
 
-usage: uv run -m harness.viewer.server --case data/cases/<name> [--port 8770]
+usage: uv run -m harness.viewer.server [--cases data/cases] [--port 8770]
+
+Every folder under --cases with a case.json is a case. A case is complete when it has at least one
+strategy output under runs/; incomplete ones are listed but cannot be opened.
 """
 from __future__ import annotations
 
@@ -46,9 +49,12 @@ def load_raw(case: pathlib.Path, t0_us: int) -> dict:
             alt=pd.to_numeric(c("common.altitude_ft"), errors="coerce"), gs=pd.to_numeric(c("common.ground_speed_kt"), errors="coerce"),
             trk=pd.to_numeric(c("common.track_deg"), errors="coerce"), hdg=pd.to_numeric(c("common.heading_deg"), errors="coerce"),
             cs=c("common.callsign"), hex=c("common.adshex"), tail=c("common.tail_number"), tid=c("common.track_identifier"),
+            _pos_us=micros("position_timestamp").astype("Int64"),
         )))
     frame = pd.concat(parts, ignore_index=True).sort_values("r").reset_index(drop=True)
-    return columnar(frame)
+    out = columnar(frame.drop(columns=["_pos_us"]))
+    out["_pos_us"] = frame["_pos_us"].tolist(); out["_t0_us"] = t0_us   # server side only, stripped before sending
+    return out
 
 
 def load_run(case: pathlib.Path, name: str, t0_us: int) -> dict:
@@ -63,12 +69,45 @@ def load_run(case: pathlib.Path, name: str, t0_us: int) -> dict:
     return columnar(frame)
 
 
-def make_handler(case: pathlib.Path):
-    info = json.loads((case / "case.json").read_text())
-    t0_us = int(pd.Timestamp(info["t_start"], tz="UTC").timestamp() * 1e6)
-    t1_us = int(pd.Timestamp(info["t_end"], tz="UTC").timestamp() * 1e6)
-    runs = sorted(p.name for p in (case / "runs").glob("*") if (p / "fused_plots.parquet").exists()) if (case / "runs").exists() else []
-    cache = {}
+def load_used(case: pathlib.Path, name: str, raw: dict) -> dict:
+    """For every raw plot, in the page's raw order: the strategy track that took it, "" if the strategy
+    used it without saying which track, or None if it was dropped."""
+    path = case / "runs" / name / "used_raw.parquet"
+    if not path.exists():
+        return dict(track=None)
+    used = pd.read_parquet(path)
+    key = list(zip(used["source"], pd.to_numeric(used["position_us"]).astype("Int64").tolist(), used["source_track_identifier"].fillna("")))
+    lookup = dict(zip(key, used["track_id"].tolist()))
+    t0 = raw["_t0_us"]
+    out = []
+    for src, t_ms, tid, pos_us in zip(raw["src"], raw["t"], raw["tid"], raw["_pos_us"]):
+        v = lookup.get((src, pos_us, tid), None)
+        out.append(None if v is None or (isinstance(v, float) and np.isnan(v)) or v is pd.NA else v)
+    return dict(track=out)
+
+
+def list_cases(root: pathlib.Path) -> list[dict]:
+    out = []
+    for folder in sorted(p for p in root.iterdir() if (p / "case.json").exists()):
+        runs = sorted(r.name for r in (folder / "runs").glob("*") if (r / "fused_plots.parquet").exists()) if (folder / "runs").exists() else []
+        info = json.loads((folder / "case.json").read_text())
+        out.append(dict(name=folder.name, complete=bool(runs), runs=runs, t_start=info.get("t_start"), suspect=(info.get("suspect") or {}).get("callsign")))
+    return out
+
+
+def make_handler(root: pathlib.Path):
+    cache = {}   # case name -> dict(info, t0_us, t1_us, runs, raw, run data, used data)
+
+    def open_case(name: str) -> dict:
+        if name in cache:
+            return cache[name]
+        case = root / name
+        info = json.loads((case / "case.json").read_text())
+        t0_us = int(pd.Timestamp(info["t_start"], tz="UTC").timestamp() * 1e6)
+        t1_us = int(pd.Timestamp(info["t_end"], tz="UTC").timestamp() * 1e6)
+        runs = sorted(p.name for p in (case / "runs").glob("*") if (p / "fused_plots.parquet").exists()) if (case / "runs").exists() else []
+        cache[name] = dict(path=case, info=info, t0_us=t0_us, t1_us=t1_us, runs=runs, data={})
+        return cache[name]
 
     class H(SimpleHTTPRequestHandler):
         def end_headers(self):
@@ -83,20 +122,32 @@ def make_handler(case: pathlib.Path):
             self.end_headers(); self.wfile.write(body)
 
         def do_GET(self):
-            if self.path in ("/", "/index.html"):
+            if self.path in ("/", "/index.html") or self.path.startswith("/?"):
                 self.path = "/viewer.html"
                 return SimpleHTTPRequestHandler.do_GET(self)
-            if self.path == "/api/case":
-                return self._json(dict(case=info, t0_us=t0_us, span_ms=(t1_us - t0_us) // 1000, runs=runs))
-            if self.path == "/api/raw":
-                cache.setdefault("raw", load_raw(case, t0_us))
-                return self._json(cache["raw"])
-            if self.path.startswith("/api/run/"):
-                name = self.path.split("/")[-1]
-                if name not in runs:
-                    return self._json(dict(error="no such run"), 404)
-                cache.setdefault(name, load_run(case, name, t0_us))
-                return self._json(cache[name])
+            parts = [p for p in self.path.split("?")[0].split("/") if p]
+            if parts == ["api", "cases"]:
+                return self._json(dict(cases=list_cases(root)))
+            if len(parts) >= 3 and parts[0] == "api":
+                kind, name = parts[1], parts[2]
+                if not (root / name / "case.json").exists():
+                    return self._json(dict(error="no such case"), 404)
+                c = open_case(name)
+                if kind == "case":
+                    return self._json(dict(case=c["info"], t0_us=c["t0_us"], span_ms=(c["t1_us"] - c["t0_us"]) // 1000, runs=c["runs"]))
+                if kind == "raw":
+                    c["data"].setdefault("raw", load_raw(c["path"], c["t0_us"]))
+                    return self._json({k: v for k, v in c["data"]["raw"].items() if not k.startswith("_")})
+                if kind in ("run", "used") and len(parts) == 4:
+                    run = parts[3]
+                    if run not in c["runs"]:
+                        return self._json(dict(error="no such strategy"), 404)
+                    if kind == "run":
+                        c["data"].setdefault("run:" + run, load_run(c["path"], run, c["t0_us"]))
+                        return self._json(c["data"]["run:" + run])
+                    c["data"].setdefault("raw", load_raw(c["path"], c["t0_us"]))
+                    c["data"].setdefault("used:" + run, load_used(c["path"], run, c["data"]["raw"]))
+                    return self._json(c["data"]["used:" + run])
             return SimpleHTTPRequestHandler.do_GET(self)
 
         def log_message(self, *a):
@@ -108,12 +159,14 @@ def make_handler(case: pathlib.Path):
 def main():
     import os
     ap = argparse.ArgumentParser()
-    ap.add_argument("--case", required=True)
+    ap.add_argument("--cases", default=str(pathlib.Path.cwd() / "data" / "cases"), help="folder with one sub folder per case")
     ap.add_argument("--port", type=int, default=8770)
     a = ap.parse_args()
-    case = pathlib.Path(a.case).resolve()
+    root = pathlib.Path(a.cases).resolve()
+    if not root.is_dir():
+        raise SystemExit(f"no such folder: {root}")
     os.chdir(HERE)
-    srv = HTTPServer(("127.0.0.1", a.port), make_handler(case))
+    srv = HTTPServer(("127.0.0.1", a.port), make_handler(root))
     print(f"viewer: http://localhost:{a.port}  (ctrl-c to stop)")
     webbrowser.open(f"http://localhost:{a.port}")
     srv.serve_forever()
