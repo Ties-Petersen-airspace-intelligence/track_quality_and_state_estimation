@@ -1,0 +1,85 @@
+syntax = "proto3";
+
+package uni.protobuf.uni_track_schemas.fusion.v1beta;
+
+import "uni/protobuf/uni_track_schemas/fusion/v1beta/fused_track.proto";
+
+// WGS84 geographic point in decimal degrees. Used by BoundingBox
+// below.
+message Point {
+  // WGS84 latitude in decimal degrees. Range: [-90, 90]
+  float lat = 1;
+  // WGS84 longitude in decimal degrees. Range: [-180, 180]
+  float lon = 2;
+}
+
+// Geographic bounding box in WGS84 covering a changed track segment.
+// The box is stored as four explicit corners.
+// Currently axis-aligned (computed as min/max lat × min/max lon)
+message BoundingBox {
+  // Northwest corner.
+  Point northwest = 1;
+  // Northeast corner.
+  Point northeast = 2;
+  // Southwest corner.
+  Point southwest = 3;
+  // Southeast corner.
+  Point southeast = 4;
+}
+
+// A contiguous portion of a track that changed in the latest fusion
+// run. Consumers can use ChangedSegment summaries (since / until /
+// bounding_box) to subscribe to track changes without receiving the
+// full plot bodies each time.
+message ChangedSegment {
+  // Unix epoch microseconds. Earliest plot timestamp in the segment.
+  int64 since = 1;
+  // Unix epoch microseconds. Latest plot timestamp in the segment.
+  int64 until = 2;
+  // Bounding box covering all plots in the segment.
+  BoundingBox bounding_box = 3;
+  // The fused track plots for this segment. Optional — gated behind a
+  // feature flag so consumers that don't need the full plot bodies
+  // can opt out and rely on `since` / `until` / `bounding_box`
+  // summaries instead.
+  optional FusedTrack fused_track = 4;
+}
+
+// Describes how a fusion run produced this event. Used by downstream
+// consumers to differentiate streaming / incremental updates from
+// batch re-runs.
+enum FusionQuality {
+  NOT_SET = 0;
+  // Streaming append-only fusion: incremental update appending new
+  // plots to the end of an existing track.
+  APPEND_ONLY = 1;
+  // Batch fusion over a time window when the correlation mapping
+  // hasn't changed since the previous fusion run.
+  REGULAR = 2;
+  // Re-fusion of a track, triggered when the correlation mapping
+  // for that track has advanced since the previous fusion run
+  // (i.e. correlation regrouped its inputs and fusion needs to
+  // catch up).
+  RECORRELATION = 3;
+}
+
+// Event emitted when a fused track changes. Published by
+// uni-track-fusion to a pubsub topic consumed by downstream services
+// (uni-flight-tracks, REVO services, etc.).
+message FusionChangedEvent {
+  // Internal tracked-object ID identifying the aircraft track within
+  // the Tracks REVO pipeline. Opaque from a consumer's perspective;
+  // correlates the same object across uni-track-correlation and
+  // uni-track-fusion.
+  string track_id = 1;
+  // Unix epoch microseconds. When uni-track-fusion produced this
+  // event.
+  int64 created_at = 2;
+  // Portions of the track that changed in this fusion run.
+  repeated ChangedSegment changed_segments = 3;
+  // How this event was produced (streaming / batch / recorrelation).
+  FusionQuality quality = 4;
+  // Unix epoch microseconds. Reserved for future logical-deletion signalling;
+  // not currently emitted by uni-track-fusion as of 2026-05.
+  optional int64 deleted_at = 5;
+}

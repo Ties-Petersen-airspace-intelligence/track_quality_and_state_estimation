@@ -1,0 +1,280 @@
+syntax = "proto3";
+
+// Shim: the source plot schemas import the shared Common plot from this path. The real file now lives in
+// uni-proto as uni/protobuf/uni_track_schemas/common_plot/v1beta/plot.proto with the same fields and numbers;
+// this copy only keeps the old package name so the source schemas compile unchanged.
+package uni_track_plot_schema.proto.plot;
+
+enum PlotSource {
+  NOT_SET = 0;
+  // FAA TFMS Track Information (FLTD over SWIM). See uni-track-source-tfms.
+  TFMS_TI = 1;
+  // FAA TFMS Oceanic Report (FLTD over SWIM). See uni-track-source-tfms.
+  TFMS_OR = 2;
+  // PlaneFinder Firehose. See uni-planefinder-integration.
+  PLANEFINDER = 3;
+  // ADSBExchange. See uni-adsbx-integration.
+  ADSBX = 4;
+  // Alaska Airlines ACARS. See uni-track-source-asa.
+  ALASKA_ACARS = 5;
+  // United Airlines POSRPT. See uni-track-source-ual.
+  UNITED_POSRPT = 6;
+  // Spire satellite-based ADS-B.
+  SPIRE = 7;
+  // Unified Data Library, See uni-track-source-udl.
+  UDL = 8;
+  // FAA MEIS.
+  MEIS = 9;
+  // FAA STDDS SMES surface plot. See uni-track-source-stdds.
+  STDDS_SMES_POSITION_REPORT = 10;
+  // uAvionix Flight Line (ASTERIX CAT021). See uni-track-source-uavionix.
+  UAVIONIX_FLIGHT_LINE = 11;
+  // See uni-track-source-faa-adsb-edp.
+  FAA_ADSB_EDP = 12;
+  // See uni-track-source-aireon-stream-global.
+  AIREON_STREAM_GLOBAL = 13;
+}
+
+// Fields common to all plot sources. Carried as a sub-message on every
+// per-source Plot envelope so producers can add source-specific fields
+// alongside Common (see the "Message format for Plot data" design doc:
+// https://www.notion.so/airspaceintelligence/Message-format-for-Plot-data-ef1e9c7078cf47a1ae392959bed30f4a).
+//
+// Position datum is WGS84. Timestamps are int64 Unix epoch microseconds.
+// Datum / unit conventions for derived fields (altitude, heading, track)
+// are NOT uniform across sources — see per-field notes for the per-source
+// matrix that future unification work needs to reconcile.
+message Common {
+  // WGS84 longitude in decimal degrees. Range: [-180, 180]
+  float longitude = 1;
+  // WGS84 latitude in decimal degrees. Range: [-90, 90]
+  float latitude = 2;
+
+  // Unix epoch microseconds. Time at which the object was at this
+  // position, as reported by the source.
+  int64 position_timestamp = 3;
+
+  // Unix epoch microseconds. When the upstream system received / published
+  // this position — intended to be used with position_timestamp and
+  // asi_received_timestamp to attribute latency between source emission,
+  // upstream ingest, and Tracks REVO processing.
+  //
+  // Per-source semantics (audited 2026-05):
+  // - TFMS_TI / TFMS_OR: set from the FLTD `sourceTimeStamp` attribute
+  //   (accurate per the upstream message).
+  // - UAL: set from `pos_rpt.report_datetime`, distinct from
+  //   `pos_rpt.source_timestamp` (which feeds position_timestamp) —
+  //   real upstream-ingest timestamp.
+  // - ADSBX, PlaneFinder, STDDS, UAVIONIX: NOT exposed by the upstream
+  //   API; the integration sets this equal to position_timestamp. Do
+  //   NOT use to estimate upstream→ASI lag for these sources.
+  // - Other sources: behavior varies — verify against the source's
+  //   integration before using for SLO / latency math.
+  int64 source_received_timestamp = 4;
+  // Unix epoch microseconds. When the source integration parsed the
+  // upstream message (i.e., when Airspace Intelligence first had this
+  // plot in structured form). Set by every source integration at parse
+  // time.
+  int64 asi_received_timestamp = 5;
+
+  // Upstream producer that emitted this plot. Together with
+  // track_identifier, uniquely identifies an object within this source.
+  PlotSource source_identifier = 6;
+  // Source-within-source code: the sub-feed / sensor / protocol within
+  // a single PlotSource. Populated only by a subset of producers:
+  //
+  // - ADSBX: ADSBXPlotType enum value derived from `pos.type` — e.g.
+  //   ADSB_ICAO, ADSR_ICAO, TISB_ICAO, MLAT.
+  // - PLANEFINDER: PlanefinderDataSource enum value — UNKNOWN (0),
+  //   ADSB, PLANE_FINDER_MLAT, FLARM, THIRD_PARTY_DERIVED_MLAT,
+  //   BLOCKED_DATA.
+  // - All other sources audited (TFMS, UAVIONIX, STDDS, ASA, UAL):
+  //   NOT set (default 0).
+  //
+  // Note: uni-track-correlation does NOT consume this field (zero
+  // references in the repo as of 2026-05). It is currently
+  // informational for fusion / BigQuery analytics only.
+  int32 provider_source_type = 19;
+
+  // Source-specific identifier of the object. Must be unique within a
+  // single source_identifier and must not be reused for a different
+  // object by that source. Together with source_identifier, forms the
+  // primary key into uni-track-correlation.
+  //
+  // How each source constructs it (audited 2026-05):
+  // - ADSBX: `pos.hex` (uppercased; any `~` prefix for non-ICAO
+  //   addresses is preserved). NonUniqueAdshexHandler then re-keys
+  //   only adshexes that match a configured non-unique set (default
+  //   `["000001"]`) by appending a coarse lat/lon fix + hour-bucketed
+  //   timestamp; for every other adshex the input is returned
+  //   unchanged.
+  // - PlaneFinder: `position.adshex` passed through the same
+  //   NonUniqueAdshexHandler with the same default non-unique set.
+  // - TFMS_TI / TFMS_OR: synthetic key = `flight_ref` + source_timestamp
+  //   date (so the identifier rotates with the flight leg, not the
+  //   aircraft).
+  // - UAVIONIX: ASTERIX `target_address` formatted as 6-hex; equals
+  //   the `adshex` field for the same plot.
+  // - STDDS: `adshex` (FAA STID is not globally unique, so the
+  //   integration falls back to the ICAO 24-bit address).
+  // - ASA (Alaska): raw `aircraft_registration` (tail number string).
+  // - UAL (United): raw `pos_rpt.tail_number`.
+  string track_identifier = 7;
+
+  // Altitude in feet. Datum and reference vary by source — there is no
+  // uniform meaning across the pipeline. Treat as "the source's notion
+  // of altitude" until normalized. uni-track-multiplexer derives both
+  // mean_sea_level_altitude_ft and above_ground_altitude_ft from this
+  // value (see those fields).
+  //
+  // Per-source semantics (audited 2026-05):
+  // - ADSBX: `alt_baro` — barometric pressure altitude. Special: the
+  //   literal "ground" maps to 0; "-1" maps to unset.
+  // - PlaneFinder: `position.altitude` raw; datum undocumented
+  //   upstream. Observed convention (per design doc): 0 on the ground,
+  //   MSL-like in flight (mixes references — confirmed e.g. at KDEN).
+  // - TFMS_TI / TFMS_OR: `simpleAltitude × 100` (Flight Level → ft);
+  //   pressure altitude. EUC source-facility carries a quirk: values
+  //   < 5000 are multiplied by 10; values ≥ 5000 are unset.
+  // - UAVIONIX: priority order — `geometric_height` (HAE-ish) →
+  //   fallback to `flight_level × 100` (pressure FL) → fallback to 0
+  //   when the ground bit is set. Internally mixes geometric and
+  //   pressure references depending on what ASTERIX provides; the
+  //   field cannot be assumed pressure-only for this source.
+  // - STDDS: `position.altitude` raw (FAA SMES, mode-C / surface).
+  // - ASA: `present_altitude × 100` (FL → ft; pressure).
+  // - UAL: `pos_rpt.altitude × 100` (FL → ft; pressure).
+  optional int64 altitude_ft = 8;
+  // Ground speed in knots. Populated by sources that expose ground
+  // speed directly (e.g. ADSBX `pos.gs`, PlaneFinder, TFMS); other
+  // sources vary — verify per integration.
+  //
+  // Read by uni-track-multiplexer for the on-ground heuristic in
+  // above_ground_altitude_ft (taxi-speed cutoff = 50 kt).
+  optional float ground_speed_kt = 9;
+
+  // Aircraft callsign. Example: AAL1234
+  //
+  // Normalized by uni-track-plot-schema-lib's `normalize_callsign`
+  // (strips whitespace, uppercases, validates). May be empty for
+  // sources that do not provide one — UAL synthesizes it as
+  // ICAO airline code + flight number; ASA leaves it empty.
+  //
+  // Fusion fallback: in uni-track-fusion, if Common.callsign is empty
+  // AND the source plot is TFMS_TI or TFMS_OR, the FusedPlot's
+  // Common.callsign is overwritten with the FLTD `acid` attribute
+  // (uni_track_fusion.fusor.fusor.Fusor.raw_plot_to_fused_plot). This
+  // is the one place where the wire value of Common.callsign for a
+  // FusedPlot may differ from its source plot.
+  string callsign = 10;
+  // Aircraft registration / tail number. Example: N12345
+  //
+  // Normalized by `normalize_tail_number` where set. NOT populated by
+  // all sources — TFMS, STDDS, UAVIONIX leave empty; ADSBX,
+  // PlaneFinder, ASA, UAL populate from their native registration
+  // field.
+  string tail_number = 11;
+  // ICAO 24-bit address in hex. Example: A12345
+  //
+  // Normalized by `normalize_icao_address`. Some upstream feeds prefix
+  // non-ICAO addresses with `~` (e.g. ADSBX); the integrations strip
+  // those to empty here and keep the original on track_identifier
+  // instead. Empty for TFMS, ASA, UAL.
+  string adshex = 12;
+  // 4-digit octal Mode A code. Example: 2400
+  //
+  // - ADSBX: `pos.squawk`.
+  // - PlaneFinder: `position.squawk`.
+  // - UAVIONIX: `{:04o}` of `mode_3_a_code`.
+  // - STDDS: parsed from mode 3/A.
+  // - TFMS, ASA, UAL: empty.
+  string squawk = 13;
+  // ICAO aircraft type designator. Example: B738
+  //
+  // Normalized by `normalize_ac_type` where set. Empty for sources
+  // that do not carry aircraft type (ASA, UAL, UAVIONIX, STDDS).
+  string ac_type = 14;
+  // Flight number. Example: AAL1234
+  //
+  // Populated by PlaneFinder (`position.flight_number`). Most other
+  // sources leave Common.flight_number empty and carry the flight
+  // number on the per-source envelope (e.g. AsaPlot, UalPlot) instead.
+  // UAL's integration synthesizes Common.callsign as
+  // (ICAO airline + flight number) but does NOT set
+  // Common.flight_number.
+  string flight_number = 20;
+
+  // Heading in degrees clockwise. Range: [0, 360)
+  //
+  // ⚠ Datum varies by source — the field name does not encode true vs
+  // magnetic. Future unification will need to reconcile:
+  // - ADSBX: `pos.true_heading` — TRUE heading
+  //   (heading-from-true-north).
+  // - UAVIONIX: `msg.magnetic_heading` — MAGNETIC heading. Will
+  //   diverge from ADSBX by local magnetic declination.
+  // - PlaneFinder: `position.heading` — datum NOT documented upstream
+  //   (the upstream model has separate `magnetic_heading` and
+  //   `target_heading` fields, so `heading` is most likely true, but
+  //   unverified).
+  // - STDDS: `movement.heading` — datum NOT documented; FAA SMES
+  //   movement heading at surface, likely true / track-like.
+  // - TFMS, ASA, UAL: NOT set.
+  optional float heading_deg = 15;
+  // Track over ground in degrees clockwise. Range: [0, 360)
+  // Source set it as TRUE north
+  // ⚠ Semantics vary by source:
+  // - ADSBX: `pos.track` — TRUE track over ground.
+  // - UAVIONIX: ASTERIX CAT021 `track_angle` — TRUE track.
+  // - STDDS: set equal to heading_deg (NOT a real track measurement —
+  //   the integration copies the heading field).
+  // - PlaneFinder: explicitly left unset — upstream `track_angle` was
+  //   deemed too inaccurate to publish; the raw value is retained on
+  //   the PlanefinderPlot envelope only.
+  // - TFMS, ASA, UAL: NOT set.
+  optional float track_deg = 16;
+
+  // Height above ground in feet, derived by uni-track-multiplexer from
+  // altitude_ft + terrain elevation. NOT set by source integrations.
+  //
+  // Formula (rust_multiplexer/src/forwarder.rs::
+  // calculate_above_ground_altitude_ft):
+  //   - if altitude_ft is unset → above_ground_altitude_ft is unset
+  //   - else if altitude_ft == 0 and (ground_speed_kt is unset
+  //     or < 50 kt) → 0  (treated as on the ground / taxiing)
+  //   - else → max(altitude_ft − elevation_ft, 0)
+  //
+  // Terrain elevation is read from a vector-tile elevation dataset
+  // (ElevationFileService / LazilyLoadedElevationService); the
+  // sentinel -1640 ft (-500 m, "ocean" in the dataset) is normalized
+  // to 0.
+  //
+  // Used by uni-track-fusion for airborne detection (segment_finder
+  // and stabilize_flight_metadata_strategy): a plot is treated as
+  // airborne when this field is MISSING (HasField == false) OR ≥
+  // 100 ft. Absence is therefore interpreted as "presumed airborne"
+  // by fusion — relevant for sources that do not populate altitude_ft
+  // (e.g. UAVIONIX surface-only plots without altitude data).
+  optional int64 above_ground_altitude_ft = 17;
+  // Mean sea level altitude in feet, derived by uni-track-multiplexer
+  // from altitude_ft + terrain elevation. NOT set by source
+  // integrations.
+  //
+  // Formula (rust_multiplexer/src/forwarder.rs::
+  // calculate_mean_sea_level_altitude_ft):
+  //   - if altitude_ft is unset → mean_sea_level_altitude_ft is unset
+  //   - else if altitude_ft <= 0 → elevation_ft (ground fix at this
+  //     location)
+  //   - else → altitude_ft (assumed to already be MSL — see caveat)
+  //
+  // ⚠ Caveat: the formula treats altitude_ft as MSL when > 0, but
+  // altitude_ft is pressure altitude (FL × 100, baro) for most sources,
+  // NOT QNH-corrected MSL. The field name is therefore aspirational;
+  // consumers that need true MSL must apply a QNH correction (not
+  // currently performed anywhere in the pipeline).
+  optional int64 mean_sea_level_altitude_ft = 18;
+}
+
+message Plot {
+  // Shared plot fields (position, timing, identity).
+  Common common = 1;
+}

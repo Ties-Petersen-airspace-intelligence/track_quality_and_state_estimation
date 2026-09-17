@@ -1,0 +1,83 @@
+syntax = "proto3";
+
+package uni_track_source_tfms_plot_schema.proto;
+
+
+message FLTDMessageAttributes {
+    // AirCraft ID, it might be either a callsign or tailnumber
+    string acid = 1;
+
+    // "Three character airline identifier. If the aircraft is not associated
+    // with an airline the value will be XXX."
+    string airline = 2;
+
+    // arrival airport, might be icao, but doesn't have to be
+    string arr_arpt = 3;
+
+    // "If true, the flight belongs to a CDM participant."
+    string cdm_part = 4;
+
+    // departure airport, might be icao, but doesn't have to be
+    string dep_arpt = 5;
+
+    // identifier for correlation that is unique in some ~few month range
+    string flight_ref = 6;
+
+
+    // "code can indicate an actual air carrier, a general aviation fleet
+    // operator, or a pseudo carrier used to logically group certain flights.
+    // If the MAJOR code is three letters, it is an official three-letter code
+    // that can be used for flight plan filing. If the MAJOR starts with a
+    // period character (.), it is a dummy code used only within TFMS. Dummy
+    // codes are used for any organization, such as a GA data provider, that is
+    // a CDM Participant but does not have an official three-letter code. If
+    // the flight IDs are being filtered, the MAJOR field contains the filtered
+    // four-letter code, and the '.' is not indicated." it might be XXX.
+    string major = 7;
+
+    // "Defines the sensitivity of the data for distribution:
+    // R - government agency only,
+    // A - all users including government,
+    // D - all users except government because duplicate."
+    string sensitivity = 8;  
+
+    // "The facility/system that originated the data."
+    string source_facility = 9;
+
+
+
+    // "The sourceTimeStamp identifies the time the original message that
+    // triggered this Flight Data message to be sent was sent by the facility
+    // identified by attribute sourceFacility."
+    int64 source_timestamp = 10;
+
+}
+
+message QualifiedAircraftID {
+    // "Aircraft category: JET, TURBO, or PROP.". It also looks like `OTHER` is
+    // allowed value (not mentioned in the docs). Found a `PISTON` as well.
+    string aircraft_category = 1;  
+
+    // "User category: AIR_TAXI, CARGO, COMMERCIAL, GENERAL_AVIATION, or
+    // MILITARY."` Seems like "GENERAL AVIATION" (space, not underscore) is
+    // also permitted.    
+    string user_category = 2;  
+
+
+    // "Global Unique Flight Identifier is a 10-character alphanumeric
+    // identifier. The first character represents an ICAO country code. The
+    // second character is a single-letter facility ID. The last eight
+    // characters are a unique identifier for each flight."
+    string gufi = 3;
+
+    // following fields look like they should be the same as some of fltd
+    // message attributes, but I didn't find confirmation about that. If we
+    // find out they are indeed the same after we collect data into BQ, we can
+    // then just stop sending them out and remove them from schema
+
+    string aircraft_id = 4;
+    string computer_id__facility_identifier = 5;
+    string computer_id__id_number = 6;
+    string departure_point__airport = 7;
+    string arrival_point__airport = 8;
+}

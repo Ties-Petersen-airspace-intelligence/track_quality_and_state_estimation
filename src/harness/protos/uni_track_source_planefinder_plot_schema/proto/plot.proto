@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package uni_track_source_planefinder_plot_schema.proto.plot;
+
+import "uni_track_plot_schema/proto/plot.proto";
+
+// All BQ-related options are commented in order not to
+// break file generation for Python
+// import "bq_table.proto";
+// import "bq_field.proto";
+
+// adding comment to field, either above or after, allows to keep it for BQ
+// schema field description. in order to avoid the comment being added to a
+// particular field it needs to be surrounded by blank lines.
+
+enum DataSource {
+    UNKNOWN = 0;
+    ADSB = 1;
+    PLANE_FINDER_MLAT = 2;
+    FLARM = 3;
+    THIRD_PARTY_DERIVED_MLAT = 4;
+    BLOCKED_DATA = 5;
+};
+
+message PlanefinderPlot {
+    uni_track_plot_schema.proto.plot.Common common = 1;
+
+    // position information
+
+    optional int32 speed = 2; // unit: knots
+    optional int32 altitude = 3; // unit: feet
+    optional bool is_on_ground = 4;
+    optional int64 pos_update_time = 5; //Time position was last updated - track_timestamp
+
+    optional int32 vert_rate = 6;
+    optional int32 selected_altitude = 7; // unit: feet
+    optional float roll_angle = 8; // Roll Angle of Aircraft, unit: Degrees
+    optional int32 gs = 9; // Ground Speed, unit: knots
+    optional int32 ias = 10; // Indicated Air Speed, unit: knots
+    optional int32 tas = 11; // True Air Speed, unit: knots
+    optional float mach = 12;
+
+    optional int32 heading = 13; // unit: Degrees
+    optional int32 magnetic_heading = 14; // unit: Degrees
+    optional int32 target_heading = 15; // Heading selected in the FMS, unit: Degrees
+    optional int32 track_angle = 16; // unit: Degrees
+
+    optional float oat = 17; // outside_air_temperature, unit: celsius
+    optional float barometer = 18; // unit: hPa
+    optional int32 wind_speed = 19; // unit: knots
+    optional int32 wind_direction = 20; // Wind Direction (from), unit: Degrees
+
+    DataSource data_source = 21;
+
+    // aircraft information
+
+    string reg = 22; // Aircraft Registration/Tail Number
+    string ac_type = 23; // Aircraft ICAO Type Code
+    string category = 24; // ADS-B Emitter Category
+    optional int64 last_seen_time = 25; // Time aircraft was last seen
+
+    // flight information
+
+    string flight_number = 26;
+    string original_callsign = 27;
+    string callsign = 28;
+    string route = 29; // Route of aircraft IATA codes, hyphens denoting hops
+
+    optional bool is_blocked = 30;
+    string station_id = 31; // Last Plane Finder station reporting, provide to PF in case of debugging
+}

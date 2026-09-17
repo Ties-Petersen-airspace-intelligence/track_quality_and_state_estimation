@@ -1,0 +1,276 @@
+syntax = "proto3";
+
+package uni_track_source_uavionix_plot_schema.proto.asterix;
+
+import "uni_track_plot_schema/proto/plot.proto";
+
+// ASTERIX Category 021 - ADS-B Target Reports
+message AsterixCat021 {
+  // Data Item I021/008 - Aircraft Operational Status
+  message AircraftOperationalStatus {
+    enum TargetTcReportCapability { // TC - Trajectory Change
+      TARGET_TC_REPORT_CAPABILITY_UNSPECIFIED = 0;
+      NO_SUPPORT = 1;
+      SUPPORT_FOR_TC_PLUS_ZERO_REPORTS_ONLY = 2;
+      SUPPORT_FOR_MULTIPLE_TC_REPORTS = 3;
+    }
+
+    optional bool is_tcas_resolution_advisory_active = 1; // TCAS - Traffic Collision Avoidance System
+    optional TargetTcReportCapability target_tc_report_capability = 2; // TC - Trajectory Change
+    optional bool is_capable_of_supporting_target_state_reports = 3;
+    optional bool is_capable_of_generating_arv_reports = 4; // ARV - Air-Referenced Velocity
+    optional bool is_cdti_operational = 5; // CDTI - Cockpit Display of Traffic Information
+    optional bool is_tcas_not_operational = 6; // TCAS - Traffic Collision Avoidance System
+    optional bool has_single_antenna_only = 7;
+  }
+
+  // Data Item I021/010 - Data Source Identification
+  message DataSourceIdentification {
+    uint32 system_area_code = 1;
+    uint32 system_identification_code = 2;
+  }
+
+  // Data Item I021/040 - Target Report Descriptor
+  message TargetReportDescriptor {
+    enum AddressType {
+      ADDRESS_TYPE_UNSPECIFIED = 0;
+      ICAO = 1;
+      DUPLICATE = 2;
+      SURFACE_VEHICLE = 3;
+      ANONYMOUS = 4;
+    }
+
+    enum AltitudeReportingCapability {
+      ALTITUDE_CAPABILITY_UNSPECIFIED = 0;
+      FT_25 = 1;
+      FT_100 = 2;
+      UNKNOWN = 3;
+      INVALID = 4;
+    }
+
+    enum ConfidenceLevel {
+      CONFIDENCE_LEVEL_UNSPECIFIED = 0;
+      REPORT_VALID = 1;
+      REPORT_SUSPECT = 2;
+      NO_INFORMATION = 3;
+    }
+
+    // Primary subfield
+    optional AddressType address_type = 1;
+    optional AltitudeReportingCapability altitude_reporting_capability = 2;
+    optional bool did_range_check_pass = 3; // [0 = default]
+    optional bool is_report_from_field_monitor = 4; // [0 = target transponder]
+    // First extension
+    optional bool has_differential_correction = 5;
+    optional bool is_ground_bit_set = 6;
+    optional bool is_simulated_target = 7; // [0 = actual target]
+    optional bool is_test_target = 8; // [0 = default]
+    optional bool is_not_capable_to_provide_selected_altitude = 9;
+    optional ConfidenceLevel confidence_level = 10;
+    // Second extension: error conditions
+    optional bool is_target_suspect = 11;
+    optional bool did_independent_position_check_fail = 12;
+    optional bool is_nogo_bit_set = 13;
+    optional bool did_cpr_validation_fail = 14; // CPR - Compact Position Reporting
+    optional bool is_ldpj_detected = 15; // LDPJ - Local Decoding Position Jump
+    optional bool did_range_check_fail = 16; // [0 = default]
+    // Third extension
+    optional uint32 total_bits_corrected = 17;
+    // Fourth extension
+    optional uint32 maximum_bits_corrected = 18;
+  }
+
+  // Data Item I021/090 - Quality Indicators
+  message QualityIndicators {
+    // Primary subfield
+    optional uint32 nucr_or_nacv = 1; // NUCr - Navigation Uncertainty Category for velocity / NACv - Navigation Accuracy Category for Velocity
+    optional uint32 nucp_or_nic = 2; // NUCp - Navigation Uncertainty Category for Position / NIC - Navigation Integrity Category
+    // First extension
+    optional uint32 nic_baro = 3; // NIC - Navigation Integrity Category
+    optional uint32 sil = 4; // Surveillance or Source Integrity Level
+    optional uint32 nacp = 5; // Navigation Accuracy Category for Position
+    // Second extension
+    optional bool is_sil_measured_per_sample = 6; // Source Integrity Level
+    optional uint32 system_design_assurance = 7;
+    optional uint32 geometric_vertical_accuracy = 8;
+    // Third extension
+    optional uint32 position_integrity_category = 9;
+  }
+
+  // Data Item I021/130 - Position in WGS-84 Coordinates
+  message Position {
+    optional float latitude = 1; // degrees
+    optional float longitude = 2; // degrees
+  }
+
+  // Data Item I021/131 - High-Resolution Position in WGS-84
+  message HighResolutionPosition {
+    optional float latitude = 1; // degrees
+    optional float longitude = 2; // degrees
+  }
+
+  // Data Item I021/150 - Air Speed
+  message AirSpeed {
+    optional bool is_mach = 1; // true = Mach, false = IAS - Indicated Air Speed
+    optional double air_speed = 2; // knots or Mach number
+  }
+
+  // Data Item I021/151 - True Airspeed
+  message TrueAirspeed {
+    optional bool is_range_exceeded = 1;
+    optional double true_airspeed = 2; // knots
+  }
+
+  // Data Item I021/160 - Airborne Ground Vector
+  message AirborneGroundVector {
+    optional bool is_range_exceeded = 1;
+    optional double ground_speed = 2; // knots
+    optional double track_angle = 3; // degrees
+  }
+
+  // Data Item I021/200 - Target Status
+  message TargetStatus {
+    enum PriorityStatus {
+      PRIORITY_STATUS_UNSPECIFIED = 0;
+      GENERAL_EMERGENCY = 1;
+      LIFEGUARD_MEDICAL_EMERGENCY = 2;
+      MINIMUM_FUEL = 3;
+      NO_COMMUNICATIONS = 4;
+      UNLAWFUL_INTERFERENCE = 5;
+      DOWNED_AIRCRAFT = 6;
+    }
+
+    enum SurveillanceStatus {
+      SURVEILLANCE_STATUS_UNSPECIFIED = 0;
+      PERMANENT_ALERT = 1;
+      TEMPORARY_ALERT = 2;
+      SPI_SET = 3;
+    }
+
+    optional bool is_intent_change_active = 1;
+    optional bool is_not_lateral_navigation_engaged = 2;
+    optional bool is_military_emergency = 3;
+    optional PriorityStatus priority_status = 4;
+    optional SurveillanceStatus surveillance_status = 5;
+  }
+
+  // Data Item I021/210 - MOPS Version
+  message MOPS { // MOPS - Minimum Operational Performance Standards
+    enum MopsVersion {
+      MOPS_VERSION_UNSPECIFIED = 0;
+      DO_260 = 1;
+      DO_260A = 2;
+      DO_260B = 3;
+      DO_260C = 4;
+    }
+
+    enum LinkTechnologyType {
+      LINK_TECHNOLOGY_TYPE_UNSPECIFIED = 0;
+      OTHER = 1;
+      UAT = 2;
+      ES_1090 = 3;
+      VDL_4 = 4;
+    }
+
+    // MOPS - Minimum Operational Performance Standards version
+    optional bool is_mops_version_not_supported = 1;
+    optional MopsVersion mops_version = 2;
+    optional LinkTechnologyType link_technology = 3;
+  }
+
+  enum EmitterCategory {
+    EMITTER_CATEGORY_UNSPECIFIED = 0;
+    NO_CATEGORY_INFO = 1;
+    LIGHT_AIRCRAFT = 2;
+    SMALL_AIRCRAFT = 3;
+    MEDIUM_AIRCRAFT = 4;
+    HIGH_VORTEX_LARGE = 5;
+    HEAVY_AIRCRAFT = 6;
+    HIGHLY_MANOEUVRABLE = 7;
+    ROTORCRAFT = 8;
+    GLIDER_OR_SAILPLANE = 9;
+    LIGHTER_THAN_AIR = 10;
+    UNMANNED = 11;
+    SPACE_OR_TRANSATMOSPHERIC = 12;
+    ULTRALIGHT_OR_HANDGLIDER_OR_PARAGLIDER = 13;
+    PARACHUTIST_OR_SKYDIVER = 14;
+    SURFACE_EMERGENCY = 15;
+    SURFACE_SERVICE = 16;
+    FIXED_GROUND_OR_TETHERED_OBSTRUCTION = 17;
+    CLUSTER_OBSTACLE = 18;
+    LINE_OBSTACLE = 19;
+  }
+
+  uni_track_plot_schema.proto.plot.Common common = 1;
+
+  int64 position_timestamp = 2; // microseconds
+
+  // Data Item I021/008 - Aircraft Operational Status
+  optional AircraftOperationalStatus aircraft_operational_status = 3;
+
+  // Data Item I021/010 - Data Source Identification
+  DataSourceIdentification data_source_identification = 4;
+
+  // Data Item I021/020 - Emitter Category
+  optional EmitterCategory emitter_category = 5;
+
+  // Data Item I021/040 - Target Report Descriptor
+  optional TargetReportDescriptor target_report_descriptor = 6;
+
+  // Data Item I021/070 - Mode 3/A Code In Octal
+  optional uint32 mode_3_a_code = 7;
+
+  // Data Item I021/073 - Time of Message Reception of Position
+  optional double time_message_reception_position = 8; // seconds
+
+  // Data Item I021/075 - Time of Message Reception of Velocity
+  optional double time_message_reception_velocity = 9; // seconds
+
+  // Data Item I021/077 - Time of Report Transmission
+  optional double time_of_report_transmission = 10; // seconds
+
+  // Data Item I021/080 - Target Address
+  uint32 target_address = 11;
+
+  // Data Item I021/090 - Quality Indicators
+  optional QualityIndicators quality_indicators = 12;
+
+  // Data Item I021/130 - Position in WGS-84 Coordinates
+  optional Position position = 13;
+
+  // Data Item I021/131 - High-Resolution Position in WGS-84
+  optional HighResolutionPosition high_resolution_position = 14;
+
+  // Data Item I021/140 - Geometric Height
+  optional float geometric_height = 15; // feet
+
+  // Data Item I021/145 - Flight Level
+  optional double flight_level = 16;
+
+  // Data Item I021/150 - Air Speed
+  optional AirSpeed air_speed = 17;
+
+  // Data Item I021/151 - True Airspeed
+  optional TrueAirspeed true_airspeed = 18;
+
+  // Data Item I021/152 - Magnetic Heading
+  optional double magnetic_heading = 19; // degrees
+
+  // Data Item I021/155 - Barometric Vertical Rate
+  optional double barometric_vertical_rate = 20; // feet/min
+
+  // Data Item I021/157 - Geometric Vertical Rate
+  optional double geometric_vertical_rate = 21; // feet/min
+
+  // Data Item I021/160 - Airborne Ground Vector
+  optional AirborneGroundVector airborne_ground_vector = 22;
+
+  // Data Item I021/170 - Target Identification
+  optional string target_identification = 23;
+
+  // Data Item I021/200 - Target Status
+  optional TargetStatus target_status = 24;
+
+  // Data Item I021/210 - MOPS Version
+  optional MOPS mops_version = 25;
+}

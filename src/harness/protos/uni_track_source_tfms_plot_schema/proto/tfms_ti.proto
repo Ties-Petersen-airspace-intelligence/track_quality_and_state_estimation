@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package uni_track_source_tfms_plot_schema.proto;
+
+import "uni_track_plot_schema/proto/plot.proto";
+import "uni_track_source_tfms_plot_schema/proto/common.proto";
+
+message TFMSTrackInformationPlot {
+    uni_track_plot_schema.proto.plot.Common common = 1;
+    uni_track_source_tfms_plot_schema.proto.FLTDMessageAttributes fltd_message_attributes = 2;
+    uni_track_source_tfms_plot_schema.proto.QualifiedAircraftID qualified_aircraft_id = 3;
+
+    // position data is fully encapsulated within common and has sane
+    // representation in TFMS TI message, apart from altitude field below
+
+    // "Allowed format: [0-9]{0,3}[C,T]{0,1}. Where C = Beacon reported altitude is
+    // within Altitude Conformance Limits (ALCT) feet and T = Interim altitude is
+    // currently being displayed in the assigned altitude field."
+    string simple_altitude = 4; 
+    // reported position data is fully contained inside common. There's no
+    // not-common information in tfms oceanic report
+
+    // we need to have a field for partitioning in BQ in top level
+    // message, since nested fields cannot be used for partitioning
+    int64 position_timestamp = 5;
+}

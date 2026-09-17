@@ -1,0 +1,113 @@
+syntax = "proto3";
+
+package uni.protobuf.uni_track_schemas.fusion.v1beta;
+
+import "uni/protobuf/uni_track_schemas/common_plot/v1beta/plot.proto";
+
+// A plot enriched by uni-track-fusion with flight-plan, derived, and
+// stabilized metadata.
+//
+// Built from a per-source raw plot by Fusor.raw_plot_to_fused_plot, then
+// further populated by fusion strategies (flight_id_fill,
+// propagate_flight_id, stabilize_flight_metadata,
+// flifo_snapshot_information_fill, etc.). Several fields are only set
+// when the source plot is from a specific upstream — see per-field
+// notes.
+message FusedPlot {
+  // Shared plot fields (position, timing, identity) — see Common in
+  // common_plot/v1beta/plot.proto.
+  //
+  // Note: Common.callsign may be overwritten by fusion with the TFMS
+  // FLTD `acid` when the source plot is TFMS_TI / TFMS_OR and
+  // Common.callsign was empty (see the callsign note on Common).
+  uni.protobuf.uni_track_schemas.common_plot.v1beta.Common common = 1;
+  // Deprecated — predates Common.above_ground_altitude_ft (int64),
+  // which is the canonical source today. Retained for wire
+  // compatibility with older clients and persisted data; new producers
+  // should not set this and new consumers should read
+  // Common.above_ground_altitude_ft instead.
+  optional int32 above_ground_altitude_ft = 2 [deprecated = true];
+  // FAA TFMS FLTD flight reference — the `flightRef` attribute on the
+  // FLTD root in the upstream SWIM XML. Cross-system identifier of a
+  // flight within FAA's TFMS pipeline.
+  //
+  // Populated only when the source plot is TFMS_TI or TFMS_OR; empty
+  // string for every other source (see
+  // uni_track_fusion.plots_batcher.plot_parser.get_flight_ref).
+  string flight_ref = 3;
+
+  // FMS / autopilot selected target altitude in feet, when available.
+  //
+  // Populated only from PlaneFinder plots
+  // (`PlanefinderPlot.selected_altitude`). The upstream PlaneFinder
+  // schema comments the field as `// unit: feet` and does not
+  // document the datum — typically pressure-altitude (matches
+  // Common.altitude_ft for PlaneFinder), but the upstream does NOT
+  // state this explicitly.
+  //
+  // No other source populates this field — for ADSBX, TFMS, UAVIONIX,
+  // STDDS, ASA, UAL the field is unset.
+  optional int32 selected_altitude_ft = 4;
+  // Vertical rate in feet per minute. Positive = climb, negative =
+  // descent.
+  //
+  // Populated from one of two upstream fields depending on the source:
+  // - PlaneFinder: `PlanefinderPlot.vert_rate`; the upstream schema
+  //   does NOT document datum (geometric vs barometric).
+  // - ADSBX: `ADSBXPlot.baro_rate` — confirmed barometric rate of
+  //   change in ft/min (per the uni-adsbx model:
+  //   "rate of change of barometric altitude in feet/minute").
+  //
+  // Other sources do not populate this. ⚠ Mixing PlaneFinder and
+  // ADSBX into one field hides the geometric-vs-barometric
+  // distinction; future unification should consider splitting per
+  // datum.
+  optional float vert_rate_fpm = 5;
+  // Barometric / altimeter setting (QNH) in hectopascals.
+  //
+  // Populated only from PlaneFinder plots
+  // (`PlanefinderPlot.barometer`, which the upstream schema marks
+  // `// unit: hPa`). Unset for every other source.
+  optional float pressure_hpa = 6;
+
+  // Internal flight ID assigned by uni-track-fusion. Opaque identifier
+  // used to attach a flight plan / FliFo snapshot / OOOI events to a
+  // track over time.
+  //
+  // Set by fusion strategies, not by sources or by the basic
+  // Fusor.raw_plot_to_fused_plot path. Assignment chain (as of
+  // 2026-05):
+  // - flight_id_fill_strategy + propagate_flight_id_strategy: match
+  //   uni-flight-plan IDs from callsign + position + time.
+  // - temporary_flight_id_assignment_strategy: assign a temporary ID
+  //   from OOOI taxi events when no real flight-plan match is found.
+  string flight_id = 7;
+  // Callsign as carried on the source plot, before fusion's
+  // stabilization and (potentially) TFMS-fallback overwrite of
+  // Common.callsign.
+  //
+  // ⚠ Source-dependent:
+  // - PlaneFinder: `PlanefinderPlot.original_callsign` when set,
+  //   otherwise `Common.callsign`. This is the only source where
+  //   this field can carry information distinct from
+  //   Common.callsign.
+  // - All other sources: returns `Common.callsign` verbatim (see
+  //   uni_track_fusion.plots_batcher.plot_parser.get_original_callsign),
+  //   so reading original_callsign and Common.callsign yields the
+  //   same value pre-stabilization.
+  string original_callsign = 8;
+  // Departure airport, populated by uni-track-fusion's FliFo snapshot
+  // strategy (flifo_snapshot_information_fill_strategy) by joining on
+  // flight_id; empty when no FliFo snapshot is available for the
+  // flight_id at the plot timestamp.
+  //
+  // ⚠ Code scheme (ICAO vs IATA) follows what the upstream FliFo
+  // snapshot carries; NOT verified as of 2026-05. Example values:
+  // KJFK (ICAO) or JFK (IATA) — confirm against the FliFo source
+  // before relying on either format.
+  string origin = 9;
+  // Arrival airport, populated by uni-track-fusion's FliFo snapshot
+  // strategy. See `origin` above for the code-scheme caveat. Example
+  // values: KLAX or LAX.
+  string destination = 10;
+}
