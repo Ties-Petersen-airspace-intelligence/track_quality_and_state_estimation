@@ -1,0 +1,324 @@
+.gitignore
+  7815a8e19a342c8c 219-224
+pyproject.toml
+  7815a8e19a342c8c 1-10
+README.md
+  7815a8e19a342c8c 14-21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.5",
+  "base_commit_sha": "3b89ac5a2e3048c3e0aea40de24950a793dd3a40",
+  "prompts": {
+    "7815a8e19a342c8c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9c8adca8-79b9-4752-b2c6-5004db0ff1d5",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Ties Petersen",
+      "messages": [],
+      "total_additions": 5339,
+      "total_deletions": 6707,
+      "accepted_lines": 3368,
+      "overriden_lines": 128,
+      "messages_url": "https://uni-git-ai-cas.sre.aws.ai-internal.com//cas/b0b51f96962080f1baa6c683058a84bfe2759ca26ae49692ec2afa9961b4c840",
+      "context_window_samples": [
+        {
+          "used_tokens": 149446,
+          "timestamp": "2026-09-17T09:08:18.816Z"
+        },
+        {
+          "used_tokens": 161417,
+          "timestamp": "2026-09-17T09:10:52.197Z"
+        },
+        {
+          "used_tokens": 163928,
+          "timestamp": "2026-09-17T09:11:27.665Z"
+        },
+        {
+          "used_tokens": 167348,
+          "timestamp": "2026-09-17T09:12:49.748Z"
+        },
+        {
+          "used_tokens": 179314,
+          "timestamp": "2026-09-17T09:14:15.516Z"
+        },
+        {
+          "used_tokens": 191573,
+          "timestamp": "2026-09-17T09:16:20.353Z"
+        },
+        {
+          "used_tokens": 198786,
+          "timestamp": "2026-09-17T09:20:37.405Z"
+        },
+        {
+          "used_tokens": 212156,
+          "timestamp": "2026-09-17T09:24:37.788Z"
+        },
+        {
+          "used_tokens": 217955,
+          "timestamp": "2026-09-17T09:25:28.200Z"
+        },
+        {
+          "used_tokens": 224377,
+          "timestamp": "2026-09-17T09:27:18.006Z"
+        },
+        {
+          "used_tokens": 228731,
+          "timestamp": "2026-09-17T09:28:03.029Z"
+        },
+        {
+          "used_tokens": 238954,
+          "timestamp": "2026-09-17T09:34:03.324Z"
+        },
+        {
+          "used_tokens": 246756,
+          "timestamp": "2026-09-17T09:36:11.513Z"
+        },
+        {
+          "used_tokens": 252263,
+          "timestamp": "2026-09-17T09:36:57.319Z"
+        },
+        {
+          "used_tokens": 264127,
+          "timestamp": "2026-09-17T09:39:04.018Z"
+        },
+        {
+          "used_tokens": 269208,
+          "timestamp": "2026-09-17T09:39:38.838Z"
+        },
+        {
+          "used_tokens": 273025,
+          "timestamp": "2026-09-17T09:40:17.065Z"
+        },
+        {
+          "used_tokens": 295074,
+          "timestamp": "2026-09-17T09:59:20.403Z"
+        },
+        {
+          "used_tokens": 327844,
+          "timestamp": "2026-09-17T10:10:01.387Z"
+        },
+        {
+          "used_tokens": 346634,
+          "timestamp": "2026-09-17T10:12:07.950Z"
+        },
+        {
+          "used_tokens": 360524,
+          "timestamp": "2026-09-17T10:16:48.200Z"
+        },
+        {
+          "used_tokens": 364606,
+          "timestamp": "2026-09-17T10:18:29.353Z"
+        },
+        {
+          "used_tokens": 367585,
+          "timestamp": "2026-09-17T10:20:14.564Z"
+        },
+        {
+          "used_tokens": 380190,
+          "timestamp": "2026-09-17T10:21:35.281Z"
+        },
+        {
+          "used_tokens": 384343,
+          "timestamp": "2026-09-17T10:21:55.382Z"
+        },
+        {
+          "used_tokens": 389110,
+          "timestamp": "2026-09-17T10:28:48.602Z"
+        },
+        {
+          "used_tokens": 395502,
+          "timestamp": "2026-09-17T10:29:59.027Z"
+        },
+        {
+          "used_tokens": 405049,
+          "timestamp": "2026-09-17T10:31:57.322Z"
+        },
+        {
+          "used_tokens": 417666,
+          "timestamp": "2026-09-17T11:41:20.006Z"
+        },
+        {
+          "used_tokens": 435953,
+          "timestamp": "2026-09-17T11:41:32.988Z"
+        },
+        {
+          "used_tokens": 449969,
+          "timestamp": "2026-09-17T11:44:07.460Z"
+        },
+        {
+          "used_tokens": 454334,
+          "timestamp": "2026-09-17T11:45:05.797Z"
+        },
+        {
+          "used_tokens": 458246,
+          "timestamp": "2026-09-17T11:58:24.108Z"
+        },
+        {
+          "used_tokens": 471007,
+          "timestamp": "2026-09-17T11:58:38.616Z"
+        },
+        {
+          "used_tokens": 475442,
+          "timestamp": "2026-09-17T11:59:33.651Z"
+        },
+        {
+          "used_tokens": 479085,
+          "timestamp": "2026-09-17T12:00:35.477Z"
+        },
+        {
+          "used_tokens": 482228,
+          "timestamp": "2026-09-17T12:02:09.477Z"
+        },
+        {
+          "used_tokens": 490137,
+          "timestamp": "2026-09-17T12:06:10.292Z"
+        },
+        {
+          "used_tokens": 500653,
+          "timestamp": "2026-09-17T12:08:08.006Z"
+        },
+        {
+          "used_tokens": 501062,
+          "timestamp": "2026-09-17T12:10:40.185Z"
+        },
+        {
+          "used_tokens": 509788,
+          "timestamp": "2026-09-17T12:13:36.021Z"
+        },
+        {
+          "used_tokens": 512059,
+          "timestamp": "2026-09-17T12:13:51.830Z"
+        },
+        {
+          "used_tokens": 515838,
+          "timestamp": "2026-09-17T12:14:47.914Z"
+        },
+        {
+          "used_tokens": 516201,
+          "timestamp": "2026-09-17T12:14:56.328Z"
+        },
+        {
+          "used_tokens": 524811,
+          "timestamp": "2026-09-17T12:18:29.193Z"
+        },
+        {
+          "used_tokens": 527938,
+          "timestamp": "2026-09-17T12:21:11.485Z"
+        },
+        {
+          "used_tokens": 533939,
+          "timestamp": "2026-09-17T12:22:18.771Z"
+        },
+        {
+          "used_tokens": 538252,
+          "timestamp": "2026-09-17T12:24:59.510Z"
+        },
+        {
+          "used_tokens": 552226,
+          "timestamp": "2026-09-17T12:33:46.340Z"
+        },
+        {
+          "used_tokens": 557111,
+          "timestamp": "2026-09-17T12:36:47.350Z"
+        },
+        {
+          "used_tokens": 562162,
+          "timestamp": "2026-09-17T12:37:58.249Z"
+        },
+        {
+          "used_tokens": 571404,
+          "timestamp": "2026-09-17T12:42:08.003Z"
+        },
+        {
+          "used_tokens": 581432,
+          "timestamp": "2026-09-17T12:52:56.684Z"
+        },
+        {
+          "used_tokens": 582862,
+          "timestamp": "2026-09-17T12:53:36.050Z"
+        },
+        {
+          "used_tokens": 596538,
+          "timestamp": "2026-09-17T12:59:29.803Z"
+        },
+        {
+          "used_tokens": 604670,
+          "timestamp": "2026-09-17T13:00:31.923Z"
+        },
+        {
+          "used_tokens": 604979,
+          "timestamp": "2026-09-17T13:02:35.062Z"
+        },
+        {
+          "used_tokens": 612444,
+          "timestamp": "2026-09-17T13:03:35.260Z"
+        },
+        {
+          "used_tokens": 613327,
+          "timestamp": "2026-09-17T13:03:59.390Z"
+        },
+        {
+          "used_tokens": 621053,
+          "timestamp": "2026-09-17T13:05:14.099Z"
+        },
+        {
+          "used_tokens": 624655,
+          "timestamp": "2026-09-17T13:07:42.863Z"
+        },
+        {
+          "used_tokens": 628038,
+          "timestamp": "2026-09-17T13:11:05.196Z"
+        },
+        {
+          "used_tokens": 637468,
+          "timestamp": "2026-09-17T13:14:39.070Z"
+        },
+        {
+          "used_tokens": 638102,
+          "timestamp": "2026-09-17T13:15:47.039Z"
+        },
+        {
+          "used_tokens": 648948,
+          "timestamp": "2026-09-17T13:23:03.126Z"
+        },
+        {
+          "used_tokens": 654149,
+          "timestamp": "2026-09-17T15:12:55.874Z"
+        },
+        {
+          "used_tokens": 659899,
+          "timestamp": "2026-09-17T15:13:12.486Z"
+        },
+        {
+          "used_tokens": 663299,
+          "timestamp": "2026-09-17T15:19:01.708Z"
+        }
+      ],
+      "skill_usages": [
+        {
+          "name": "context",
+          "timestamp": "2026-09-16T07:24:49.697Z",
+          "source": "slash_command"
+        },
+        {
+          "name": "compact",
+          "timestamp": "2026-09-17T08:07:38.750Z",
+          "source": "slash_command"
+        },
+        {
+          "name": "ties-skill-code-v3",
+          "timestamp": "2026-09-17T09:13:03.298Z",
+          "source": "skill_tool"
+        },
+        {
+          "name": "ties-skill-code-v3",
+          "timestamp": "2026-09-17T15:12:17.817Z",
+          "source": "skill_tool"
+        }
+      ]
+    }
+  }
+}
