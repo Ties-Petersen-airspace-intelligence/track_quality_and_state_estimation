@@ -1,0 +1,10 @@
+[project]
+name = "track-quality-and-state-estimation"
+version = "0.1.0"
+requires-python = ">=3.14"
+dependencies = [
+    "grpcio-tools>=1.84.0",
+    "pandas>=3.0.5",
+    "protobuf>=7.36.1",
+    "pyarrow>=25.0.1",
+]
