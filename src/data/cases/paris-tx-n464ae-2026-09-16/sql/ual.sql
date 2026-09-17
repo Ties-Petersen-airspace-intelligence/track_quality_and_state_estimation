@@ -1,0 +1,1 @@
+SELECT * FROM `flyways.ual_integration.ual_positions` WHERE DATE(source_timestamp) = '2026-09-16' AND common.position_timestamp >= TIMESTAMP('2026-09-16 00:00:00') AND common.position_timestamp < TIMESTAMP('2026-09-16 01:00:00') AND common.latitude BETWEEN 32.91 AND 34.17 AND common.longitude BETWEEN -96.27 AND -95.03

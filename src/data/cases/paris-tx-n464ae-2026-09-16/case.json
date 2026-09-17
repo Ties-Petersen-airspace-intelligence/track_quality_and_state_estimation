@@ -1,0 +1,32 @@
+{
+ "name": "paris-tx-n464ae-2026-09-16",
+ "day": "2026-09-16",
+ "t_start": "2026-09-16 00:00:00",
+ "t_end": "2026-09-16 01:00:00",
+ "box": {
+  "lat_min": 32.91,
+  "lat_max": 34.17,
+  "lon_min": -96.27,
+  "lon_max": -95.03
+ },
+ "suspect": {
+  "callsign": "N464AE",
+  "hex": "A5A87C",
+  "fused_track_id": "AIR.64370"
+ },
+ "found_by": "case finder rule source_zigzag, case id source_zigzag-AIR.64370-000911",
+ "reason": "Three consecutive fused plots of track N464AE within 26.5 s: uAvionix, then ADS-B Exchange, then uAvionix again. The middle plot sits 4180 m off the straight line between its neighbours. Two sources disagree on where the aircraft is and fusion switches between them instead of smoothing. The aircraft is a light aircraft at 2700 to 3100 ft near Paris, Texas, with 16 other tracks in the original box.",
+ "notes": "Box is twice the case finder box. Window shifted to start at 00:00 so only one day partition is scanned. Pulled 2026-09-17, about 3.80 dollars.",
+ "rows": {
+  "adsbx": 91456,
+  "planefinder": 20383,
+  "uavionix": 59644,
+  "stdds": 0,
+  "tfms_ti": 854,
+  "tfms_or": 0,
+  "ual": 0,
+  "asa": 0,
+  "fusion_append": 16254,
+  "fusion_final": 26358
+ }
+}
