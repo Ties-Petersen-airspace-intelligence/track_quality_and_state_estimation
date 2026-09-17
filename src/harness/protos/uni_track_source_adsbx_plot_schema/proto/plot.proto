@@ -1,0 +1,111 @@
+syntax = "proto3";
+
+package uni_track_source_adsbx_plot_schema.proto.plot;
+
+import "uni_track_plot_schema/proto/plot.proto";
+
+// All BQ-related options are commented in order not to
+// break file generation for Python
+// import "bq_table.proto";
+// import "bq_field.proto";
+
+// adding comment to field, either above or after, allows to keep it for BQ
+// schema field description. in order to avoid the comment being added to a
+// particular field it needs to be surrounded by blank lines.
+
+enum ADSBXPlotType {
+    UNKNOWN = 0;
+    ADSB_ICAO = 1;
+    ADSB_ICAO_NT = 2;
+    ADSR_ICAO = 3;
+    TISB_ICAO = 4;
+    TISB_TRACKFILE = 5;
+    ADSC = 6;
+    MLAT = 7;
+    MODE_S = 8;
+    ADSB_OTHER = 9;
+    ADSR_OTHER = 10;
+    TISB_OTHER = 11;
+    OTHER = 12;
+}
+
+message LastPosition{
+    float lat = 1; // aircraft position in decimal degrees
+    float lon = 2; // aircraft position in decimal degrees
+    int64 nic = 3; // navigation integrity category
+    float rc = 4; // radius of containment in meters
+    float seen_pos = 5; // how long ago (in seconds before “now”) the position was last updated
+}
+
+
+message ADSBXPlot {
+    uni_track_plot_schema.proto.plot.Common common = 1;
+
+    string hex = 2; // ADSHEX code of the aircraft
+    ADSBXPlotType type = 3; // type of the plot
+    int64 messages = 4; // total number of Mode S messages received from this aircraft
+    float seen = 5; // how long ago (in seconds before “now”) a message was last received
+    optional float seen_pos = 6; // how long ago (in seconds before “now”) the position was last updated
+
+    // flight identification
+    string r = 7; // aircraft registration pulled from database
+    string t = 8; // aircraft type pulled from database
+    optional int64  dbFlags = 9; // bitfield for certain database flags
+    string flight = 10; // callsign
+
+    // position and movement
+    string alt_baro = 11; // the aircraft barometric altitude in feet as a number or ground as string
+    optional float alt_geom = 12; // geometric altitude in feet
+    optional float gs = 13; // ground speed in knots
+    optional float ias = 14; // indicated airspeed in knots
+    optional float tas = 15; // true airspeed in knots
+    optional float mach = 16; // mach number
+    optional float track = 17; // true track over ground in degrees
+    optional float track_rate = 18; // rate of change of track in degrees/second
+    optional float calc_track = 19; // calculated track over ground in degrees
+    optional float roll = 20; // roll, degrees, negative is left roll
+    optional float mag_heading = 21; // heading, degrees clockwise from magnetic north
+    optional float true_heading = 22; // heading, degrees clockwise from true north
+    optional float baro_rate = 23; // rate of change of barometric altitude in feet/minute
+    optional float geom_rate = 24; // rate of change of geometric altitude in feet/minute
+
+    optional LastPosition lastPosition = 25; // position when last update is older than 60 seconds
+    optional float rr_lat = 26; // rough estimated position for the aircraft based on the receiver’s estimated coordinates
+    optional float rr_lon = 27; // rough estimated position for the aircraft based on the receiver’s estimated coordinates
+    optional float gpsOkBefore = 28; //timestamp before GPS was working well (experimental)
+    optional float gpsOkLat = 29; // position before GPS was working well (experimental)
+    optional float gpsOkLon = 30; // position before GPS was working well (experimental)
+
+    // other
+    string squawk = 31; // mode A code encoded as 4 octal digits
+    string emergency = 32; // ADS-B emergency/priority status
+    string category = 33; // emitter category
+    optional int64 version = 34; // ADS-B version number
+    optional float rc = 35; // radius of containment in meters
+    optional int64 nic = 36; // navigation integrity category
+    optional int64 nic_baro = 37; // navigation integrity category for barometric altitude
+    optional int64 nac_p = 38; // navigation accuracy for position
+    optional int64 nac_v = 39; // navigation accuracy for velocity
+    optional int64 sil = 40; // source integrity level
+    string sil_type = 41; // interpretation of sil
+    optional int64 gva = 42; // geometric vertical accuracy
+    optional int64 sda = 43; // system design assurance
+    optional float nav_altitude_mcp = 44; // selected altitude from the Mode Control Panel
+    optional float nav_qnh = 45; // altimeter setting
+    optional float nav_altitude_fms = 46; // selected altitude from the Flight Management System
+    optional float nav_heading = 47; // selected heading
+    repeated string nav_modes = 48; // set of engaged automation modes
+    repeated string mlat = 49; // list of fields derived from MLAT data
+    repeated string tisb = 50; // list of fields derived from TIS-B data
+    optional float rssi = 51; // recent average RSSI (received signal strength indicator) in dbFS
+    optional int64 alert = 52; // flight status alert bit
+    optional int64 spi = 53; // flight status special position identification bit
+    optional int64 wd = 54; // wind direction
+    optional int64 ws = 55; // wind speed
+    optional float oat = 56; // outside air temperature in degrees Celsius
+    optional float tat = 57; // total air temperature in degrees Celsius
+    optional bytes acas_ra = 58; // experimental (no description in API docs)
+
+    int64 position_timestamp = 59; // timestamp of position same as in common - also here for BQ partitioning purposes
+    int64 response_timestamp = 60; // timestamp of the response from the API, to be used with seen and seen_pos
+}

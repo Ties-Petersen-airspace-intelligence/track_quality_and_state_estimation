@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package uni.protobuf.uni_track_schemas.fusion.v1beta;
+
+import "uni/protobuf/uni_track_schemas/fusion/v1beta/fused_plot.proto";
+
+// A sequence of fused plots representing a single tracked object
+// (typically an aircraft) over time. Ordered by
+// Common.position_timestamp ascending.
+message FusedTrack {
+  // Ordered plots that compose the track.
+  repeated FusedPlot plots = 1;
+}
+
+// Wire-equivalent to FusedTrack but with plots left as opaque bytes,
+// so intermediaries can re-serialize without paying to deserialize
+// each plot (used for high-throughput passthrough in the fusion
+// pipeline). To access plot fields, parse with FusedTrack instead.
+message FusedTrackBytes {
+  // Each entry is a serialized FusedPlot message.
+  repeated bytes plots = 1;
+}

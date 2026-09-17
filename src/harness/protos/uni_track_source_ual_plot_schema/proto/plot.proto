@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package uni_track_source_ual_plot_schema.proto.plot;
+
+import "uni_track_plot_schema/proto/plot.proto";
+
+message UalPlot {
+    uni_track_plot_schema.proto.plot.Common common = 1;
+
+    // datetime
+    int64 source_timestamp = 2;
+    string interface_version = 3;
+    string system_seq_number = 4;
+
+    // flight key
+    string airline_code_cid = 5;
+    string airline_code_iata = 6;
+    string airline_code_icao = 7;
+
+    int64 sched_dep_date_time = 8;
+    string sched_dep_icao = 9;
+    string flight_number = 10;
+    optional int64 flight_leg_instance_number = 11;
+    optional int64 stub_flight_number = 12;
+
+    // report key
+    int64 report_datetime = 13;
+
+    // report
+    string position = 14;
+    optional int64 speed = 15;
+    int64 altitude = 16;
+    int64 fuel = 17;
+    string air_temperature = 18;
+    string wind = 19;
+    string arrival_icao = 20;
+    string tail_number = 21;
+    string dispatch_desk = 22;
+}

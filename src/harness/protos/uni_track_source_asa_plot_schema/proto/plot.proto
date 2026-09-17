@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package uni_track_source_planefinder_plot_schema.proto.plot;
+
+import "uni_track_plot_schema/proto/plot.proto";
+
+message AsaPlot {
+    uni_track_plot_schema.proto.plot.Common common = 1;
+
+    // PositionReport
+    string present_position = 2; // Present FMC position
+    string last_waypoint = 3; // Last sequenced waypoint ID
+    string system_time = 4; // FMC system time HHMMSS
+    string present_altitude = 5; // Present FMC altitude unit: FlightLevel
+    string goto_waypoint_id = 6;
+    string eta_at_goto_waypoint = 7;
+    string following_goto_waypoint_id = 8;
+    string static_air_temp = 9; // Static air temperature, x deg C
+    string actual_wind = 10; // Actual wind, x deg at y knots
+    string total_fuel = 11; // Total fuel, x * 1000 pounds
+    string ground_speed = 12; // unit: knots
+    string true_air_speed = 13; // unit: knots
+    string calibrated_air_speed = 14;
+    string downlink_stimulus_number = 15; // Downlink stimulus number
+
+    // FlightInfo
+    string icao_airline_code = 16;
+    string flight_number = 17;
+    string aircraft_registration = 18;
+    string scheduled_departure_time = 19;
+    string icao_departure_airport = 20;
+
+    // Timestamp info
+    string current_time = 21;
+    string message_time = 22;
+
+    // parsed values
+    optional int32 wind_speed = 23; // unit: knots
+    optional int32 wind_direction = 24; // unit: degrees
+
+    optional int32 total_fuel_lbs = 25; // unit: pounds
+    optional int64 fuel_data_update_ts = 26; // last fuel data update timestamp
+
+    optional int64 scheduled_departure_time_ts = 27;
+    optional int64 eta_at_goto_waypoint_ts = 28;
+
+    optional int32 air_temperature = 29; // unit: celsius
+    optional int32 true_air_speed_kt = 30;
+    optional int32 calibrated_air_speed_kt = 31;
+
+    int64 position_timestamp = 32;
+    string raw_position_report = 33;
+}
