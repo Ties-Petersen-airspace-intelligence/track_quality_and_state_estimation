@@ -1,0 +1,1 @@
+SELECT * FROM `flyways-aws-prod.uni_track_source_stdds.uni_track_source_stdds_position_reports` WHERE DATE(position_timestamp) = '2026-09-16' AND position_timestamp >= TIMESTAMP('2026-09-16 05:00:00') AND position_timestamp < TIMESTAMP('2026-09-16 06:00:00') AND common.latitude BETWEEN 48.6 AND 49.8 AND common.longitude BETWEEN -123.775 AND -122.575
