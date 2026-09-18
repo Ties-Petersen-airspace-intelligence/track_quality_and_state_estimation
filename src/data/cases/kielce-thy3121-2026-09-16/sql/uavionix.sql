@@ -1,0 +1,1 @@
+SELECT * FROM `flyways-aws-prod.uni_track_source_uavionix.uni_track_source_uavionix_flightline_asterix_cat021` WHERE DATE(position_timestamp) = '2026-09-16' AND position_timestamp >= TIMESTAMP('2026-09-16 04:40:00') AND position_timestamp < TIMESTAMP('2026-09-16 05:40:00') AND common.latitude BETWEEN 50.19 AND 51.39 AND common.longitude BETWEEN 19.94 AND 21.19
