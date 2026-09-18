@@ -1,0 +1,85 @@
+src/data/cases/dubai-fr113-2026-09-16/sql/fusion_append.sql
+  7815a8e19a342c8c 1
+src/data/cases/dubai-fr113-2026-09-16/sql/adsbx.sql
+  7815a8e19a342c8c 1
+src/data/cases/dubai-fr113-2026-09-16/sql/stdds.sql
+  7815a8e19a342c8c 1
+src/data/cases/dubai-fr113-2026-09-16/sql/ual.sql
+  7815a8e19a342c8c 1
+src/data/cases/dubai-fr113-2026-09-16/sql/asa.sql
+  7815a8e19a342c8c 1
+src/data/cases/dubai-fr113-2026-09-16/sql/tfms_ti.sql
+  7815a8e19a342c8c 1
+src/data/cases/dubai-fr113-2026-09-16/case.json
+  7815a8e19a342c8c 1-32
+src/data/cases/dubai-fr113-2026-09-16/sql/tfms_or.sql
+  7815a8e19a342c8c 1
+src/data/cases/dubai-fr113-2026-09-16/sql/fusion_final.sql
+  7815a8e19a342c8c 1
+src/data/cases/dubai-fr113-2026-09-16/sql/planefinder.sql
+  7815a8e19a342c8c 1
+src/data/cases/dubai-fr113-2026-09-16/sql/uavionix.sql
+  7815a8e19a342c8c 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.5",
+  "base_commit_sha": "4c8a45eba394c04a0567a33f1a11c174aef4670f",
+  "prompts": {
+    "7815a8e19a342c8c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9c8adca8-79b9-4752-b2c6-5004db0ff1d5",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Ties Petersen",
+      "messages": [],
+      "total_additions": 45881,
+      "total_deletions": 42,
+      "accepted_lines": 45839,
+      "overriden_lines": 0,
+      "messages_url": "https://uni-git-ai-cas.sre.aws.ai-internal.com//cas/f471aeea5223ee588a311a4d35c593d919a7aee808faca8778e050e90a9f6ede",
+      "context_window_samples": [
+        {
+          "used_tokens": 891016,
+          "timestamp": "2026-09-18T12:59:23.874Z"
+        },
+        {
+          "used_tokens": 892349,
+          "timestamp": "2026-09-18T13:02:04.484Z"
+        },
+        {
+          "used_tokens": 894187,
+          "timestamp": "2026-09-18T13:03:49.457Z"
+        }
+      ],
+      "skill_usages": [
+        {
+          "name": "context",
+          "timestamp": "2026-09-16T07:24:49.697Z",
+          "source": "slash_command"
+        },
+        {
+          "name": "compact",
+          "timestamp": "2026-09-17T08:07:38.750Z",
+          "source": "slash_command"
+        },
+        {
+          "name": "ties-skill-code-v3",
+          "timestamp": "2026-09-17T09:13:03.298Z",
+          "source": "skill_tool"
+        },
+        {
+          "name": "ties-skill-code-v3",
+          "timestamp": "2026-09-17T15:12:17.817Z",
+          "source": "skill_tool"
+        },
+        {
+          "name": "context",
+          "timestamp": "2026-09-18T06:37:56.934Z",
+          "source": "slash_command"
+        }
+      ]
+    }
+  }
+}
