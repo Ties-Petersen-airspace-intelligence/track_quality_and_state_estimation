@@ -1,0 +1,1 @@
+SELECT * FROM `flyways.tfms_or_positions.tfms_or_positions` WHERE DATE(position_timestamp) = '2026-09-16' AND common.position_timestamp >= TIMESTAMP('2026-09-16 04:40:00') AND common.position_timestamp < TIMESTAMP('2026-09-16 05:40:00') AND common.latitude BETWEEN 50.19 AND 51.39 AND common.longitude BETWEEN 19.94 AND 21.19
