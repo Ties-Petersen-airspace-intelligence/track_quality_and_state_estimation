@@ -1,0 +1,1 @@
+SELECT * FROM `flyways.planefinder_positions.planefinder_positions` WHERE DATE(pos_update_time) = '2026-09-16' AND common.position_timestamp >= TIMESTAMP('2026-09-16 05:00:00') AND common.position_timestamp < TIMESTAMP('2026-09-16 06:00:00') AND common.latitude BETWEEN 23.757 AND 24.957 AND common.longitude BETWEEN 55.015 AND 56.216
