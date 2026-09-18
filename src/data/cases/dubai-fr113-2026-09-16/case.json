@@ -1,0 +1,32 @@
+{
+ "name": "dubai-fr113-2026-09-16",
+ "day": "2026-09-16",
+ "t_start": "2026-09-16 05:00:00",
+ "t_end": "2026-09-16 06:00:00",
+ "box": {
+  "lat_min": 23.757,
+  "lat_max": 24.957,
+  "lon_min": 55.015,
+  "lon_max": 56.216
+ },
+ "suspect": {
+  "callsign": "FR113",
+  "hex": "896C16",
+  "fused_track_id": "AIR.8354"
+ },
+ "found_by": "case finder rule source_zigzag, case id source_zigzag-AIR.8354-052810",
+ "reason": "Between 05:22 and 05:28 UTC near Dubai, consecutive fused plots of FR113 alternate between PlaneFinder and ADS-B Exchange with the middle plot up to 3 km off the line between its neighbours, plus one 2,525 kt jump. Two sources disagree on where the aircraft is and fusion switches between them.",
+ "notes": "Box is twice the case finder box, centred on the hits. Window is the hour around the hits so only one day partition is scanned.",
+ "rows": {
+  "adsbx": 53737,
+  "planefinder": 26983,
+  "uavionix": 0,
+  "stdds": 0,
+  "tfms_ti": 0,
+  "tfms_or": 0,
+  "ual": 0,
+  "asa": 0,
+  "fusion_append": 12620,
+  "fusion_final": 20167
+ }
+}
