@@ -124,7 +124,7 @@ message AsterixCat021 {
   // Data Item I021/160 - Airborne Ground Vector
   message AirborneGroundVector {
     optional bool is_range_exceeded = 1;
-    optional double ground_speed = 2; // knots
+    optional double ground_speed = 2; // NM/s (I021/160 LSB 2^-14 NM/s); the integration converts to knots since TS-1929
     optional double track_angle = 3; // degrees
   }
 
