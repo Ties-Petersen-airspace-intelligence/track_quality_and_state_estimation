@@ -1,0 +1,151 @@
+src/harness/runs.py
+  9a4e422589070266 1-95
+src/harness/viewer/server.py
+  9a4e422589070266 16-17,34-40,61-70,80,112,128,156,161-163,173-185
+src/harness/run.py
+  9a4e422589070266 3-4,6-10,22,29,31,33-40,45,48,57,66-70
+src/harness/production.py
+  9a4e422589070266 3,5-6,15,19-20,66-67,69-72,74,76,83,86,94-98,101-104
+src/harness/viewer/viewer.html
+  9a4e422589070266 117-139,149-150,186,303-313,348-352,362,403-405,409,430,435-509,515,543,547-548,550,626,859-861,914,959,961,967-968,989,1039,1041,1051,1055,1062
+  37be85dfe488ec96 206,222-223,556-561,589-590,605-606,608-613,616-617,698
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.5",
+  "base_commit_sha": "6a3ceff5d80c796de0817158f1763a3e8b137fbe",
+  "prompts": {
+    "37be85dfe488ec96": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7f29d15f-e3bf-4191-8331-edd9784c5f52",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Ties Petersen",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 15,
+      "overriden_lines": 0,
+      "context_window_samples": [
+        {
+          "used_tokens": 556091,
+          "timestamp": "2026-09-22T11:03:39.737Z"
+        },
+        {
+          "used_tokens": 558084,
+          "timestamp": "2026-09-22T11:03:58.017Z"
+        },
+        {
+          "used_tokens": 562485,
+          "timestamp": "2026-09-22T11:26:45.768Z"
+        },
+        {
+          "used_tokens": 564070,
+          "timestamp": "2026-09-22T11:28:20.897Z"
+        }
+      ],
+      "skill_usages": [
+        {
+          "name": "master-guide",
+          "timestamp": "2026-09-21T11:37:01.578Z",
+          "source": "skill_tool"
+        }
+      ]
+    },
+    "9a4e422589070266": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d5fce6a1-fbde-4eeb-9535-46674b4e412a",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Ties Petersen",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 421,
+      "overriden_lines": 0,
+      "context_window_samples": [
+        {
+          "used_tokens": 254938,
+          "timestamp": "2026-09-21T13:32:24.198Z"
+        },
+        {
+          "used_tokens": 265439,
+          "timestamp": "2026-09-21T13:34:07.039Z"
+        },
+        {
+          "used_tokens": 278250,
+          "timestamp": "2026-09-21T13:35:44.187Z"
+        },
+        {
+          "used_tokens": 290103,
+          "timestamp": "2026-09-21T13:36:42.540Z"
+        },
+        {
+          "used_tokens": 296795,
+          "timestamp": "2026-09-21T13:37:44.991Z"
+        },
+        {
+          "used_tokens": 300410,
+          "timestamp": "2026-09-21T13:38:33.829Z"
+        },
+        {
+          "used_tokens": 308994,
+          "timestamp": "2026-09-21T13:43:53.735Z"
+        },
+        {
+          "used_tokens": 314495,
+          "timestamp": "2026-09-21T13:46:28.837Z"
+        },
+        {
+          "used_tokens": 319395,
+          "timestamp": "2026-09-21T13:49:23.472Z"
+        },
+        {
+          "used_tokens": 327506,
+          "timestamp": "2026-09-21T13:51:39.568Z"
+        },
+        {
+          "used_tokens": 559593,
+          "timestamp": "2026-09-22T07:42:06.709Z"
+        },
+        {
+          "used_tokens": 563331,
+          "timestamp": "2026-09-22T07:42:43.101Z"
+        },
+        {
+          "used_tokens": 566905,
+          "timestamp": "2026-09-22T07:43:41.998Z"
+        },
+        {
+          "used_tokens": 568821,
+          "timestamp": "2026-09-22T07:44:25.831Z"
+        },
+        {
+          "used_tokens": 574572,
+          "timestamp": "2026-09-22T07:47:04.868Z"
+        },
+        {
+          "used_tokens": 578974,
+          "timestamp": "2026-09-22T07:47:32.024Z"
+        },
+        {
+          "used_tokens": 585361,
+          "timestamp": "2026-09-22T07:51:38.695Z"
+        },
+        {
+          "used_tokens": 602212,
+          "timestamp": "2026-09-22T07:54:16.317Z"
+        }
+      ],
+      "skill_usages": [
+        {
+          "name": "master-guide",
+          "timestamp": "2026-09-21T11:37:01.578Z",
+          "source": "skill_tool"
+        }
+      ]
+    }
+  }
+}
