@@ -867,8 +867,6 @@ function crossTrack(lat1, lon1, lat2, lon2, lat, lon) {
 // each chart: how to get a value for a raw plot and for a strategy plot
 const CHARTS = [   // raw: value for a raw plot index; run: value for a strategy plot index
   { id:"alt", title:"Altitude, shared altitude_ft field", unit:"ft", raw:i => RAW.alt[i], run:(r, i) => r.alt[i], note:"What every consumer reads. uAvionix puts its geometric (GPS) height here; all other sources put barometric altitude here, so uAvionix sits hundreds to thousands of feet above the rest of the same aircraft." },
-  { id:"altBaro", title:"Barometric altitude, source's own field", unit:"ft", raw:i => RAW.alt_baro[i], run:null, note:"Raw plots only. ADS-B Exchange alt_baro, PlaneFinder altitude, uAvionix flight_level × 100, TFMS and ACARS altitude_ft. Strategy plots carry one altitude of unknown kind, so they are not drawn here." },
-  { id:"altGeo", title:"Geometric height, source's own field", unit:"ft", raw:i => RAW.alt_geo[i], run:null, note:"Raw plots only. ADS-B Exchange alt_geom and uAvionix geometric_height. PlaneFinder and TFMS send no geometric height, so their series stay empty." },
   { id:"gs", title:"Ground speed", unit:"kt", raw:i => RAW.gs[i], run:(r, i) => r.gs[i] },
   { id:"trk", title:"Track angle", unit:"deg", raw:i => RAW.trk[i] ?? RAW.hdg[i], run:(r, i) => r.trk[i] ?? r.hdg[i] },
   { id:"late", title:"Lateness, received minus position time", unit:"s", raw:i => (RAW.r[i] - RAW.t[i]) / 1000, run:(r, i) => (r.r[i] - r.t[i]) / 1000 },
@@ -876,6 +874,8 @@ const CHARTS = [   // raw: value for a raw plot index; run: value for a strategy
   { id:"gap", title:"Time since previous plot of the same source", unit:"s", raw:i => derived.gap[i], run:null },
   { id:"vrate", title:"Vertical rate from altitude changes", unit:"ft/min", raw:i => derived.vrate[i], run:null, zero:true },
   { id:"used", title:"Which source each strategy track used", unit:"source", raw:null, run:(r, i) => r.src[i], categorical:true },
+  { id:"altBaro", title:"Barometric altitude, source's own field", unit:"ft", raw:i => RAW.alt_baro[i], run:null, note:"Raw plots only. ADS-B Exchange alt_baro, PlaneFinder altitude, uAvionix flight_level × 100, TFMS and ACARS altitude_ft. Strategy plots carry one altitude of unknown kind, so they are not drawn here." },
+  { id:"altGeo", title:"Geometric height, source's own field", unit:"ft", raw:i => RAW.alt_geo[i], run:null, note:"Raw plots only. ADS-B Exchange alt_geom and uAvionix geometric_height. PlaneFinder and TFMS send no geometric height, so their series stay empty." },
 ];
 const chartHeight = {};   // chart id -> height in px, kept when the charts are rebuilt
 const hiddenSeries = {};  // chart id -> set of series labels switched off in the legend, kept when the charts are rebuilt
