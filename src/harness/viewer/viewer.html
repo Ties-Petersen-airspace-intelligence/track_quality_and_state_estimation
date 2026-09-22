@@ -737,7 +737,7 @@ function setHover(h, x, y) {
 }
 function describe(p) {
   const d = table(p.kind), i = p.i, raw = p.kind === "raw";
-  return `<b>${d.cs[i] || "no callsign"}</b> · hex ${d.hex[i] || "–"} · tail ${d.tail[i] || "–"}<br>${raw ? "raw plot" : p.kind + " · track " + d.track[i] + " · " + d.quality[i]} · ${srcName(p.kind, i)}<br>position ${fmtMs(d.t[i])} · received ${fmt(d.r[i])} (${((d.r[i] - d.t[i]) / 1000).toFixed(2)} s late)${!raw ? `<br>emitted ${fmt(d.created[i])}${d.valid_to[i] != null ? ` · replaced ${fmt(d.valid_to[i])}` : ""}` : ""}<br>alt ${d.alt[i] ?? "–"} ft · ${d.gs[i] ?? "–"} kt · trk ${d.trk[i] ?? "–"} · hdg ${d.hdg[i] ?? "–"}${raw ? ` · source track ${d.tid[i]}` : ""}${raw ? qualityLine(i) : ""}${raw ? usedLine(i) : ""}`;
+  return `<b>${d.cs[i] || "no callsign"}</b> · hex ${d.hex[i] || "–"} · tail ${d.tail[i] || "–"}<br>${raw ? "raw plot" : p.kind + " · track " + d.track[i] + " · " + d.quality[i]} · ${srcName(p.kind, i)}${raw && RAW.kind && RAW.kind[i] ? " · " + RAW.kind[i] : ""}<br>position ${fmtMs(d.t[i])} · received ${fmt(d.r[i])} (${((d.r[i] - d.t[i]) / 1000).toFixed(2)} s late)${!raw ? `<br>emitted ${fmt(d.created[i])}${d.valid_to[i] != null ? ` · replaced ${fmt(d.valid_to[i])}` : ""}` : ""}<br>alt ${d.alt[i] ?? "–"} ft · ${d.gs[i] ?? "–"} kt · trk ${d.trk[i] ?? "–"} · hdg ${d.hdg[i] ?? "–"}${raw ? ` · source track ${d.tid[i]}` : ""}${raw ? qualityLine(i) : ""}${raw ? usedLine(i) : ""}`;
 }
 function qualityLine(i) {
   const parts = [];

@@ -89,7 +89,7 @@ Click a legend item to hide or show a series, shift click to show only that one,
 
 **The address bar** carries the whole view: case, compared tracks, timeline position, zoom window, map position and every toggle. It updates as you work, so copying it at any moment gives a link that opens the same view.
 
-**Pins.** Shift click a plot on the map, or click a point in a chart, to pin it. Hovering a point anywhere rings it on the map and in every chart. Up to two pins, numbered on the map and the charts, with the differences between them listed above the charts: seconds apart in position time, metres apart, the speed that distance would need, feet and knots apart, and how far apart we received them. Click a pin's card to remove it, escape clears both.
+**Pins.** Shift click a plot on the map, or click a point in a chart, to pin it. Hovering a point anywhere rings it on the map and in every chart, and the card on the map names the kind of plot inside the source where a source has more than one: ADS-B, MLAT, ADS-R or TIS-B for ADS-B Exchange, ADS-B, PlaneFinder MLAT or third party MLAT for PlaneFinder. Up to two pins, numbered on the map and the charts, with the differences between them listed above the charts: seconds apart in position time, metres apart, the speed that distance would need, feet and knots apart, and how far apart we received them. Click a pin's card to remove it, escape clears both.
 
 ## About the protos
 

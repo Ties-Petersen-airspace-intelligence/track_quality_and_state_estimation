@@ -38,6 +38,19 @@ def num(f: pd.DataFrame, col: str | None) -> pd.Series:
     return pd.to_numeric(f[col], errors="coerce")
 
 
+ADSBX_TYPE = {1: "ADS-B", 2: "ADS-B, no position in message", 3: "ADS-R", 4: "TIS-B", 5: "TIS-B track file", 6: "ADS-C", 7: "MLAT", 8: "Mode S only", 9: "ADS-B other", 10: "ADS-R other", 11: "TIS-B other", 12: "other"}
+PF_SOURCE = {1: "ADS-B", 2: "PlaneFinder MLAT", 3: "FLARM", 4: "third party MLAT", 5: "blocked"}
+
+
+def plot_kind(f: pd.DataFrame, source: str) -> pd.Series:
+    """The kind of plot inside a source, as words, or empty when the source has only one kind."""
+    if source == "adsbx" and "type" in f.columns:
+        return pd.to_numeric(f["type"], errors="coerce").map(ADSBX_TYPE).fillna("")
+    if source == "planefinder" and "data_source" in f.columns:
+        return pd.to_numeric(f["data_source"], errors="coerce").map(PF_SOURCE).fillna("")
+    return pd.Series([""] * len(f))
+
+
 def load_raw(case: pathlib.Path, t0_us: int) -> dict:
     parts = []
     for source in RAW_SOURCES:
@@ -68,6 +81,8 @@ def load_raw(case: pathlib.Path, t0_us: int) -> dict:
             alt_geo=num(f, {"adsbx": "alt_geom", "uavionix": "geometric_height"}.get(source)),
             nacv=num(f, {"adsbx": "nac_v", "uavionix": "quality_indicators.nucr_or_nacv"}.get(source)),
             sil=num(f, {"adsbx": "sil", "uavionix": "quality_indicators.sil", "stdds": "status.sil"}.get(source)),
+            # the kind of plot inside the source: ADS-B Exchange's type, PlaneFinder's data_source; empty when the source has only one kind
+            kind=plot_kind(f, source),
             _pos_us=micros("position_timestamp").astype("Int64"),
         )))
     frame = pd.concat(parts, ignore_index=True).sort_values("r").reset_index(drop=True)
