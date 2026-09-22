@@ -1,0 +1,301 @@
+src/analysis/sql/fused_uavionix_share.sql
+  9a4e422589070266 1-6
+src/analysis/sql/uavionix_altitude_by_band.sql
+  9a4e422589070266 1-11
+src/analysis/source_accuracy.py
+  57a87aa366dd0565 3-296
+src/analysis/sql/uavionix_altitude_by_region.sql
+  9a4e422589070266 1-19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.5",
+  "base_commit_sha": "815812951f600cda40e11233b5caf9550df255f3",
+  "prompts": {
+    "37be85dfe488ec96": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7f29d15f-e3bf-4191-8331-edd9784c5f52",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Ties Petersen",
+      "messages": [],
+      "total_additions": 18,
+      "total_deletions": 8,
+      "accepted_lines": 15,
+      "overriden_lines": 0,
+      "messages_url": "https://uni-git-ai-cas.sre.aws.ai-internal.com//cas/1c252eb5c79e139e58effe7caccc925692c9c6af6553918f9076ccde4d828332",
+      "context_window_samples": [
+        {
+          "used_tokens": 556091,
+          "timestamp": "2026-09-22T11:03:39.737Z"
+        },
+        {
+          "used_tokens": 558084,
+          "timestamp": "2026-09-22T11:03:58.017Z"
+        },
+        {
+          "used_tokens": 564070,
+          "timestamp": "2026-09-22T11:28:20.897Z"
+        }
+      ],
+      "skill_usages": [
+        {
+          "name": "master-guide",
+          "timestamp": "2026-09-21T11:37:01.578Z",
+          "source": "skill_tool"
+        }
+      ]
+    },
+    "57a87aa366dd0565": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5ac02de7-374c-4ccf-b715-4fe2789396a8",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Ties Petersen",
+      "messages": [],
+      "total_additions": 210,
+      "total_deletions": 90,
+      "accepted_lines": 203,
+      "overriden_lines": 0,
+      "messages_url": "https://uni-git-ai-cas.sre.aws.ai-internal.com//cas/f1125bfdd91b532e64f123dc26a9e870712e0100bc7a3c90f902fceddd7cdaa4",
+      "context_window_samples": [
+        {
+          "used_tokens": 104090,
+          "timestamp": "2026-09-21T11:00:23.475Z"
+        },
+        {
+          "used_tokens": 114769,
+          "timestamp": "2026-09-21T11:00:51.086Z"
+        },
+        {
+          "used_tokens": 223151,
+          "timestamp": "2026-09-21T12:16:07.831Z"
+        }
+      ],
+      "skill_usages": [
+        {
+          "name": "context",
+          "timestamp": "2026-09-16T07:24:49.697Z",
+          "source": "slash_command"
+        },
+        {
+          "name": "compact",
+          "timestamp": "2026-09-17T08:07:38.750Z",
+          "source": "slash_command"
+        },
+        {
+          "name": "ties-skill-code-v3",
+          "timestamp": "2026-09-17T09:13:03.298Z",
+          "source": "skill_tool"
+        },
+        {
+          "name": "ties-skill-code-v3",
+          "timestamp": "2026-09-17T15:12:17.817Z",
+          "source": "skill_tool"
+        },
+        {
+          "name": "context",
+          "timestamp": "2026-09-18T06:37:56.934Z",
+          "source": "slash_command"
+        },
+        {
+          "name": "master-guide",
+          "timestamp": "2026-09-21T11:37:01.578Z",
+          "source": "skill_tool"
+        }
+      ]
+    },
+    "7815a8e19a342c8c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9c8adca8-79b9-4752-b2c6-5004db0ff1d5",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Ties Petersen",
+      "messages": [],
+      "total_additions": 1252,
+      "total_deletions": 25,
+      "accepted_lines": 0,
+      "overriden_lines": 0,
+      "messages_url": "https://uni-git-ai-cas.sre.aws.ai-internal.com//cas/47dd24cf913d8e6028d63c7d12404210c46445ef1594a3c8fb871b22aa7b31df",
+      "context_window_samples": [
+        {
+          "used_tokens": 908319,
+          "timestamp": "2026-09-21T09:02:32.433Z"
+        },
+        {
+          "used_tokens": 918649,
+          "timestamp": "2026-09-21T09:08:58.568Z"
+        },
+        {
+          "used_tokens": 925140,
+          "timestamp": "2026-09-21T09:13:04.682Z"
+        },
+        {
+          "used_tokens": 942831,
+          "timestamp": "2026-09-21T10:07:38.442Z"
+        },
+        {
+          "used_tokens": 954736,
+          "timestamp": "2026-09-21T10:26:44.075Z"
+        }
+      ],
+      "skill_usages": [
+        {
+          "name": "context",
+          "timestamp": "2026-09-16T07:24:49.697Z",
+          "source": "slash_command"
+        },
+        {
+          "name": "compact",
+          "timestamp": "2026-09-17T08:07:38.750Z",
+          "source": "slash_command"
+        },
+        {
+          "name": "ties-skill-code-v3",
+          "timestamp": "2026-09-17T09:13:03.298Z",
+          "source": "skill_tool"
+        },
+        {
+          "name": "ties-skill-code-v3",
+          "timestamp": "2026-09-17T15:12:17.817Z",
+          "source": "skill_tool"
+        },
+        {
+          "name": "context",
+          "timestamp": "2026-09-18T06:37:56.934Z",
+          "source": "slash_command"
+        }
+      ]
+    },
+    "9a4e422589070266": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d5fce6a1-fbde-4eeb-9535-46674b4e412a",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Ties Petersen",
+      "messages": [],
+      "total_additions": 720,
+      "total_deletions": 73,
+      "accepted_lines": 456,
+      "overriden_lines": 3,
+      "messages_url": "https://uni-git-ai-cas.sre.aws.ai-internal.com//cas/f38f78ca3a99adc6de0030c4a7248a34dbf0be449f539765c18c572625dfa7eb",
+      "context_window_samples": [
+        {
+          "used_tokens": 254938,
+          "timestamp": "2026-09-21T13:32:24.198Z"
+        },
+        {
+          "used_tokens": 265439,
+          "timestamp": "2026-09-21T13:34:07.039Z"
+        },
+        {
+          "used_tokens": 278250,
+          "timestamp": "2026-09-21T13:35:44.187Z"
+        },
+        {
+          "used_tokens": 290103,
+          "timestamp": "2026-09-21T13:36:42.540Z"
+        },
+        {
+          "used_tokens": 296795,
+          "timestamp": "2026-09-21T13:37:44.991Z"
+        },
+        {
+          "used_tokens": 300410,
+          "timestamp": "2026-09-21T13:38:33.829Z"
+        },
+        {
+          "used_tokens": 308994,
+          "timestamp": "2026-09-21T13:43:53.735Z"
+        },
+        {
+          "used_tokens": 314495,
+          "timestamp": "2026-09-21T13:46:28.837Z"
+        },
+        {
+          "used_tokens": 319395,
+          "timestamp": "2026-09-21T13:49:23.472Z"
+        },
+        {
+          "used_tokens": 327506,
+          "timestamp": "2026-09-21T13:51:39.568Z"
+        },
+        {
+          "used_tokens": 559593,
+          "timestamp": "2026-09-22T07:42:06.709Z"
+        },
+        {
+          "used_tokens": 563331,
+          "timestamp": "2026-09-22T07:42:43.101Z"
+        },
+        {
+          "used_tokens": 566905,
+          "timestamp": "2026-09-22T07:43:41.998Z"
+        },
+        {
+          "used_tokens": 568821,
+          "timestamp": "2026-09-22T07:44:25.831Z"
+        },
+        {
+          "used_tokens": 574572,
+          "timestamp": "2026-09-22T07:47:04.868Z"
+        },
+        {
+          "used_tokens": 578974,
+          "timestamp": "2026-09-22T07:47:32.024Z"
+        },
+        {
+          "used_tokens": 602212,
+          "timestamp": "2026-09-22T07:54:16.317Z"
+        }
+      ],
+      "skill_usages": [
+        {
+          "name": "master-guide",
+          "timestamp": "2026-09-21T11:37:01.578Z",
+          "source": "skill_tool"
+        }
+      ]
+    },
+    "b399e2b5e454d500": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "296f1a46-39c7-432b-91b4-359561334504",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Ties Petersen",
+      "messages": [],
+      "total_additions": 15,
+      "total_deletions": 1,
+      "accepted_lines": 0,
+      "overriden_lines": 0,
+      "messages_url": "https://uni-git-ai-cas.sre.aws.ai-internal.com//cas/546b0de8372a775c67c25ca70f6d20061d4072db1616e48a453ab00daad1b8ff",
+      "context_window_samples": [
+        {
+          "used_tokens": 665397,
+          "timestamp": "2026-09-22T09:40:03.068Z"
+        },
+        {
+          "used_tokens": 703800,
+          "timestamp": "2026-09-22T10:30:43.524Z"
+        }
+      ],
+      "skill_usages": [
+        {
+          "name": "master-guide",
+          "timestamp": "2026-09-21T11:37:01.578Z",
+          "source": "skill_tool"
+        },
+        {
+          "name": "ties-skill-code-v3",
+          "timestamp": "2026-09-22T08:00:42.354Z",
+          "source": "skill_tool"
+        }
+      ]
+    }
+  }
+}
