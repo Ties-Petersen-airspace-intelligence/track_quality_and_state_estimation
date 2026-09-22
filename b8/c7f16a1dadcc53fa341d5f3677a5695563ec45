@@ -1,0 +1,88 @@
+src/harness/viewer/viewer.html
+  6c9faa6b8be14604 564-566,623,626
+src/harness/README.md
+  6c9faa6b8be14604 73
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.5",
+  "base_commit_sha": "b8c7f16a1dadcc53fa341d5f3677a5695563ec45",
+  "prompts": {
+    "6c9faa6b8be14604": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4a460faa-453c-4ce3-8af4-f74da897cc42",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Ties Petersen",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 71,
+      "overriden_lines": 0,
+      "messages_url": "https://uni-git-ai-cas.sre.aws.ai-internal.com//cas/c622175e28f731dae7b65c18733e5fa4928726a34162e006e8d4b717bd4227af",
+      "context_window_samples": [
+        {
+          "used_tokens": 78899,
+          "timestamp": "2026-09-22T15:46:47.171Z"
+        },
+        {
+          "used_tokens": 80180,
+          "timestamp": "2026-09-22T15:46:52.221Z"
+        },
+        {
+          "used_tokens": 81350,
+          "timestamp": "2026-09-22T15:46:57.793Z"
+        },
+        {
+          "used_tokens": 86270,
+          "timestamp": "2026-09-22T15:47:11.348Z"
+        },
+        {
+          "used_tokens": 87007,
+          "timestamp": "2026-09-22T15:47:15.726Z"
+        },
+        {
+          "used_tokens": 90323,
+          "timestamp": "2026-09-22T15:47:36.456Z"
+        },
+        {
+          "used_tokens": 95284,
+          "timestamp": "2026-09-22T15:47:54.884Z"
+        },
+        {
+          "used_tokens": 95639,
+          "timestamp": "2026-09-22T15:48:05.360Z"
+        },
+        {
+          "used_tokens": 114970,
+          "timestamp": "2026-09-22T16:19:21.348Z"
+        },
+        {
+          "used_tokens": 121612,
+          "timestamp": "2026-09-22T16:19:48.718Z"
+        },
+        {
+          "used_tokens": 130113,
+          "timestamp": "2026-09-22T16:21:34.774Z"
+        },
+        {
+          "used_tokens": 131744,
+          "timestamp": "2026-09-22T16:21:55.421Z"
+        }
+      ],
+      "skill_usages": [
+        {
+          "name": "task",
+          "timestamp": "2026-09-22T15:45:57.753Z",
+          "source": "slash_command"
+        },
+        {
+          "name": "pause",
+          "timestamp": "2026-09-22T16:13:41.014Z",
+          "source": "slash_command"
+        }
+      ]
+    }
+  }
+}
