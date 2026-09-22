@@ -220,7 +220,6 @@
     <div class="field"><span class="label">strategy colour</span><select id="runColour"><option value="run">by strategy</option><option value="track">by track id (TOID)</option></select></div>
     <div class="field"><span class="label">fade over</span><select id="fadeWin"><option value="10">10 s</option><option value="30">30 s</option><option value="60">1 min</option><option value="120">2 min</option><option value="300">5 min</option><option value="900" selected>15 min</option><option value="0">never</option><option value="custom">custom…</option></select><input type="text" id="fadeCustom" placeholder="seconds" style="width:5rem; display:none"></div>
     <div class="field"><span class="label">raw plot size</span><select id="rawSize"><option value="fixed">fixed</option><option value="nacp">NACp accuracy radius</option><option value="nic">NIC containment radius</option></select></div>
-    <div class="help">In a radius mode, plots that do not carry that number stay as grey dots of the normal size.</div>
     <div class="row" style="margin-top:0.4rem"><label><input type="checkbox" id="qualityOnly"> only plots that carry NIC or NACp</label></div>
     <div class="row"><label><input type="checkbox" id="greyOthers" checked> grey out tracks not being compared</label></div>
   </section>
@@ -562,7 +561,9 @@ const chartWidth = () => $("charts").clientWidth - 30;
 
 // ---------- colours ----------
 const DROPPED = [62, 68, 76];
-const PLAIN = [205, 212, 220];   // plots without the number a size mode asks for: light grey, so they stand out from the dark map and the muted tracks
+const PLAIN = [205, 212, 220];   // plots that do not carry the number a size mode asks for: light grey, so they stand out from the dark map and the muted tracks
+const UNKNOWN = [255, 255, 255];  // plots that carry it with value 0, the aircraft saying "accuracy unknown": bright white
+const plainValue = (i, mode) => mode === "nacp" ? RAW.nacp[i] : mode === "nic" ? RAW.nic[i] : null;
 // DO-260B: NACp -> 95 % position error radius, NIC -> containment radius, metres
 const NACP_M = {11:3, 10:10, 9:30, 8:92.6, 7:185.2, 6:555.6, 5:926, 4:1852, 3:3704, 2:7408, 1:18520};
 const NIC_M = {11:7.5, 10:25, 9:75, 8:185.2, 7:370.4, 6:1111.2, 5:1852, 4:3704, 3:7408, 2:14816, 1:37040};
@@ -619,10 +620,10 @@ function draw() {
     const plain = sized ? idx.filter(i => plotRadiusM(i, sizeMode) == null) : [];
     const sizedIdx = sized ? idx.filter(i => plotRadiusM(i, sizeMode) != null) : idx;
     if (plain.length) rawLayers.push(new deck.ScatterplotLayer({ id:"raw-plain", data:plain, getPosition:i => [RAW.lon[i], RAW.lat[i]], radiusUnits:"pixels",
-      getRadius:i => emph("raw", i) ? 3.5 : 2.4, getFillColor:i => [...PLAIN, alpha(RAW.t[i])],
+      getRadius:i => emph("raw", i) ? 3.5 : 2.4, getFillColor:i => [...(plainValue(i, sizeMode) === 0 ? UNKNOWN : PLAIN), alpha(RAW.t[i])],
       getLineColor:i => { const c = emph("raw", i); return c ? [...c.color, alpha(RAW.t[i])] : [0, 0, 0, 0]; }, stroked:true, lineWidthUnits:"pixels", getLineWidth:i => emph("raw", i) ? 1.5 : 0,
       pickable:true, onHover:info => mapHover(info, "raw"),
-      updateTriggers:{ getFillColor:[now, fadeMs, showLate], getLineColor:[now, fadeMs, compare, showLate], getRadius:[compare], getLineWidth:[compare] } }));
+      updateTriggers:{ getFillColor:[now, fadeMs, showLate, sizeMode], getLineColor:[now, fadeMs, compare, showLate], getRadius:[compare], getLineWidth:[compare] } }));
     rawLayers.push(new deck.ScatterplotLayer({ id:"raw", data:sizedIdx, getPosition:i => [RAW.lon[i], RAW.lat[i]], radiusUnits:sized ? "meters" : "pixels", radiusMinPixels:sized ? 1.5 : 0,
       getRadius:i => sized ? plotRadiusM(i, sizeMode) : (emph("raw", i) ? 3.5 : 2.2),
       getFillColor:i => [...(grey && !emph("raw", i) ? GREY : rawColor(i, mode)), sized ? Math.round(alpha(RAW.t[i]) * 0.18) : alpha(RAW.t[i])],
