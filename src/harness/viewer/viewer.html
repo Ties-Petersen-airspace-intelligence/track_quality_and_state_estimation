@@ -203,7 +203,7 @@
   <h1>Track harness</h1>
   <select id="caseSel" title="switch case"><option>loading…</option></select>
   <button id="resetView" title="back to the default view of this case: nothing compared, timeline at the start, all toggles as they open">reset view</button>
-  <div class="right"><span id="sub"></span><span class="dim">viewer build 2026-09-22 09:25</span></div>
+  <div class="right"><span id="sub"></span><span class="dim">viewer build 2026-09-22 14:20</span></div>
 </header>
 
 <aside id="left">
@@ -257,32 +257,34 @@
   </section>
   <div class="hatch"></div>
   <section>
-    <h2>Controls</h2>
-    <div class="keys">
-      <div class="g">map</div>
-      <span class="k">click plot</span><span class="v">add or remove its track</span>
-      <span class="k"><kbd>shift</kbd> click</span><span class="v">pin the plot</span>
-      <span class="k"><kbd>shift</kbd> left drag</span><span class="v">add every track in the box</span>
-      <span class="k"><kbd>shift</kbd> right drag</span><span class="v">remove every track in the box</span>
-      <span class="k">hover</span><span class="v">details, marked in the charts</span>
-      <div class="g">timeline</div>
-      <span class="k"><kbd>space</kbd></span><span class="v">play or pause</span>
-      <span class="k"><kbd>←</kbd> <kbd>→</kbd></span><span class="v">step 1 s, with <kbd>shift</kbd> 10 s</span>
-      <span class="k">drag bar</span><span class="v">set now</span>
-      <div class="g">charts</div>
-      <span class="k">drag</span><span class="v">zoom all charts and the map</span>
-      <span class="k">double click</span><span class="v">reset zoom</span>
-      <span class="k">click point</span><span class="v">pin the plot</span>
-      <span class="k">click legend</span><span class="v">hide or show a series</span>
-      <span class="k"><kbd>shift</kbd> legend</span><span class="v">only that series, again for all</span>
-      <span class="k">drag bar below</span><span class="v">chart height</span>
-      <div class="g">panels</div>
-      <span class="k">click chip</span><span class="v">remove the track</span>
-      <span class="k">click pin card</span><span class="v">remove the pin</span>
-      <span class="k"><kbd>esc</kbd></span><span class="v">clear pins</span>
-      <span class="k">drag panel edge</span><span class="v">panel width</span>
-      <span class="k">address bar</span><span class="v">holds the whole view, copy to share</span>
-    </div>
+    <details id="controlsRef" open>
+      <summary><h2 style="display:inline">Controls</h2></summary>
+      <div class="keys" style="margin-top:0.5rem">
+        <div class="g">map</div>
+        <span class="k">click plot</span><span class="v">add or remove its track</span>
+        <span class="k"><kbd>shift</kbd> click</span><span class="v">pin the plot</span>
+        <span class="k"><kbd>shift</kbd> left drag</span><span class="v">add every track in the box</span>
+        <span class="k"><kbd>shift</kbd> right drag</span><span class="v">remove every track in the box</span>
+        <span class="k">hover</span><span class="v">details, marked in the charts</span>
+        <div class="g">timeline</div>
+        <span class="k"><kbd>space</kbd></span><span class="v">play or pause</span>
+        <span class="k"><kbd>←</kbd> <kbd>→</kbd></span><span class="v">step 1 s, with <kbd>shift</kbd> 10 s</span>
+        <span class="k">drag bar</span><span class="v">set now</span>
+        <div class="g">charts</div>
+        <span class="k">drag</span><span class="v">zoom all charts and the map</span>
+        <span class="k">double click</span><span class="v">reset zoom</span>
+        <span class="k">click point</span><span class="v">pin the plot</span>
+        <span class="k">click legend</span><span class="v">hide or show a series</span>
+        <span class="k"><kbd>shift</kbd> legend</span><span class="v">only that series, again for all</span>
+        <span class="k">drag bar below</span><span class="v">chart height</span>
+        <div class="g">panels</div>
+        <span class="k">click chip</span><span class="v">remove the track</span>
+        <span class="k">click pin card</span><span class="v">remove the pin</span>
+        <span class="k"><kbd>esc</kbd></span><span class="v">clear pins</span>
+        <span class="k">drag panel edge</span><span class="v">panel width</span>
+        <span class="k">address bar</span><span class="v">holds the whole view, copy to share</span>
+      </div>
+    </details>
   </section>
   </div>
 </aside>
@@ -370,6 +372,13 @@ const displayKey = (d, i) => d.hex[i] || d.tail[i] || (d.tid ? d.src[i] + ":" + 
 // which compare entry a plot belongs to, if any
 function trackOf(kind, i) { const d = table(kind); return kind === "raw" ? compare.find(c => c.kind === "raw" && c.src === d.src[i] && c.tid === d.tid[i]) : compare.find(c => c.kind === kind && c.track === d.track[i]); }
 const trackLabel = c => c.kind === "raw" ? `${SOURCE_NAME[SRC_ID[c.src]]} ${c.tid}` : `${c.kind} ${c.track}`;
+
+// the Controls cheat sheet is open for a new visitor; once closed it stays closed
+function rememberControls() {
+  const box = $("controlsRef");
+  try { box.open = localStorage.getItem("controlsOpen") !== "0"; } catch (err) { }
+  box.ontoggle = () => { try { localStorage.setItem("controlsOpen", box.open ? "1" : "0"); } catch (err) { } };
+}
 
 async function init() {
   const all = (await api("cases")).cases, complete = all.filter(c => c.complete);
@@ -1078,6 +1087,7 @@ function redrawCharts() {
     catch (err) { console.error("chart update failed", c.spec.id, err); $("status").textContent = "chart update failed: " + err.message; }
   }
 }
+rememberControls();
 init();
 </script>
 </body>
