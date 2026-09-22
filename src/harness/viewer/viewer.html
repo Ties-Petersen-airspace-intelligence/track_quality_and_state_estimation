@@ -78,6 +78,8 @@
   button.accent { background:var(--accent); color:#090b0c; border-color:var(--accent); font-weight:600; }
   input[type=range] { accent-color: var(--accent); }
   .help { font-size:0.75rem; color:var(--muted); line-height:1.5; }
+  details summary { cursor:pointer; list-style:none; } details summary::-webkit-details-marker { display:none; } details summary::before { content:"▸ "; color:var(--dim); font-size:0.7rem; } details[open] summary::before { content:"▾ "; }
+  #left table.nums td, #left table.nums th { text-align:left; }
   /* one grid for every control row, so the two columns line up through the whole section */
   .keys { display:grid; grid-template-columns: 9.5rem 1fr; gap:0.2rem 0.6rem; align-items:baseline; margin-top:0.5rem; }
   .keys .g { grid-column: 1 / -1; font: 0.625rem/1 var(--mono); text-transform:uppercase; letter-spacing:0.1em; color:var(--dim); margin-top:0.6rem; padding-bottom:0.25rem; border-bottom:1px solid var(--line); }
@@ -112,6 +114,29 @@
   #pick .item:last-child { border-bottom:none; } #pick .item:hover { background:var(--raised); } #pick .item .muted { margin-left:auto; white-space:nowrap; font-size:0.6875rem; text-transform:uppercase; letter-spacing:0.06em; }
   #pick .item .muted::after { content:" ›"; color:var(--dim); }
   #selbox { position:absolute; display:none; z-index:9; pointer-events:none; border:1px solid var(--accent); background:rgba(204,255,0,0.08); }
+  /* the runs panel: every run of the case as a table, over the left edge of the map */
+  #runsPanel { position:absolute; top:0; left:0; bottom:0; width:var(--runs, 52rem); max-width:90%; z-index:11; display:none; flex-direction:column; background:rgba(17,20,23,0.97); border-right:1px solid var(--line-strong); box-shadow:0 0 32px rgb(0 0 0 / 60%); }
+  #runsPanel.open { display:flex; }
+  #gripRuns { position:absolute; right:0; top:0; bottom:0; width:10px; cursor:col-resize; z-index:12; } #gripRuns:hover, #gripRuns.on { background:var(--line-strong); }
+  #runsPanel .body { overflow:auto; padding:0.6rem 0.9rem 1rem; flex:1; }
+  #runsPanel table { border-collapse:collapse; width:100%; font: 0.6875rem/1.4 var(--mono); }
+  #runsPanel th { text-align:left; font-size:0.6rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); padding:0.35rem 0.45rem; border-bottom:1px solid var(--line-strong); cursor:pointer; white-space:nowrap; user-select:none; position:sticky; top:0; background:var(--chrome); }
+  #runsPanel th.sorted { color:var(--accent); } #runsPanel th.sorted::after { content:" ▾"; } #runsPanel th.sorted.asc::after { content:" ▴"; }
+  #runsPanel td { padding:0.35rem 0.45rem; border-bottom:1px solid var(--line); vertical-align:top; white-space:nowrap; }
+  #runsPanel td.num { text-align:right; font-variant-numeric:tabular-nums; }
+  #runsPanel tr.run { cursor:pointer; } #runsPanel tr.run:hover td { background:var(--raised); }
+  #runsPanel tr.latest td.lab { color:var(--fg); } #runsPanel td.lab, #runsPanel td.dim { color:var(--muted); }
+  #runsPanel td.note { white-space:normal; min-width:12rem; max-width:20rem; color:var(--fg); }
+  #runsPanel td.note:empty::before, #runsPanel td.note.empty::before { content:"add a note…"; color:var(--dim); }
+  #runsPanel td.note[contenteditable]:focus { outline:1px solid var(--accent); outline-offset:1px; background:var(--raised); }
+  #runsPanel .dirty { color:var(--danger); } #runsPanel .sw { width:0.7rem; height:0.7rem; border-radius:2px; display:inline-block; vertical-align:middle; }
+  #runsPanel tr.detail td { white-space:normal; background:var(--bg); padding:0.6rem 0.9rem 0.8rem; color:var(--muted); }
+  #runsPanel .det { display:grid; grid-template-columns: 9rem 1fr; gap:0.2rem 1.2rem; font: 0.6875rem/1.5 var(--mono); }
+  #runsPanel .det .k { color:var(--dim); text-align:left; } #runsPanel .det .v { color:var(--fg); text-align:left; white-space:pre-wrap; word-break:break-word; }
+  #runsPanel .det .h { grid-column:1 / -1; margin-top:0.55rem; font-size:0.6rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); border-bottom:1px solid var(--line); padding-bottom:0.15rem; } #runsPanel .det .h:first-child { margin-top:0; }
+  #runsPanel .help { color:var(--dim); font: 0.6875rem/1.5 var(--sans); margin:0.4rem 0 0.6rem; }
+  #runsPanel .diff { margin-top:0.9rem; } #runsPanel .diff td.changed { color:var(--accent); } #runsPanel .diff th { position:static; }
+  #runsPanel .diff .same { color:var(--dim); }
   #selbox.remove { border-color:var(--danger); background:rgba(255,26,94,0.08); }
   #map canvas, .maplibregl-canvas:focus, .maplibregl-canvas:focus-visible { outline:none !important; }
   .maplibregl-ctrl-group { background:var(--chrome) !important; border:1px solid var(--line-strong); border-radius:3px !important; box-shadow:none !important; }
@@ -121,6 +146,8 @@
 
   /* timeline, Flyways style: header line, played part in lime, NOW chip under the marker */
   #ctl { position:absolute; z-index:10; left:0; right:0; bottom:0; background:var(--chrome); border-top:1px solid var(--line); padding:0.55rem 0.9rem 0.9rem; }
+  /* with the runs panel open the timeline moves out from under it and gives back the room when it closes */
+  #mapwrap:has(#runsPanel.open) #ctl { left:min(var(--runs, 52rem), 90%); }
   #ctl .head { display:flex; align-items:center; gap:0.9rem; font: 0.75rem var(--mono); color:var(--muted); margin-bottom:0.45rem; }
   #ctl .head .sep { color:var(--dim); } #ctl .head b { color:var(--fg); font-weight:500; } #ctl .head .zulu { color:var(--dim); font-size:0.625rem; text-transform:uppercase; letter-spacing:0.08em; margin-left:-0.5rem; }
   #ctl .head .tools { margin-left:auto; display:flex; gap:0.5rem; align-items:center; }
@@ -156,6 +183,7 @@
   .chart-head { display:flex; align-items:baseline; gap:0.5rem; margin-bottom:0.3rem; }
   .chart-head b { font: 0.6875rem var(--mono); text-transform:uppercase; letter-spacing:0.08em; color:var(--fg); font-weight:500; }
   .chart-head .unit { font: 0.625rem var(--mono); color:var(--dim); }
+  .chart-note { font: 0.6875rem/1.4 var(--sans); color:var(--dim); margin:-0.15rem 0 0.35rem; }
   .chart-head .legend { display:flex; gap:0.7rem; flex-wrap:wrap; margin-left:auto; font: 0.625rem var(--mono); color:var(--muted); }
   .chart-head .legend span.item { cursor:pointer; user-select:none; display:inline-flex; align-items:center; gap:0.3rem; } .chart-head .legend span.item.off { opacity:0.35; text-decoration:line-through; }
   .chart .hgrip { height:7px; cursor:row-resize; margin-top:0.2rem; background: repeating-linear-gradient(-45deg, var(--line) 0 1px, transparent 1px 5px); opacity:0.6; } .chart .hgrip:hover { opacity:1; background: repeating-linear-gradient(-45deg, var(--line-strong) 0 1px, transparent 1px 5px); }
@@ -175,7 +203,7 @@
   <h1>Track harness</h1>
   <select id="caseSel" title="switch case"><option>loading…</option></select>
   <button id="resetView" title="back to the default view of this case: nothing compared, timeline at the start, all toggles as they open">reset view</button>
-  <div class="right"><span id="sub"></span><span class="dim">viewer build 2026-09-17 18:39</span></div>
+  <div class="right"><span id="sub"></span><span class="dim">viewer build 2026-09-22 09:25</span></div>
 </header>
 
 <aside id="left">
@@ -191,7 +219,10 @@
     <div class="field"><span class="label">raw plot colour</span><select id="rawColour"><option value="source">by source</option><option value="key">by hex, else tail, else source track id</option><option value="lateness">by lateness</option></select></div>
     <div class="field"><span class="label">strategy colour</span><select id="runColour"><option value="run">by strategy</option><option value="track">by track id (TOID)</option></select></div>
     <div class="field"><span class="label">fade over</span><select id="fadeWin"><option value="10">10 s</option><option value="30">30 s</option><option value="60">1 min</option><option value="120">2 min</option><option value="300">5 min</option><option value="900" selected>15 min</option><option value="0">never</option><option value="custom">custom…</option></select><input type="text" id="fadeCustom" placeholder="seconds" style="width:5rem; display:none"></div>
-    <div class="row" style="margin-top:0.4rem"><label><input type="checkbox" id="greyOthers" checked> grey out tracks not being compared</label></div>
+    <div class="field"><span class="label">raw plot size</span><select id="rawSize"><option value="fixed">fixed</option><option value="nacp">NACp accuracy radius</option><option value="nic">NIC containment radius</option></select></div>
+    <div class="help">In a radius mode, plots that do not carry that number stay as grey dots of the normal size.</div>
+    <div class="row" style="margin-top:0.4rem"><label><input type="checkbox" id="qualityOnly"> only plots that carry NIC or NACp</label></div>
+    <div class="row"><label><input type="checkbox" id="greyOthers" checked> grey out tracks not being compared</label></div>
   </section>
   <div class="hatch"></div>
   <section>
@@ -201,6 +232,28 @@
       <label class="row"><input type="radio" name="filterMode" value="only"> only the compared tracks</label>
       <label class="row"><input type="radio" name="filterMode" value="others"> everything except the compared tracks</label>
     </div>
+  </section>
+  <div class="hatch"></div>
+  <section>
+    <details id="refTables">
+      <summary><h2 style="display:inline">Reference: NACp and NIC</h2><span class="dim mono" style="margin-left:0.5rem; font-size:0.625rem">DO-260B</span></summary>
+      <div class="help" style="margin-top:0.5rem">NACp says how accurate the reported position is: the 95 percent radius of the position error, called EPU. NIC says how far the true position can be from the reported one with high confidence, the containment radius Rc, guaranteed to a probability given by SIL. Both come from the aircraft's own GPS receiver. Raw plot size uses these radii in metres.</div>
+      <table class="nums" style="margin-top:0.5rem"><tr><th class="k">NACp</th><th>EPU 95 %</th><th class="k" style="padding-left:1rem">NIC</th><th>Rc</th></tr>
+        <tr><td class="k">11</td><td>&lt; 3 m</td><td class="k" style="padding-left:1rem">11</td><td>&lt; 7.5 m</td></tr>
+        <tr><td class="k">10</td><td>&lt; 10 m</td><td class="k" style="padding-left:1rem">10</td><td>&lt; 25 m</td></tr>
+        <tr><td class="k">9</td><td>&lt; 30 m</td><td class="k" style="padding-left:1rem">9</td><td>&lt; 75 m</td></tr>
+        <tr><td class="k">8</td><td>&lt; 92.6 m</td><td class="k" style="padding-left:1rem">8</td><td>&lt; 185 m</td></tr>
+        <tr><td class="k">7</td><td>&lt; 185 m</td><td class="k" style="padding-left:1rem">7</td><td>&lt; 370 m</td></tr>
+        <tr><td class="k">6</td><td>&lt; 556 m</td><td class="k" style="padding-left:1rem">6</td><td>&lt; 1,111 m</td></tr>
+        <tr><td class="k">5</td><td>&lt; 926 m</td><td class="k" style="padding-left:1rem">5</td><td>&lt; 1,852 m</td></tr>
+        <tr><td class="k">4</td><td>&lt; 1,852 m</td><td class="k" style="padding-left:1rem">4</td><td>&lt; 3,704 m</td></tr>
+        <tr><td class="k">3</td><td>&lt; 3,704 m</td><td class="k" style="padding-left:1rem">3</td><td>&lt; 7,408 m</td></tr>
+        <tr><td class="k">2</td><td>&lt; 7,408 m</td><td class="k" style="padding-left:1rem">2</td><td>&lt; 14,816 m</td></tr>
+        <tr><td class="k">1</td><td>&lt; 18,520 m</td><td class="k" style="padding-left:1rem">1</td><td>&lt; 37,040 m</td></tr>
+        <tr><td class="k">0</td><td>unknown</td><td class="k" style="padding-left:1rem">0</td><td>unknown</td></tr>
+      </table>
+      <div class="help" style="margin-top:0.5rem">Also on ADS-B plots: NACv, the velocity accuracy, 4 is under 0.3 m/s, 1 is under 10 m/s; SIL, how likely the true position lies outside Rc, 3 is under one in ten million per hour; NICbaro, whether the barometric altitude was cross checked; GVA, geometric vertical accuracy, 2 is under 45 m; SDA, the design assurance of the avionics. ADS-B Exchange sends Rc itself in metres. uAvionix also flags suspect reports and failed position checks. PlaneFinder and TFMS carry no accuracy numbers at all.</div>
+    </details>
   </section>
   <div class="hatch"></div>
   <section>
@@ -247,6 +300,17 @@
       <span class="tbdivider"></span>
       <label class="tb" title="lines between the plots of a strategy"><input type="checkbox" id="runLines" checked>lines</label>
       <label class="tb" title="rings on the plots of a strategy"><input type="checkbox" id="runRings">rings</label>
+      <span class="tbdivider"></span>
+      <label class="tb" title="every run of this case: versions, notes, numbers"><input type="checkbox" id="runsMore">more…</label>
+    </div>
+  </div>
+  <div id="runsPanel">
+    <div id="gripRuns"></div>
+    <div class="panel-head"><span class="label">strategy runs</span><span class="n" id="runsCount"></span><span class="spacer"></span><button class="small" id="runsClose">close</button></div>
+    <div class="body">
+      <div class="help">Every run of a strategy on this case, one row each. Labels count up per strategy and nothing is overwritten. Tick a row to show it on the map, click a row for its parameters, commit and command, tick two rows under "diff" to see what differs. Notes are editable in place and saved to the run's run.json.</div>
+      <table id="runsTable"></table>
+      <div class="diff" id="runsDiff"></div>
     </div>
   </div>
   <div id="dbg"><div class="kv"><span class="k">raw plots</span><span class="v" id="status"></span><span class="k">now</span><span class="v" id="dbgNow"></span><span class="k">lat (mouse)</span><span class="v" id="dbgLat">–</span><span class="k">lon (mouse)</span><span class="v" id="dbgLon">–</span><span class="k">zoom</span><span class="v" id="dbgZoom">–</span></div></div>
@@ -281,7 +345,11 @@ const SRC_ID = {adsbx:4, planefinder:3, uavionix:11, stdds:10, tfms_ti:1, tfms_o
 const SOURCE_COLOR = {adsbx:[79,179,255], planefinder:[123,216,143], uavionix:[53,224,216], stdds:[255,90,90], tfms_ti:[242,178,51], tfms_or:[253,29,136], ual:[170,130,255], asa:[220,180,60]};
 const RUN_COLORS = [[204,255,0],[253,29,136],[235,141,7],[170,130,255],[255,255,255]];
 const SHORT_SOURCE = {adsbx:"ADS-B X", planefinder:"PlaneFinder", uavionix:"uAvionix", stdds:"STDDS", tfms_ti:"TFMS TI", tfms_or:"TFMS OR", ual:"United", asa:"Alaska"};
-const shortRun = r => r.replace(/^prod_fusion_/, "prod ").replace(/_/g, " ");
+// a run id is "strategy/label"; the label is shown unless the strategy has only one run in this case
+const shortStrategy = s => s.replace(/^prod_fusion_/, "prod ").replace(/_/g, " ");
+const shortRun = id => { const [s, l] = id.split("/"); return shortStrategy(s) + (CASE && CASE.runs.filter(r => r.strategy === s).length > 1 ? " " + l : ""); };
+const runById = id => CASE.runs.find(r => r.id === id);
+let runChecked = new Set();                                   // runs shown on the map
 const rgb = c => `rgb(${c})`;
 let CASE, RAW, RUNS = {}, USED = {}, runColor = {}, map, overlay, now = 0, playing = false, lastTick = 0;
 const CASE_NAME = new URLSearchParams(location.search).get("case");
@@ -291,6 +359,7 @@ let compare = [];                                            // tracks to compar
 let charts = [], chartData = null, derived = {};
 let visible = { raw: [], runs: {} };                          // plot indices the map is drawing right now
 let shiftDown = false;                                        // shift held at the last mouse down on the map
+let showLate = false;                                         // show plots that only arrived after the case window, as if they were known at their position time
 const TRACK_COLORS = [[204,255,0],[92,146,255],[253,29,136],[40,210,220],[235,141,7],[170,130,255],[80,200,120],[255,255,255],[255,90,90],[220,180,60]];
 const $ = id => document.getElementById(id);
 const fmt = ms => new Date(CASE.t0_us / 1000 + ms).toISOString().slice(11, 19);
@@ -331,12 +400,13 @@ async function init() {
   $("splashWhat").textContent = `${RAW.n.toLocaleString()} raw plots · drawing`;
   const srcs = [...new Set(RAW.src)];
   $("sources").innerHTML = srcs.map(s => `<label class="tb" title="${RAW.src.filter(x => x === s).length.toLocaleString()} plots"><input type="checkbox" class="srcOn" value="${s}" checked><span class="sw" style="background:${rgb(SOURCE_COLOR[s])}"></span>${SHORT_SOURCE[s] || s}</label>`).join("");
-  $("runs").innerHTML = CASE.runs.map((r, i) => { runColor[r] = RUN_COLORS[i % RUN_COLORS.length]; return `<label class="tb" id="runlabel-${r}"><input type="checkbox" class="runOn" value="${r}"><span class="sw line" style="background:${rgb(runColor[r])}"></span>${shortRun(r)}<span class="n" id="runcount-${r}"></span></label>`; }).join("");
+  renderRunToolbar();
+  $("runsMore").onchange = () => { $("runsPanel").classList.toggle("open", $("runsMore").checked); if ($("runsMore").checked) renderRunsPanel(); };
+  $("runsClose").onclick = () => { $("runsMore").checked = false; $("runsPanel").classList.remove("open"); };
   map.on("mousemove", e => { $("dbgLat").textContent = e.lngLat.lat.toFixed(4); $("dbgLon").textContent = e.lngLat.lng.toFixed(4); });
   map.on("move", () => { $("dbgZoom").textContent = map.getZoom().toFixed(2); }); $("dbgZoom").textContent = map.getZoom().toFixed(2);
-  document.querySelectorAll(".runOn").forEach(cb => cb.onchange = async () => { if (cb.checked && !RUNS[cb.value]) await loadRun(cb.value); rebuildCharts(); draw(); });
   document.querySelectorAll(".srcOn").forEach(cb => cb.onchange = () => { rebuildCharts(); draw(); });
-  ["rawOn", "runsOn", "rawColour", "runColour", "greyOthers", "runLines", "runRings"].forEach(id => $(id).onchange = draw);
+  ["rawOn", "runsOn", "rawColour", "runColour", "rawSize", "qualityOnly", "greyOthers", "runLines", "runRings"].forEach(id => $(id).onchange = draw);
   document.querySelectorAll('input[name="filterMode"]').forEach(r => r.onchange = draw);
   $("fadeWin").onchange = () => { $("fadeCustom").style.display = $("fadeWin").value === "custom" ? "inline-block" : "none"; draw(); };
   $("fadeCustom").oninput = draw;
@@ -357,17 +427,92 @@ async function init() {
 async function loadRun(name) {
   $("status").textContent = `loading ${name}…`;
   const r = await api(`run/${CASE.name}/${name}`); r.n = r.t.length; RUNS[name] = r;
-  $(`runlabel-${name}`).title = `${r.n.toLocaleString()} plots, ${new Set(r.track).size} tracks emitted by this strategy`;
+  const lab = $(`runlabel-${name}`); if (lab) lab.title = `${r.n.toLocaleString()} plots, ${new Set(r.track).size} tracks emitted by this strategy`;
   // the raw colour menu gains "used by <strategy>"
   if (![...$("rawColour").options].some(o => o.value === "used:" + name)) { const o = document.createElement("option"); o.value = "used:" + name; o.textContent = `used by ${shortRun(name)}`; $("rawColour").appendChild(o); }
   $("status").textContent = RAW.n.toLocaleString();
+}
+// the toolbar lists the newest run of every strategy plus any older run that is switched on
+function toolbarRuns() { const latest = new Set(); for (const r of CASE.runs) latest.add(r.strategy); const ids = []; for (const s of latest) { const of = CASE.runs.filter(r => r.strategy === s); ids.push(of[of.length - 1].id); } for (const id of runChecked) if (!ids.includes(id)) ids.push(id); return CASE.runs.map(r => r.id).filter(id => ids.includes(id)); }
+function colorFor(id) { if (runColor[id]) return runColor[id]; const used = Object.values(runColor).map(String); runColor[id] = RUN_COLORS.find(c => !used.includes(String(c))) || RUN_COLORS[Object.keys(runColor).length % RUN_COLORS.length]; return runColor[id]; }
+function renderRunToolbar() {
+  $("runs").innerHTML = toolbarRuns().map(id => `<label class="tb" id="runlabel-${id}"><input type="checkbox" class="runOn" value="${id}" ${runChecked.has(id) ? "checked" : ""}><span class="sw line" style="background:${rgb(colorFor(id))}"></span>${shortRun(id)}</label>`).join("");
+  document.querySelectorAll(".runOn").forEach(cb => cb.onchange = () => setRunShown(cb.value, cb.checked));
+}
+async function setRunShown(id, on) {
+  if (on) { runChecked.add(id); if (!RUNS[id]) await loadRun(id); } else runChecked.delete(id);
+  renderRunToolbar(); if ($("runsPanel").classList.contains("open")) renderRunsPanel(); rebuildCharts(); draw();
+}
+// ---------- the runs panel ----------
+let runsSort = { key:"created", asc:true }, runsOpen = null, runsDiff = [];
+const RUN_COLS = [
+  { key:"on", title:"map", cell:r => `<input type="checkbox" class="rp-on" data-id="${r.id}" ${runChecked.has(r.id) ? "checked" : ""}> <span class="sw" style="background:${runChecked.has(r.id) ? rgb(colorFor(r.id)) : "transparent"}"></span>` },
+  { key:"diff", title:"diff", cell:r => `<input type="checkbox" class="rp-diff" data-id="${r.id}" ${runsDiff.includes(r.id) ? "checked" : ""}>` },
+  { key:"strategy", title:"strategy", cell:r => shortStrategy(r.strategy) },
+  { key:"label", title:"label", cls:"lab", cell:r => r.label },
+  { key:"created", title:"when", cls:"dim", cell:r => r.created ? r.created.slice(5, 16).replace("T", " ") : "" },
+  { key:"batch", title:"batch", cls:"dim", cell:r => r.batch ? r.batch.slice(4, 8) + " " + r.batch.slice(9, 13) : "" },
+  { key:"commit", title:"commit", cls:"dim", val:r => (r.git || {}).commit || "", cell:r => r.git && r.git.commit ? r.git.commit.slice(0, 7) + (r.git.dirty ? `<span class="dirty" title="the working tree had uncommitted changes">*</span>` : "") : "" },
+  { key:"fused", title:"plots", cls:"num", val:r => (r.counts || {}).fused_plots, cell:r => fmtN((r.counts || {}).fused_plots) },
+  { key:"tracks", title:"tracks", cls:"num", val:r => (r.counts || {}).tracks, cell:r => fmtN((r.counts || {}).tracks) },
+  { key:"used", title:"raw used", cls:"num", val:r => usedShare(r), cell:r => usedShare(r) == null ? "" : usedShare(r).toFixed(1) + "%" },
+  { key:"rewritten", title:"rewritten", cls:"num", val:r => (r.counts || {}).rewritten, cell:r => fmtN((r.counts || {}).rewritten) },
+  { key:"duration", title:"took", cls:"num dim", val:r => r.duration_s, cell:r => r.duration_s == null ? "" : r.duration_s + " s" },
+  { key:"note", title:"note", cls:"note", cell:r => escapeHtml(r.note || "") },
+];
+const fmtN = v => v == null ? "" : Number(v).toLocaleString();
+const usedShare = r => r.counts && r.counts.raw_plots ? 100 * r.counts.raw_used / r.counts.raw_plots : null;
+const escapeHtml = t => t.replace(/[&<>"]/g, ch => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[ch]));
+function renderRunsPanel() {
+  const rows = [...CASE.runs], col = RUN_COLS.find(c => c.key === runsSort.key), val = r => col.val ? col.val(r) : r[col.key];
+  rows.sort((a, b) => { const x = val(a), y = val(b); const c = x == null ? 1 : y == null ? -1 : (typeof x === "number" ? x - y : String(x).localeCompare(String(y))); return runsSort.asc ? c : -c; });
+  const latest = new Set(toolbarRuns());
+  $("runsCount").textContent = `${CASE.runs.length} run${CASE.runs.length === 1 ? "" : "s"}`;
+  let html = "<thead><tr>" + RUN_COLS.map(c => `<th data-key="${c.key}" class="${c.key === runsSort.key ? "sorted" + (runsSort.asc ? " asc" : "") : ""}">${c.title}</th>`).join("") + "</tr></thead><tbody>";
+  for (const r of rows) {
+    html += `<tr class="run ${latest.has(r.id) ? "latest" : ""}" data-id="${r.id}">` + RUN_COLS.map(c => `<td class="${c.cls || ""} ${c.key === "note" && !r.note ? "empty" : ""}" ${c.key === "note" ? `contenteditable="plaintext-only" data-id="${r.id}"` : ""}>${c.cell(r)}</td>`).join("") + "</tr>";
+    if (runsOpen === r.id) html += `<tr class="detail"><td colspan="${RUN_COLS.length}">${runDetail(r)}</td></tr>`;
+  }
+  $("runsTable").innerHTML = html + "</tbody>";
+  $("runsTable").querySelectorAll("th").forEach(th => th.onclick = () => { const k = th.dataset.key; if (runsSort.key === k) runsSort.asc = !runsSort.asc; else runsSort = { key:k, asc:true }; renderRunsPanel(); });
+  $("runsTable").querySelectorAll("tr.run").forEach(tr => tr.onclick = e => { if (e.target.closest("input, td.note")) return; runsOpen = runsOpen === tr.dataset.id ? null : tr.dataset.id; renderRunsPanel(); });
+  $("runsTable").querySelectorAll(".rp-on").forEach(cb => cb.onchange = () => setRunShown(cb.dataset.id, cb.checked));
+  $("runsTable").querySelectorAll(".rp-diff").forEach(cb => cb.onchange = () => { runsDiff = cb.checked ? [...runsDiff.filter(x => x !== cb.dataset.id), cb.dataset.id].slice(-2) : runsDiff.filter(x => x !== cb.dataset.id); renderRunsPanel(); });
+  $("runsTable").querySelectorAll("td.note").forEach(td => { td.onkeydown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); td.blur(); } if (e.key === "Escape") { td.textContent = (runById(td.dataset.id).note || ""); td.blur(); } }; td.onblur = () => saveNote(td.dataset.id, td.textContent.trim()); td.onfocus = () => td.classList.remove("empty"); });
+  renderRunsDiff();
+}
+async function saveNote(id, note) {
+  const r = runById(id); if ((r.note || "") === note) { renderRunsPanel(); return; }
+  const [strategy, label] = id.split("/");
+  const res = await fetch(`/api/note/${CASE.name}/${strategy}/${label}`, { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ note }) });
+  if (res.ok) r.note = note; renderRunsPanel();
+}
+// every manifest field as key -> value, nested ones flattened with a dot, for the detail view and the diff
+function flatManifest(r) { const out = {}; const walk = (o, pre) => { for (const [k, v] of Object.entries(o)) { if (k === "id") continue; if (v && typeof v === "object" && !Array.isArray(v)) walk(v, pre + k + "."); else out[pre + k] = v; } }; walk(r, ""); return out; }
+// the manifest laid out for reading: run, code, what came out, then the strategy's parameters
+function runDetail(r) {
+  const g = r.git || {}, c = r.counts || {}, params = Object.entries(r.params || {});
+  const row = (k, v) => v == null || v === "" ? "" : `<span class="k">${k}</span><span class="v">${escapeHtml(String(v))}</span>`;
+  const head = t => `<span class="h">${t}</span>`;
+  return `<div class="det">` +
+    head("run") + row("run", `${r.strategy} ${r.label}`) + row("when", (r.created || "").replace("T", " ").replace("+00:00", " UTC")) + row("took", r.duration_s == null ? "" : r.duration_s + " s") + row("batch", r.batch) + row("command", r.command) + row("note", r.note) +
+    head("code") + row("commit", g.commit) + row("branch", g.branch) + row("uncommitted changes", g.dirty == null ? "" : g.dirty ? "yes, the working tree was dirty" : "no") +
+    head("what came out") + row("raw plots fed in", fmtN(c.raw_plots)) + row("events emitted", fmtN(c.events)) + row("fused plots", fmtN(c.fused_plots)) + row("tracks", fmtN(c.tracks)) + row("raw plots used", c.raw_used == null ? "" : `${fmtN(c.raw_used)} (${usedShare(r).toFixed(1)}%)`) + row("raw plots dropped", fmtN(c.raw_dropped)) + row("plots later rewritten", fmtN(c.rewritten)) +
+    (params.length ? head("parameters") + params.map(([k, v]) => row(k, typeof v === "object" ? JSON.stringify(v) : v)).join("") : head("parameters") + row("none", "this strategy declares no parameters")) +
+    `</div>`;
+}
+function renderRunsDiff() {
+  const el = $("runsDiff");
+  if (runsDiff.length < 2) { el.innerHTML = runsDiff.length === 1 ? `<div class="help">tick one more run to compare</div>` : ""; return; }
+  const [a, b] = runsDiff.map(runById), fa = flatManifest(a), fb = flatManifest(b), keys = [...new Set([...Object.keys(fa), ...Object.keys(fb)])];
+  el.innerHTML = `<table><thead><tr><th>field</th><th>${shortRun(a.id)}</th><th>${shortRun(b.id)}</th></tr></thead><tbody>` + keys.map(k => { const same = String(fa[k] ?? "") === String(fb[k] ?? ""); return `<tr class="${same ? "same" : ""}"><td class="dim">${k}</td><td class="${same ? "" : "changed"}">${escapeHtml(String(fa[k] ?? ""))}</td><td class="${same ? "" : "changed"}">${escapeHtml(String(fb[k] ?? ""))}</td></tr>`; }).join("") + "</tbody></table>";
 }
 async function loadUsed(name) { if (USED[name]) return USED[name]; USED[name] = await api(`used/${CASE.name}/${name}`); renderCompare(); return USED[name]; }
 const clampNow = v => win ? Math.max(win[0], Math.min(win[1], v)) : Math.max(0, Math.min(CASE.span_ms, v));
 function sync() { $("time").value = now; draw(); }
 function togglePlay() { playing = !playing; $("play").textContent = playing ? "❚❚" : "▶"; if (playing) { lastTick = performance.now(); requestAnimationFrame(tick); } }
 function tick(ts) { if (!playing) return; const end = win ? win[1] : CASE.span_ms; now = Math.min(end, now + (ts - lastTick) * +$("speed").value); lastTick = ts; if (now >= end) playing = false, $("play").textContent = "▶"; sync(); requestAnimationFrame(tick); }
-function activeRuns() { return $("runsOn").checked ? [...document.querySelectorAll(".runOn:checked")].map(c => c.value).filter(n => RUNS[n]) : []; }
+function activeRuns() { return $("runsOn").checked ? [...runChecked].filter(n => RUNS[n]) : []; }
 function activeSources() { return new Set([...document.querySelectorAll(".srcOn:checked")].map(c => c.value)); }
 function fadeWindowMs() { const v = $("fadeWin").value; if (v === "custom") return Math.max(1, +$("fadeCustom").value || 120) * 1000; return +v * 1000; }
 
@@ -395,17 +540,25 @@ function grip() {
   let drag = null;   // "left" or "right" while a handle is held
   $("grip").onmousedown = e => { drag = "right"; e.preventDefault(); document.body.classList.add("dragging"); $("grip").classList.add("on"); };
   $("gripLeft").onmousedown = e => { drag = "left"; e.preventDefault(); document.body.classList.add("dragging"); $("gripLeft").classList.add("on"); };
+  $("gripRuns").onmousedown = e => { drag = "runs"; e.preventDefault(); document.body.classList.add("dragging"); $("gripRuns").classList.add("on"); };
   document.addEventListener("mousemove", e => {
     if (!drag) return;
     if (drag === "right") document.documentElement.style.setProperty("--right", Math.max(320, Math.min(window.innerWidth * 0.6, window.innerWidth - e.clientX)) + "px");
-    else document.documentElement.style.setProperty("--left", Math.max(240, Math.min(window.innerWidth * 0.4, e.clientX)) + "px");
+    else if (drag === "left") document.documentElement.style.setProperty("--left", Math.max(240, Math.min(window.innerWidth * 0.4, e.clientX)) + "px");
+    else { const left = $("mapwrap").getBoundingClientRect().left; document.documentElement.style.setProperty("--runs", Math.max(360, e.clientX - left) + "px"); }
   });
-  document.addEventListener("mouseup", () => { if (drag) { drag = null; document.body.classList.remove("dragging"); $("grip").classList.remove("on"); $("gripLeft").classList.remove("on"); for (const c of charts) c.u.setSize({ width: chartWidth(), height: c.u.height }); } });
+  document.addEventListener("mouseup", () => { if (drag) { drag = null; document.body.classList.remove("dragging"); $("grip").classList.remove("on"); $("gripLeft").classList.remove("on"); $("gripRuns").classList.remove("on"); for (const c of charts) c.u.setSize({ width: chartWidth(), height: c.u.height }); } });
 }
 const chartWidth = () => $("charts").clientWidth - 30;
 
 // ---------- colours ----------
 const DROPPED = [62, 68, 76];
+const PLAIN = [205, 212, 220];   // plots without the number a size mode asks for: light grey, so they stand out from the dark map and the muted tracks
+// DO-260B: NACp -> 95 % position error radius, NIC -> containment radius, metres
+const NACP_M = {11:3, 10:10, 9:30, 8:92.6, 7:185.2, 6:555.6, 5:926, 4:1852, 3:3704, 2:7408, 1:18520};
+const NIC_M = {11:7.5, 10:25, 9:75, 8:185.2, 7:370.4, 6:1111.2, 5:1852, 4:3704, 3:7408, 2:14816, 1:37040};
+const hasQuality = i => RAW.nacp[i] != null || RAW.nic[i] != null;
+function plotRadiusM(i, mode) { return mode === "nacp" ? NACP_M[RAW.nacp[i]] : mode === "nic" ? (NIC_M[RAW.nic[i]] ?? (RAW.rc[i] || null)) : null; }
 function rawColor(i, mode) {
   if (mode.startsWith("used:")) { const u = USED[mode.slice(5)]; if (!u || !u.track) return SOURCE_COLOR[RAW.src[i]]; return u.track[i] == null ? DROPPED : SOURCE_COLOR[RAW.src[i]]; }
   if (mode === "key") return hashColor(displayKey(RAW, i));
@@ -433,7 +586,8 @@ function draw() {
   const pct = (now / CASE.span_ms * 100) + "%"; $("nowMark").style.left = pct; $("played").style.width = pct; $("nowChip").style.left = `clamp(1.2rem, ${pct}, calc(100% - 1.2rem))`; $("nowChip").textContent = fmt(now).slice(0, 5);
   const layers = [], b = CASE.case.box;
   layers.push(new deck.PathLayer({ id:"box", data:[{ path:[[b.lon_min,b.lat_min],[b.lon_max,b.lat_min],[b.lon_max,b.lat_max],[b.lon_min,b.lat_max],[b.lon_min,b.lat_min]] }], getPath:d => d.path, getColor:[183,192,202,90], getWidth:1, widthUnits:"pixels" }));
-  const mode = $("rawColour").value, fadeMs = fadeWindowMs();
+  const mode = $("rawColour").value, fadeMs = fadeWindowMs(), sizeMode = $("rawSize").value, qualityOnly = $("qualityOnly").checked;
+  const passes = i => !qualityOnly || hasQuality(i);
   if (mode.startsWith("used:") && !USED[mode.slice(5)]) { loadUsed(mode.slice(5)).then(draw); }
   const inWin = t => !win || (t >= win[0] && t <= win[1]);
   // opacity falls in a straight line from full at the plot's position time to zero at the end of the fade window
@@ -448,25 +602,36 @@ function draw() {
   visible = { raw: [], runs: {} };
   if ($("rawOn").checked) {
     const on = activeSources(), idx = [];
-    for (let i = 0; i < RAW.n && RAW.r[i] <= now; i++) if (on.has(RAW.src[i]) && inWin(RAW.t[i]) && alpha(RAW.t[i]) > 0 && shown("raw", i)) idx.push(i);   // RAW is sorted by receipt time
+    for (let i = 0; i < RAW.n && RAW.r[i] <= now; i++) if (on.has(RAW.src[i]) && inWin(RAW.t[i]) && alpha(RAW.t[i]) > 0 && shown("raw", i) && passes(i)) idx.push(i);   // RAW is sorted by receipt time
+    if (showLate) for (let i = RAW.n - 1; i >= 0 && RAW.r[i] > CASE.span_ms; i--) if (RAW.t[i] <= now && on.has(RAW.src[i]) && inWin(RAW.t[i]) && alpha(RAW.t[i]) > 0 && shown("raw", i) && passes(i)) idx.push(i);
     visible.raw = idx;
-    rawLayers.push(new deck.ScatterplotLayer({ id:"raw", data:idx, getPosition:i => [RAW.lon[i], RAW.lat[i]], radiusUnits:"pixels",
-      getRadius:i => emph("raw", i) ? 3.5 : 2.2,
-      getFillColor:i => [...(grey && !emph("raw", i) ? GREY : rawColor(i, mode)), alpha(RAW.t[i])],
+    const sized = sizeMode !== "fixed";   // circles in metres, filled faintly with a firm edge, so the accuracy radius reads as an area
+    // in a sized mode, plots that do not carry the chosen number are drawn as plain grey dots of the default size
+    const plain = sized ? idx.filter(i => plotRadiusM(i, sizeMode) == null) : [];
+    const sizedIdx = sized ? idx.filter(i => plotRadiusM(i, sizeMode) != null) : idx;
+    if (plain.length) rawLayers.push(new deck.ScatterplotLayer({ id:"raw-plain", data:plain, getPosition:i => [RAW.lon[i], RAW.lat[i]], radiusUnits:"pixels",
+      getRadius:i => emph("raw", i) ? 3.5 : 2.4, getFillColor:i => [...PLAIN, alpha(RAW.t[i])],
       getLineColor:i => { const c = emph("raw", i); return c ? [...c.color, alpha(RAW.t[i])] : [0, 0, 0, 0]; }, stroked:true, lineWidthUnits:"pixels", getLineWidth:i => emph("raw", i) ? 1.5 : 0,
       pickable:true, onHover:info => mapHover(info, "raw"),
-      updateTriggers:{ getFillColor:[now, fadeMs, mode, grey, compare], getLineColor:[now, fadeMs, compare, mode2], getRadius:[compare], getLineWidth:[compare] } }));
+      updateTriggers:{ getFillColor:[now, fadeMs, showLate], getLineColor:[now, fadeMs, compare, showLate], getRadius:[compare], getLineWidth:[compare] } }));
+    rawLayers.push(new deck.ScatterplotLayer({ id:"raw", data:sizedIdx, getPosition:i => [RAW.lon[i], RAW.lat[i]], radiusUnits:sized ? "meters" : "pixels", radiusMinPixels:sized ? 1.5 : 0,
+      getRadius:i => sized ? plotRadiusM(i, sizeMode) : (emph("raw", i) ? 3.5 : 2.2),
+      getFillColor:i => [...(grey && !emph("raw", i) ? GREY : rawColor(i, mode)), sized ? Math.round(alpha(RAW.t[i]) * 0.18) : alpha(RAW.t[i])],
+      getLineColor:i => { const c = emph("raw", i); return sized ? [...(c ? c.color : grey && !c ? GREY : rawColor(i, mode)), alpha(RAW.t[i])] : c ? [...c.color, alpha(RAW.t[i])] : [0, 0, 0, 0]; }, stroked:true, lineWidthUnits:"pixels", getLineWidth:i => sized ? 1 : (emph("raw", i) ? 1.5 : 0),
+      pickable:true, onHover:info => mapHover(info, "raw"),
+      updateTriggers:{ getFillColor:[now, fadeMs, mode, grey, compare, showLate, sizeMode], getLineColor:[now, fadeMs, compare, mode2, showLate, sizeMode, mode, grey], getRadius:[compare, sizeMode], getLineWidth:[compare, sizeMode] } }));
   }
   const runMode = $("runColour").value;
   for (const name of activeRuns()) {
-    const run = RUNS[name], color = runColor[name], idx = [], paths = {};
+    const run = RUNS[name], color = colorFor(name), idx = [], paths = {};
     const runBase = i => runMode === "track" ? hashColor(run.track[i]) : color;   // a compared track keeps its own colour either way
-    for (let i = 0; i < run.n && run.created[i] <= now; i++) {              // sorted by created
-      const vt = run.valid_to[i]; if (vt != null && vt <= now) continue;      // already replaced by a later event
-      if (!inWin(run.t[i]) || alpha(run.t[i]) <= 0) continue;
-      if (!shown(name, i)) continue;
+    const take = i => {
+      const vt = run.valid_to[i]; if (vt != null && vt <= now) return;         // already replaced by a later event
+      if (!inWin(run.t[i]) || alpha(run.t[i]) <= 0 || !shown(name, i)) return;
       idx.push(i); (paths[run.track[i]] ||= []).push(i);
-    }
+    };
+    for (let i = 0; i < run.n && run.created[i] <= now; i++) take(i);           // sorted by created
+    if (showLate) for (let i = run.n - 1; i >= 0 && run.created[i] > CASE.span_ms; i--) if (run.t[i] <= now) take(i);
     visible.runs[name] = idx;
     const lines = Object.entries(paths).map(([track, ids]) => { ids.sort((a, b) => run.t[a] - run.t[b]); const c = compare.find(x => x.kind === name && x.track === track); return { track, cmp:c, first:ids[0], newest:run.t[ids[ids.length - 1]], path: ids.map(i => [run.lon[i], run.lat[i]]) }; });
     if ($("runLines").checked) layers.push(new deck.PathLayer({ id:"run-lines-" + name, data:lines, getPath:d => d.path, getColor:d => [...(d.cmp ? d.cmp.color : grey ? GREY : runBase(d.first)), Math.max(40, alpha(d.newest))], getWidth:d => d.cmp ? 3 : 1.2, widthUnits:"pixels", updateTriggers:{ getColor:[now, fadeMs, compare, grey, runMode], getWidth:[compare] } }));
@@ -530,7 +695,7 @@ function boxSelect() {
 function mapClickAt(info, ev) {
   closePick();
   const picks = overlay.pickMultipleObjects({ x:info.x, y:info.y, radius:7, depth:40 });
-  const items = picks.filter(pk => pk.layer && (pk.layer.id === "raw" || pk.layer.id.startsWith("run-dots-"))).map(pk => ({ kind: pk.layer.id === "raw" ? "raw" : pk.layer.id.slice("run-dots-".length), i: pk.object }));
+  const items = picks.filter(pk => pk.layer && (pk.layer.id.startsWith("raw") || pk.layer.id.startsWith("run-dots-"))).map(pk => ({ kind: pk.layer.id.startsWith("raw") ? "raw" : pk.layer.id.slice("run-dots-".length), i: pk.object }));
   if (!items.length) return;
   const shift = shiftDown || !!(ev && ev.srcEvent && ev.srcEvent.shiftKey);
   if (shift) {   // pin one plot
@@ -563,7 +728,16 @@ function setHover(h, x, y) {
 }
 function describe(p) {
   const d = table(p.kind), i = p.i, raw = p.kind === "raw";
-  return `<b>${d.cs[i] || "no callsign"}</b> · hex ${d.hex[i] || "–"} · tail ${d.tail[i] || "–"}<br>${raw ? "raw plot" : p.kind + " · track " + d.track[i] + " · " + d.quality[i]} · ${srcName(p.kind, i)}<br>position ${fmtMs(d.t[i])} · received ${fmt(d.r[i])} (${((d.r[i] - d.t[i]) / 1000).toFixed(2)} s late)${!raw ? `<br>emitted ${fmt(d.created[i])}${d.valid_to[i] != null ? ` · replaced ${fmt(d.valid_to[i])}` : ""}` : ""}<br>alt ${d.alt[i] ?? "–"} ft · ${d.gs[i] ?? "–"} kt · trk ${d.trk[i] ?? "–"} · hdg ${d.hdg[i] ?? "–"}${raw ? ` · source track ${d.tid[i]}` : ""}${raw ? usedLine(i) : ""}`;
+  return `<b>${d.cs[i] || "no callsign"}</b> · hex ${d.hex[i] || "–"} · tail ${d.tail[i] || "–"}<br>${raw ? "raw plot" : p.kind + " · track " + d.track[i] + " · " + d.quality[i]} · ${srcName(p.kind, i)}<br>position ${fmtMs(d.t[i])} · received ${fmt(d.r[i])} (${((d.r[i] - d.t[i]) / 1000).toFixed(2)} s late)${!raw ? `<br>emitted ${fmt(d.created[i])}${d.valid_to[i] != null ? ` · replaced ${fmt(d.valid_to[i])}` : ""}` : ""}<br>alt ${d.alt[i] ?? "–"} ft · ${d.gs[i] ?? "–"} kt · trk ${d.trk[i] ?? "–"} · hdg ${d.hdg[i] ?? "–"}${raw ? ` · source track ${d.tid[i]}` : ""}${raw ? qualityLine(i) : ""}${raw ? usedLine(i) : ""}`;
+}
+function qualityLine(i) {
+  const parts = [];
+  if (RAW.nacp[i] != null) parts.push(`NACp ${RAW.nacp[i]}${NACP_M[RAW.nacp[i]] ? ` (< ${NACP_M[RAW.nacp[i]]} m)` : ""}`);
+  if (RAW.nic[i] != null) parts.push(`NIC ${RAW.nic[i]}${NIC_M[RAW.nic[i]] ? ` (Rc < ${NIC_M[RAW.nic[i]]} m)` : ""}`);
+  if (RAW.rc[i] != null) parts.push(`Rc ${RAW.rc[i]} m`);
+  if (RAW.nacv[i] != null) parts.push(`NACv ${RAW.nacv[i]}`);
+  if (RAW.sil[i] != null) parts.push(`SIL ${RAW.sil[i]}`);
+  return `<br><span class="muted">${parts.length ? parts.join(" · ") : "no accuracy numbers on this plot"}</span>`;
 }
 function usedLine(i) {
   const parts = Object.entries(USED).filter(([n, u]) => u.track && activeRuns().includes(n)).map(([n, u]) => `${shortRun(n)}: ${u.track[i] == null ? "dropped" : "used" + (u.track[i] ? " by " + u.track[i] : "")}`);
@@ -581,6 +755,7 @@ function renderCompare() {
     }).join("");
     $("sel").innerHTML = `<div class="label" style="margin-top:0.7rem">${compare.length} track${compare.length > 1 ? "s" : ""} · click one to remove</div><div class="chips">${chips}</div>${numbersTable()}`;
     $("sel").querySelectorAll(".chip").forEach(b => b.onclick = () => { compare.splice(+b.dataset.k, 1); renderCompare(); rebuildCharts(); draw(); });
+    const lb = $("lateBtn"); if (lb) lb.onclick = toggleLate;
   }
   renderPins();
 }
@@ -599,6 +774,9 @@ function trackNumbers(c) {
   }
   const late = c.kind === "raw" ? ids.map(i => (d.r[i] - d.t[i]) / 1000) : ids.map(i => (d.created[i] - d.t[i]) / 1000);
   const out = { plots: ids.length, jump: Math.round(jump), step: Math.round(step), late50: pct(late, 0.5), late99: pct(late, 0.99) };
+  const knownAt = i => c.kind === "raw" ? d.r[i] : d.created[i];
+  const after = ids.filter(i => knownAt(i) > CASE.span_ms);
+  if (after.length) out.afterWindow = { n: after.length, latestH: Math.max(...after.map(i => (knownAt(i) - d.t[i]) / 3600000) ) };
   if (c.kind !== "raw") {
     const rew = ids.filter(i => d.valid_to[i] != null), after = rew.map(i => (d.valid_to[i] - d.t[i]) / 60000);
     out.rewritten = rew.length; out.rew50 = pct(after, 0.5); out.rewMax = after.length ? Math.max(...after) : null;
@@ -622,8 +800,16 @@ function numbersTable() {
     row("late p50 / p99 s", n => `${f1(n.late50)} / ${f1(n.late99)}`) +
     (anyStrat ? row("raw plots used", n => n.used == null ? "" : `${n.used.toLocaleString()}${Object.keys(n.usedBySrc || {}).length ? " · " + Object.entries(n.usedBySrc).map(([k, v]) => `${SHORT_SOURCE[k] || k} ${v}`).join(", ") : ""}`) : "") +
     (anyRaw ? usedNames.map(name => row(`used by ${shortRun(name)}`, n => n.usedBy && n.usedBy[name] != null ? `${n.usedBy[name]} / ${n.plots}` : "")).join("") : "") +
-    `</table>` + (anyRaw && !usedNames.length ? `<div class="help" style="margin-top:0.3rem">Pick a "used by" raw plot colour to see how many of these plots each strategy took.</div>` : "");
+    `</table>` + (anyRaw && !usedNames.length ? `<div class="help" style="margin-top:0.3rem">Pick a "used by" raw plot colour to see how many of these plots each strategy took.</div>` : "") + afterWindowNote(nums);
 }
+// plots that were only received or emitted after the case window: they count in the numbers and set the chart axes, but the timeline can never reach them
+function afterWindowNote(nums) {
+  const late = compare.map((c, k) => [c, nums[k].afterWindow]).filter(([, a]) => a);
+  if (!late.length) return "";
+  const items = late.map(([c, a]) => `<span class="sw${c.kind === "raw" ? "" : " line"}" style="background:${rgb(c.color)}"></span> ${a.n} plot${a.n > 1 ? "s" : ""} up to ${a.latestH.toFixed(1)} h late`).join(", ");
+  return `<div class="help" style="margin-top:0.4rem; display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap"><span><b style="color:var(--fg); font-weight:500">Arrived after this window:</b> ${items}.</span><button id="lateBtn" class="${showLate ? "accent" : ""}" title="show these plots at their position time, although nobody had them yet">${showLate ? "showing late arrivals" : "show late arrivals"}</button></div>`;
+}
+function toggleLate() { showLate = !showLate; renderCompare(); draw(); }
 function renderPins() {
   if (!pins.length) { $("pins").innerHTML = ""; return; }
   let h = pins.map((p, k) => `<div class="pin ${k ? "two" : ""}" data-k="${k}" title="click to remove this pin"><b>Pin ${k + 1}</b> · ${describe(p)}</div>`).join("");
@@ -670,7 +856,9 @@ function crossTrack(lat1, lon1, lat2, lon2, lat, lon) {
 // ---------- charts ----------
 // each chart: how to get a value for a raw plot and for a strategy plot
 const CHARTS = [   // raw: value for a raw plot index; run: value for a strategy plot index
-  { id:"alt", title:"Altitude", unit:"ft", raw:i => RAW.alt[i], run:(r, i) => r.alt[i] },
+  { id:"alt", title:"Altitude, shared altitude_ft field", unit:"ft", raw:i => RAW.alt[i], run:(r, i) => r.alt[i], note:"What every consumer reads. uAvionix puts its geometric (GPS) height here; all other sources put barometric altitude here, so uAvionix sits hundreds to thousands of feet above the rest of the same aircraft." },
+  { id:"altBaro", title:"Barometric altitude, source's own field", unit:"ft", raw:i => RAW.alt_baro[i], run:null, note:"Raw plots only. ADS-B Exchange alt_baro, PlaneFinder altitude, uAvionix flight_level × 100, TFMS and ACARS altitude_ft. Strategy plots carry one altitude of unknown kind, so they are not drawn here." },
+  { id:"altGeo", title:"Geometric height, source's own field", unit:"ft", raw:i => RAW.alt_geo[i], run:null, note:"Raw plots only. ADS-B Exchange alt_geom and uAvionix geometric_height. PlaneFinder and TFMS send no geometric height, so their series stay empty." },
   { id:"gs", title:"Ground speed", unit:"kt", raw:i => RAW.gs[i], run:(r, i) => r.gs[i] },
   { id:"trk", title:"Track angle", unit:"deg", raw:i => RAW.trk[i] ?? RAW.hdg[i], run:(r, i) => r.trk[i] ?? r.hdg[i] },
   { id:"late", title:"Lateness, received minus position time", unit:"s", raw:i => (RAW.r[i] - RAW.t[i]) / 1000, run:(r, i) => (r.r[i] - r.t[i]) / 1000 },
@@ -723,7 +911,7 @@ function makeChart(spec, points, xs) {
   const yLo = allVals.length ? Math.min(...allVals) : 0, yHi = allVals.length ? Math.max(...allVals) : 1;
   const data = maskData(full, points, spec, legend.map(l => l.match(/data-label="([^"]*)"/)[1]));
   const box = document.createElement("div"); box.className = "chart";
-  box.innerHTML = `<div class="chart-head"><b>${spec.title}</b><span class="unit">${spec.unit}</span><span class="legend">${legend.join("")}</span></div>`;
+  box.innerHTML = `<div class="chart-head"><b>${spec.title}</b><span class="unit">${spec.unit}</span><span class="legend">${legend.join("")}</span></div>` + (spec.note ? `<div class="chart-note">${spec.note}</div>` : "");
   const holder = document.createElement("div"); box.appendChild(holder); $("charts").appendChild(box);
   const hgrip = document.createElement("div"); hgrip.className = "hgrip"; hgrip.title = "drag to change the height"; box.appendChild(hgrip);
   const axisStyle = { stroke:"#8b95a1", grid:{ stroke:"#1f2429", width:1, dash:[2, 4] }, ticks:{ stroke:"#2a3037", width:1, size:4 }, font:'10px "SF Mono", SFMono-Regular, Menlo, monospace' };
@@ -768,14 +956,16 @@ function makeChart(spec, points, xs) {
   return { u, spec, full, points, labels };
 }
 // keep only what is valid at time now: raw plots we have received, strategy plots emitted and not yet replaced
+const knownNow = p => (p.known <= now || (showLate && p.known > CASE.span_ms && p.t <= now)) && (p.until == null || p.until > now);
 function maskData(full, points, spec, labels) {
-  const validAt = p => p.known <= now && (p.until == null || p.until > now), hidden = hiddenSeries[spec.id] || new Set();
+  const validAt = knownNow, hidden = hiddenSeries[spec.id] || new Set();
   return [chartData.xs, ...full.map((ys, k) => hidden.has(labels[k]) ? ys.map(() => null) : ys.map((v, j) => v != null && validAt(points[j]) ? v : null))];
 }
 let syncing = false;
 function onZoom(u) {
   const min = u.scales.x.min, max = u.scales.x.max;
-  const xs = chartData.xs, full = (min <= 0.001 && max >= CASE.span_ms / 1000 - 0.001) || (xs.length && min <= xs[0] + 0.001 && max >= xs[xs.length - 1] - 0.001);
+  // only the whole case window counts as "no zoom"; zooming to exactly the data's extent is still a zoom
+  const full = min <= 0.001 && max >= CASE.span_ms / 1000 - 0.001;
   const next = full ? null : [min * 1000, max * 1000];
   const same = (next == null && win == null) || (next && win && Math.abs(next[0] - win[0]) < 1 && Math.abs(next[1] - win[1]) < 1);
   if (same) return;
@@ -796,7 +986,7 @@ function nearestPoint(u, spec) {
   let best = null, bestD = 14;
   const hidden = hiddenSeries[spec.id] || new Set();
   chartData.points.forEach((p, k) => {
-    if (!(p.known <= now && (p.until == null || p.until > now))) return;
+    if (!knownNow(p)) return;
     if (hidden.has(trackLabel(p.track))) return;
     const v = valueOf(spec, p); if (v == null) return;
     const dx = u.valToPos(chartData.xs[k], "x") - left, dy = u.valToPos(v, "y") - top, d = Math.hypot(dx, dy);
@@ -846,9 +1036,9 @@ function pushUrl() {
     const c = map.getCenter(); q.set("map", `${c.lng.toFixed(4)},${c.lat.toFixed(4)},${map.getZoom().toFixed(2)}`);
     if (compare.length) q.set("cmp", compare.map(x => x.kind === "raw" ? `raw:${x.src}:${x.tid}` : `${x.kind}:${x.track}`).join(";"));
     q.set("src", [...document.querySelectorAll(".srcOn:checked")].map(x => x.value).join(","));
-    q.set("strat", [...document.querySelectorAll(".runOn:checked")].map(x => x.value).join(","));
+    q.set("strat", [...runChecked].join(","));
     const flags = ["rawOn", "runsOn", "runLines", "runRings", "greyOthers"].filter(id => $(id).checked); q.set("on", flags.join(","));
-    q.set("rc", $("rawColour").value); q.set("sc", $("runColour").value); q.set("fade", $("fadeWin").value === "custom" ? String(fadeWindowMs() / 1000) : $("fadeWin").value);
+    q.set("rc", $("rawColour").value); q.set("sc", $("runColour").value); q.set("rsz", $("rawSize").value); if ($("qualityOnly").checked) q.set("q", "1"); q.set("fade", $("fadeWin").value === "custom" ? String(fadeWindowMs() / 1000) : $("fadeWin").value);
     q.set("show", document.querySelector('input[name="filterMode"]:checked').value);
     history.replaceState(null, "", "?" + q.toString());
   }, 150);
@@ -858,17 +1048,18 @@ async function restoreUrlState() {
   if (!q.has("t")) return;
   const list = (k) => (q.get(k) || "").split(",").filter(Boolean);
   if (q.has("src")) { const on = new Set(list("src")); document.querySelectorAll(".srcOn").forEach(x => x.checked = on.has(x.value)); }
-  if (q.has("strat")) { for (const name of list("strat")) { const cb = document.querySelector(`.runOn[value="${name}"]`); if (cb) { cb.checked = true; if (!RUNS[name]) await loadRun(name); } } }
+  if (q.has("strat")) { for (const name of list("strat")) if (runById(name)) { runChecked.add(name); if (!RUNS[name]) await loadRun(name); } renderRunToolbar(); }
   if (q.has("on")) { const on = new Set(list("on")); for (const id of ["rawOn", "runsOn", "runLines", "runRings", "greyOthers"]) $(id).checked = on.has(id); }
   if (q.has("rc")) { const v = q.get("rc"); if ([...$("rawColour").options].some(o => o.value === v)) { $("rawColour").value = v; if (v.startsWith("used:")) await loadUsed(v.slice(5)); } }
   if (q.has("sc")) $("runColour").value = q.get("sc");
+  if (q.has("rsz")) $("rawSize").value = q.get("rsz"); $("qualityOnly").checked = q.get("q") === "1";
   if (q.has("fade")) { const v = q.get("fade"); if ([...$("fadeWin").options].some(o => o.value === v)) $("fadeWin").value = v; else { $("fadeWin").value = "custom"; $("fadeCustom").value = v; $("fadeCustom").style.display = "inline-block"; } }
   if (q.has("show")) { const r = document.querySelector(`input[name="filterMode"][value="${q.get("show")}"]`); if (r) r.checked = true; }
   if (q.has("map")) { const [lng, lat, z] = q.get("map").split(",").map(Number); map.jumpTo({ center:[lng, lat], zoom:z }); }
   if (q.has("cmp")) for (const item of q.get("cmp").split(";")) {
     const [kind, ...rest] = item.split(":");
     if (kind === "raw") { const [src, tid] = [rest[0], rest.slice(1).join(":")]; let i = -1; for (let k = 0; k < RAW.n; k++) if (RAW.src[k] === src && RAW.tid[k] === tid) { i = k; break; } if (i >= 0) toggleTrack("raw", i, true); }
-    else { const track = rest.join(":"); if (!RUNS[kind]) { const cb = document.querySelector(`.runOn[value="${kind}"]`); if (!cb) continue; cb.checked = true; await loadRun(kind); } const r = RUNS[kind]; let i = -1; for (let k = 0; k < r.n; k++) if (r.track[k] === track) { i = k; break; } if (i >= 0) toggleTrack(kind, i, true); }
+    else { const track = rest.join(":"); if (!RUNS[kind]) { if (!runById(kind)) continue; runChecked.add(kind); await loadRun(kind); renderRunToolbar(); } const r = RUNS[kind]; let i = -1; for (let k = 0; k < r.n; k++) if (r.track[k] === track) { i = k; break; } if (i >= 0) toggleTrack(kind, i, true); }
   }
   if (q.has("win")) { const [a, b] = q.get("win").split("-").map(Number); if (b > a) win = [a, b]; }
   now = clampNow(+q.get("t") || 0);

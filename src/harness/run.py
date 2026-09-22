@@ -1,11 +1,13 @@
 """Run one strategy on one case and store what it emitted.
 
-usage: uv run -m harness.run --case src/data/cases/<name> --strategy baseline
+usage: uv run -m harness.run --case src/data/cases/<name> --strategy baseline [--note "..."]
+       uv run -m harness.run --case src/data/cases --strategy baseline      # every case in the folder
 
-Output goes to <case>/runs/<strategy>/: events.bin holds every FusionChangedEvent as
-length-prefixed protobuf bytes, fused_plots.parquet holds one row per fused plot with the
-event it came from, and used_raw.parquet says for every raw plot which track took it in, or
-that it was dropped. The viewer reads the last two.
+Output goes to <case>/runs/<strategy>/<label>/, a fresh folder every time (labels r001, r002, ...):
+events.bin holds every FusionChangedEvent as length-prefixed protobuf bytes, fused_plots.parquet
+holds one row per fused plot with the event it came from, used_raw.parquet says for every raw plot
+which track took it in or that it was dropped, and run.json says what produced it (see runs.py).
+The viewer reads the last three.
 """
 from __future__ import annotations
 
@@ -17,26 +19,33 @@ from . import protos_path  # noqa: F401
 from uni.protobuf.uni_track_schemas.fusion.v1beta.fusion_changed_event_pb2 import FusionChangedEvent, FusionQuality
 from .raw_plots import load_case
 from .strategies.baseline import Baseline
+from . import runs
 
 STRATEGIES = {"baseline": Baseline}
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--case", required=True)
+    ap.add_argument("--case", required=True, nargs="+", help="case folder(s), or a folder that holds case folders")
     ap.add_argument("--strategy", required=True, choices=sorted(STRATEGIES))
+    ap.add_argument("--note", default="", help="free text stored with the run")
     a = ap.parse_args()
-    case = pathlib.Path(a.case)
-    out = case / "runs" / a.strategy
-    out.mkdir(parents=True, exist_ok=True)
+    batch, git = runs.new_batch(), runs.git_info()
+    for case in runs.case_folders(a.case):
+        run_one(case, a.strategy, a.note, batch, git)
+
+
+def run_one(case: pathlib.Path, name: str, note: str, batch: str, git: dict) -> None:
+    out, label = runs.new_run(case, name)
+    started = time.time()
 
     # load the raw plots in receipt order
     t0 = time.time()
     plots = load_case(case)
-    print(f"{len(plots)} raw plots loaded in {time.time() - t0:.1f} s")
+    print(f"{case.name}: {len(plots)} raw plots loaded in {time.time() - t0:.1f} s")
 
     # feed them to the strategy one by one
-    strategy = STRATEGIES[a.strategy]()
+    strategy = STRATEGIES[name]()
     t0 = time.time()
     events, used = [], []
     asks = hasattr(strategy, "used")
@@ -45,7 +54,7 @@ def main():
         track = strategy.used(plot) if asks else ""     # "" means used, track unknown
         used.append(dict(source=plot.source, position_us=plot.position_us, source_track_identifier=plot.proto.common.track_identifier, track_id=track))
     events += strategy.finish()
-    print(f"{len(events)} events emitted in {time.time() - t0:.1f} s")
+    print(f"  {len(events)} events emitted in {time.time() - t0:.1f} s")
 
     # store the events exactly as protobuf, and flattened for the viewer
     write_events(events, out / "events.bin")
@@ -54,7 +63,11 @@ def main():
     frame.to_parquet(out / "fused_plots.parquet", index=False)
     # which raw plots the strategy took in, and into which track; track_id None means dropped
     pd.DataFrame(used).to_parquet(out / "used_raw.parquet", index=False)
-    print(f"{len(rows)} fused plots written to {out}, {sum(1 for u in used if u['track_id'] is None)} raw plots dropped")
+    dropped = sum(1 for u in used if u["track_id"] is None)
+    counts = dict(raw_plots=len(plots), events=len(events), fused_plots=len(rows), tracks=int(frame["track_id"].nunique()) if len(frame) else 0,
+                  raw_used=len(used) - dropped, raw_dropped=dropped, rewritten=int(frame["valid_to_us"].notna().sum()) if len(frame) else 0)
+    runs.write_manifest(out, name, label, batch, case, params=dict(getattr(strategy, "params", {}) or {}), note=note, counts=counts, duration_s=time.time() - started, git=git)
+    print(f"  {len(rows)} fused plots written to {out}, {dropped} raw plots dropped")
 
 
 def write_events(events: list[FusionChangedEvent], path: pathlib.Path) -> None:

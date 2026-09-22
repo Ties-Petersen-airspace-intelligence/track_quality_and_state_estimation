@@ -13,6 +13,8 @@ from http.server import HTTPServer, SimpleHTTPRequestHandler
 import numpy as np
 import pandas as pd
 
+from .. import runs as runbook
+
 HERE = pathlib.Path(__file__).parent
 RAW_SOURCES = ["adsbx", "planefinder", "uavionix", "stdds", "tfms_ti", "tfms_or", "ual", "asa"]
 
@@ -27,6 +29,13 @@ def columnar(frame: pd.DataFrame) -> dict:
         else:
             out[c] = ["" if pd.isna(v) else str(v) for v in s.tolist()]
     return out
+
+
+def num(f: pd.DataFrame, col: str | None) -> pd.Series:
+    """A numeric column, or all missing when the source has no such field."""
+    if col is None or col not in f.columns:
+        return pd.Series([None] * len(f), dtype="Float64")
+    return pd.to_numeric(f[col], errors="coerce")
 
 
 def load_raw(case: pathlib.Path, t0_us: int) -> dict:
@@ -49,6 +58,16 @@ def load_raw(case: pathlib.Path, t0_us: int) -> dict:
             alt=pd.to_numeric(c("common.altitude_ft"), errors="coerce"), gs=pd.to_numeric(c("common.ground_speed_kt"), errors="coerce"),
             trk=pd.to_numeric(c("common.track_deg"), errors="coerce"), hdg=pd.to_numeric(c("common.heading_deg"), errors="coerce"),
             cs=c("common.callsign"), hex=c("common.adshex"), tail=c("common.tail_number"), tid=c("common.track_identifier"),
+            # ADS-B accuracy numbers where the source carries them: NACp, NIC, Rc in metres, NACv, SIL
+            nacp=num(f, {"adsbx": "nac_p", "uavionix": "quality_indicators.nacp", "stdds": "status.nacp"}.get(source)),
+            nic=num(f, {"adsbx": "nic", "uavionix": "quality_indicators.nucp_or_nic", "stdds": "status.nic"}.get(source)),
+            rc=num(f, {"adsbx": "rc"}.get(source)),
+            # the two kinds of altitude a source carries in its own fields; common.altitude_ft is barometric for every
+            # source except uAvionix, which puts the geometric height there and the flight level in flight_level
+            alt_baro=(num(f, "flight_level") * 100 if source == "uavionix" else num(f, {"adsbx": "alt_baro", "planefinder": "altitude", "tfms_ti": "common.altitude_ft", "tfms_or": "common.altitude_ft", "ual": "common.altitude_ft", "asa": "common.altitude_ft"}.get(source))),
+            alt_geo=num(f, {"adsbx": "alt_geom", "uavionix": "geometric_height"}.get(source)),
+            nacv=num(f, {"adsbx": "nac_v", "uavionix": "quality_indicators.nucr_or_nacv"}.get(source)),
+            sil=num(f, {"adsbx": "sil", "uavionix": "quality_indicators.sil", "stdds": "status.sil"}.get(source)),
             _pos_us=micros("position_timestamp").astype("Int64"),
         )))
     frame = pd.concat(parts, ignore_index=True).sort_values("r").reset_index(drop=True)
@@ -58,6 +77,7 @@ def load_raw(case: pathlib.Path, t0_us: int) -> dict:
 
 
 def load_run(case: pathlib.Path, name: str, t0_us: int) -> dict:
+    """name is 'strategy/label', the run's folder under runs/."""
     f = pd.read_parquet(case / "runs" / name / "fused_plots.parquet")
     frame = pd.DataFrame(dict(
         track=f["track_id"], created=(f["created_at_us"] - t0_us) // 1000,
@@ -89,7 +109,7 @@ def load_used(case: pathlib.Path, name: str, raw: dict) -> dict:
 def list_cases(root: pathlib.Path) -> list[dict]:
     out = []
     for folder in sorted(p for p in root.iterdir() if (p / "case.json").exists()):
-        runs = sorted(r.name for r in (folder / "runs").glob("*") if (r / "fused_plots.parquet").exists()) if (folder / "runs").exists() else []
+        runs = [r["id"] for r in runbook.list_runs(folder)]
         info = json.loads((folder / "case.json").read_text())
         out.append(dict(name=folder.name, complete=bool(runs), runs=runs, t_start=info.get("t_start"), suspect=(info.get("suspect") or {}).get("callsign")))
     return out
@@ -105,8 +125,7 @@ def make_handler(root: pathlib.Path):
         info = json.loads((case / "case.json").read_text())
         t0_us = int(pd.Timestamp(info["t_start"], tz="UTC").timestamp() * 1e6)
         t1_us = int(pd.Timestamp(info["t_end"], tz="UTC").timestamp() * 1e6)
-        runs = sorted(p.name for p in (case / "runs").glob("*") if (p / "fused_plots.parquet").exists()) if (case / "runs").exists() else []
-        cache[name] = dict(path=case, info=info, t0_us=t0_us, t1_us=t1_us, runs=runs, data={})
+        cache[name] = dict(path=case, info=info, t0_us=t0_us, t1_us=t1_us, runs=runbook.list_runs(case), data={})
         return cache[name]
 
     class H(SimpleHTTPRequestHandler):
@@ -134,13 +153,14 @@ def make_handler(root: pathlib.Path):
                     return self._json(dict(error="no such case"), 404)
                 c = open_case(name)
                 if kind == "case":
+                    c["runs"] = runbook.list_runs(c["path"])   # a run may have been added since the case was first opened
                     return self._json(dict(case=c["info"], t0_us=c["t0_us"], span_ms=(c["t1_us"] - c["t0_us"]) // 1000, runs=c["runs"]))
                 if kind == "raw":
                     c["data"].setdefault("raw", load_raw(c["path"], c["t0_us"]))
                     return self._json({k: v for k, v in c["data"]["raw"].items() if not k.startswith("_")})
-                if kind in ("run", "used") and len(parts) == 4:
-                    run = parts[3]
-                    if run not in c["runs"]:
+                if kind in ("run", "used") and len(parts) == 5:
+                    run = parts[3] + "/" + parts[4]
+                    if run not in [r["id"] for r in c["runs"]]:
                         return self._json(dict(error="no such strategy"), 404)
                     if kind == "run":
                         c["data"].setdefault("run:" + run, load_run(c["path"], run, c["t0_us"]))
@@ -149,6 +169,20 @@ def make_handler(root: pathlib.Path):
                     c["data"].setdefault("used:" + run, load_used(c["path"], run, c["data"]["raw"]))
                     return self._json(c["data"]["used:" + run])
             return SimpleHTTPRequestHandler.do_GET(self)
+
+        def do_POST(self):
+            # the one thing the page may write: the note of a run, into its run.json
+            parts = [p for p in self.path.split("?")[0].split("/") if p]
+            if len(parts) == 5 and parts[:2] == ["api", "note"] and (root / parts[2] / "case.json").exists():
+                body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0)) or 0) or b"{}")
+                try:
+                    manifest = runbook.set_note(root / parts[2], parts[3], parts[4], str(body.get("note", ""))[:2000])
+                except FileNotFoundError:
+                    return self._json(dict(error="no such run"), 404)
+                if parts[2] in cache:
+                    cache[parts[2]]["runs"] = runbook.list_runs(root / parts[2])
+                return self._json(manifest)
+            return self._json(dict(error="not found"), 404)
 
         def log_message(self, *a):
             pass
