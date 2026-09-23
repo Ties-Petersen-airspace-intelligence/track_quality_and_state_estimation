@@ -30,7 +30,7 @@ A strategy's output is stored the way production stores its own: the plots it ap
 
 The viewer's toolbar shows the newest run of every strategy. The "more…" button on the strategies group opens a table of every run of the case, sortable by any column, where any run can be switched on, the note can be edited in place, a click shows the full manifest, and two ticked runs are compared field by field. The note is the only thing the viewer ever writes, into that run's `run.json`.
 
-Strategy runs are cheap to regenerate, so `runs/baseline_append/` is not committed. The production runs are committed, because they come from BigQuery and cost money to pull.
+Every run is committed, strategy runs and production runs alike, so a version in the runs panel can be opened on any checkout.
 
 ## How a strategy works
 
