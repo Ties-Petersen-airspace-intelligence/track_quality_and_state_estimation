@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Track harness</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%22-40%20-120%20660%20410%22%3E%3Crect%20x%3D%22-40%22%20y%3D%22-120%22%20width%3D%22660%22%20height%3D%22410%22%20fill%3D%22%230a0a0a%22/%3E%3Cpath%20d%3D%22M196.103%2045.6127V81.6938H160.825L120.276%20126.333H196.103V170.973H240.743V0.973145H155.194L0.772461%20170.973L60.819%20170.973L174.692%2045.6127H196.103Z%22%20fill%3D%22%23e31b23%22/%3E%3Cpath%20d%3D%22M517.517%200.973145V45.6127L303.247%2045.6127V63.3572L517.517%2063.3572V170.973H258.607V126.333L472.877%20126.333V107.997L258.607%20107.997V0.973145H517.517Z%22%20fill%3D%22%23e31b23%22/%3E%3Cpath%20d%3D%22M535.371%200.973145H580.01V170.973H535.371V0.973145Z%22%20fill%3D%22%23e31b23%22/%3E%3C/svg%3E">
+<title>TRACK HARNESS</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%22-113%20-317%20806%20806%22%3E%3Crect%20x%3D%22-113%22%20y%3D%22-317%22%20width%3D%22806%22%20height%3D%22806%22%20fill%3D%22%23ffffff%22/%3E%3Cpath%20d%3D%22M196.103%2045.6127V81.6938H160.825L120.276%20126.333H196.103V170.973H240.743V0.973145H155.194L0.772461%20170.973L60.819%20170.973L174.692%2045.6127H196.103Z%22%20fill%3D%22%23e31b23%22/%3E%3Cpath%20d%3D%22M517.517%200.973145V45.6127L303.247%2045.6127V63.3572L517.517%2063.3572V170.973H258.607V126.333L472.877%20126.333V107.997L258.607%20107.997V0.973145H517.517Z%22%20fill%3D%22%23e31b23%22/%3E%3Cpath%20d%3D%22M535.371%200.973145H580.01V170.973H535.371V0.973145Z%22%20fill%3D%22%23e31b23%22/%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uplot@1.6.31/dist/uPlot.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.js"></script>
@@ -52,12 +52,12 @@
   #splash.gone { opacity:0; pointer-events:none; }
   #splash .logo { width:9rem; height:2.65rem; color:var(--red); margin-bottom:1.4rem; } #splash .logo svg { width:100%; height:100%; display:block; }
   #splash .wordmark { font: 500 1.5rem/1 var(--capsnorm); letter-spacing:0.16em; text-transform:uppercase; color:var(--fg); }
-  #splash .wordmark span { color:var(--accent); margin-left:0.45rem; font-weight:400; }
+  #splash .wordmark span { color:var(--body); margin-left:0.45rem; font-weight:400; }
   #splash .bar { position:relative; width:11.5rem; height:3px; overflow:hidden; }
   #splash .dots { position:absolute; inset:0; background: repeating-linear-gradient(to right, #333333 0 3px, transparent 3px 6px); }
   /* a bright head with a long soft tail, gliding back and forth over the dashes */
   #splash .block { position:absolute; top:0; width:4.5rem; height:3px; background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.25) 55%, rgba(255,255,255,0.7) 85%, #ffffff 100%); animation: slide 1.6s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate; }
-  #splash .block::after { content:""; position:absolute; right:0; top:-3px; width:1.2rem; height:9px; background: radial-gradient(ellipse at center, rgba(204,255,0,0.35), transparent 70%); }
+  #splash .block::after { content:""; position:absolute; right:0; top:-3px; width:1.2rem; height:9px; background: radial-gradient(ellipse at center, rgba(255,255,255,0.3), transparent 70%); }
   @keyframes slide { from { left:-3rem; transform:scaleX(1); } to { left:calc(100% - 1.5rem); transform:scaleX(1); } }
   #splash .block.back { transform:scaleX(-1); }
   #splash .what { color:var(--dim); font-family:var(--caps); font-size:0.625rem; text-transform:uppercase; letter-spacing:0.14em; margin-top:0.1rem; }
@@ -90,8 +90,28 @@
   .field { margin-top:0.55rem; display:flex; align-items:center; gap:0.6rem; }
   .field .label { min-width:7.5rem; }
   .sw { display:inline-block; width:0.55rem; height:0.55rem; border-radius:50%; flex:none; } .sw.line { width:0.9rem; height:2px; }
-  input[type=checkbox], input[type=radio] { accent-color: var(--accent); margin:0 0.3rem 0 0; }
+  /* checkboxes and radios in the brand's product style: square, thin border, lime when on; a radio shows a smaller lime square inside */
+  input[type=checkbox], input[type=radio] { appearance:none; -webkit-appearance:none; width:0.95rem; height:0.95rem; margin:0 0.35rem 0 0; flex:none; background:var(--panel); border:1px solid var(--dim); border-radius:0; cursor:pointer; position:relative; vertical-align:-0.15rem; }
+  input[type=checkbox]:hover, input[type=radio]:hover, input[type=checkbox]:focus-visible, input[type=radio]:focus-visible { border-color:var(--body); outline:none; }
+  input[type=checkbox]:checked { background:var(--accent); border-color:var(--accent); }
+  input[type=radio]:checked { border-color:var(--accent); }
+  input[type=radio]:checked::after { content:""; position:absolute; inset:0.2rem; background:var(--accent); }
   select, input[type=text], button { font: 0.75rem var(--mono); color:var(--fg); background:var(--panel); border:1px solid var(--line-strong); padding:0.3rem 0.5rem; }
+  /* dropdowns: the native select is hidden and kept in sync; .asel is what is seen, a flat button and a list panel like the brand's "select option" sheet */
+  select.asel-native { display:none; }
+  .asel { position:relative; flex:1; min-width:0; }
+  .asel-btn { display:flex; align-items:center; gap:0.5rem; width:100%; text-align:left; font: 0.75rem var(--mono); color:var(--fg); background:var(--panel); border:1px solid var(--line-strong); padding:0.3rem 0.5rem; cursor:pointer; }
+  .asel-btn span { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .asel-btn i { color:var(--dim); font-style:normal; font-size:0.6rem; }
+  .asel-btn:hover { border-color:var(--dim); } .asel.open .asel-btn { border-color:var(--body); } .asel.open .asel-btn i { color:var(--body); }
+  .asel-list { position:fixed; width:max-content; max-width:24rem; z-index:60; background:var(--chrome); border:1px solid var(--line-strong); box-shadow:0 8px 32px rgb(0 0 0 / 60%); display:none; }
+  .asel.open .asel-list { display:block; }
+  .asel-head { padding:0.5rem 0.7rem 0.35rem; font: 0.625rem var(--caps); text-transform:uppercase; letter-spacing:0.1em; color:var(--muted); border-bottom:1px solid var(--line); }
+  .asel-item { display:flex; align-items:center; gap:0.7rem; padding:0.5rem 0.7rem; font: 0.75rem var(--mono); color:var(--body); cursor:pointer; border-left:2px solid transparent; white-space:nowrap; }
+  .asel-item:hover { background:var(--hover); color:var(--fg); } .asel-item.on { background:var(--raised); color:var(--fg); border-left-color:var(--accent); }
+  .asel-item i { margin-left:auto; color:var(--dim); font-style:normal; }
+  .asel-item.off { color:var(--dim); cursor:default; } .asel-item.off:hover { background:transparent; color:var(--dim); }
+  #top .asel { flex:none; width:auto; } #top .asel-btn { background:transparent; border-color:transparent; color:var(--muted); max-width:24rem; } #top .asel-btn:hover { border-color:var(--line-strong); }
+  #ctl .head .asel { flex:none; } #ctl .head .asel-btn { padding:0.2rem 0.4rem; }
   #left select { flex:1; min-width:0; max-width:100%; text-overflow:ellipsis; }
   .field { min-width:0; }
   button { text-transform:uppercase; letter-spacing:0.06em; font-size:0.6875rem; cursor:pointer; } button:hover { border-color:var(--muted); color:#fff; }
@@ -223,7 +243,7 @@
   <h1><span class="pfx">&#9656;&#9656;&#9656;</span> Track harness</h1>
   <select id="caseSel" title="switch case"><option>loading…</option></select>
   <button id="resetView" title="back to the default view of this case: nothing compared, timeline at the start, all toggles as they open">reset view</button>
-  <div class="right"><span id="sub"></span><span class="dim">viewer build 2026-09-23 13:05</span><span class="asimark">[ ASI ]</span></div>
+  <div class="right"><span id="sub"></span><span class="dim">viewer build 2026-09-23 16:10</span><span class="asimark">[ ASI ]</span></div>
 </header>
 
 <aside id="left">
@@ -404,6 +424,7 @@ async function init() {
   const name = CASE_NAME && all.some(c => c.name === CASE_NAME) ? CASE_NAME : (complete[0] || {}).name;
   $("caseSel").innerHTML = all.map(c => `<option value="${c.name}" ${c.name === name ? "selected" : ""} ${c.complete ? "" : "disabled"}>${c.name}${c.complete ? "" : " (no strategy output yet)"}</option>`).join("");
   $("caseSel").onchange = () => { location.search = "?case=" + encodeURIComponent($("caseSel").value); };
+  asiSelects();
   $("resetView").onclick = () => { location.search = "?case=" + encodeURIComponent(CASE.name); };   // a clean load: only the case in the address
   if (!name) { $("splashWhat").textContent = "no complete case in the cases folder"; return; }
   CASE = await api("case/" + name); CASE.name = name;
@@ -447,6 +468,7 @@ async function init() {
   $("status").textContent = RAW.n.toLocaleString();
   now = Math.min(CASE.span_ms, 12 * 60000);
   await restoreUrlState();   // after the toolbar exists and the defaults are set, so a shared link wins
+  refreshSelects();
   renderCompare(); rebuildCharts(); applyWindow(); sync();
   map.on("moveend", pushUrl);
   const done = () => { const el = $("splash"); if (!el) return; el.classList.add("gone"); setTimeout(() => el.remove(), 400); };
@@ -1035,6 +1057,35 @@ function drawMarks(u, spec) {
   if (hover) mark(hover, "#ccff00", 7, "");
   ctx.restore();
 }
+// ---------- dropdowns in the brand style ----------
+// Every select keeps working for the code (value, options, change); a button and a list drawn next to it are what the page shows.
+function asiSelects() {
+  for (const sel of document.querySelectorAll("select:not(.asel-native)")) {
+    sel.classList.add("asel-native");
+    const wrap = document.createElement("div"); wrap.className = "asel";
+    const btn = document.createElement("button"); btn.type = "button"; btn.className = "asel-btn"; btn.innerHTML = "<span></span><i>▾</i>";
+    const list = document.createElement("div"); list.className = "asel-list";
+    wrap.append(btn, list); sel.after(wrap); wrap._sel = sel;
+    // the list is fixed to the page, not to the panel, so a scrolling side panel cannot clip it; it opens upward near the bottom edge
+    btn.onclick = e => { e.stopPropagation(); const open = !wrap.classList.contains("open"); closeSelects(); if (!open) return;
+      renderSelectList(wrap); const r = btn.getBoundingClientRect(), up = window.innerHeight - r.bottom < 260;
+      Object.assign(list.style, { left:r.left + "px", minWidth:r.width + "px", top:up ? "auto" : (r.bottom + 4) + "px", bottom:up ? (window.innerHeight - r.top + 4) + "px" : "auto" });
+      wrap.classList.add("open"); };
+    refreshSelect(wrap);
+  }
+  document.addEventListener("mousedown", e => { if (!e.target.closest(".asel")) closeSelects(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") closeSelects(); });
+}
+function closeSelects() { document.querySelectorAll(".asel.open").forEach(w => w.classList.remove("open")); }
+function refreshSelect(wrap) { const sel = wrap._sel, o = sel.options[sel.selectedIndex]; wrap.querySelector(".asel-btn span").textContent = o ? o.textContent : ""; wrap.style.display = sel.style.display === "none" ? "none" : ""; }
+function refreshSelects() { document.querySelectorAll(".asel").forEach(refreshSelect); }
+function renderSelectList(wrap) {
+  const sel = wrap._sel, label = (sel.closest(".field, .tools") || {}).querySelector?.(".label"), title = sel.title || (label ? label.textContent : "select option");
+  const list = wrap.querySelector(".asel-list");
+  list.innerHTML = `<div class="asel-head">${title}</div>` + [...sel.options].map((o, i) => `<div class="asel-item ${i === sel.selectedIndex ? "on" : ""} ${o.disabled ? "off" : ""}" data-i="${i}">${o.textContent}<i>›</i></div>`).join("");
+  list.querySelectorAll(".asel-item").forEach(it => it.onclick = () => { const i = +it.dataset.i; if (sel.options[i].disabled) return; sel.selectedIndex = i; sel.dispatchEvent(new Event("change")); refreshSelect(wrap); closeSelects(); });
+}
+
 // ---------- the view in the address bar ----------
 let urlTimer = null;
 function pushUrl() {
