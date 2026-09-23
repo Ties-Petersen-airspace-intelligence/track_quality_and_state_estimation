@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "visible-error-review",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": ["run", "--directory", "src", "data/visible_error_finder/review.py"],
+      "port": 8771
+    }
+  ]
+}
