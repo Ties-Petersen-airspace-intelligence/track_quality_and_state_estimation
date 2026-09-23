@@ -109,7 +109,7 @@ The viewer server serves that folder already, because it changes into the viewer
 
 The source schemas import the shared `Common` plot from `uni_track_plot_schema/proto/plot.proto`, a path that no checkout has any more because the file moved into uni-proto under a new package name. `protos/uni_track_plot_schema/proto/plot.proto` is a copy of the uni-proto version with the old package name, so the source schemas compile unchanged. The fields and numbers are identical, and a raw `Common` is copied into a `FusedPlot.common` by serialising and parsing, which works because the wire format is the same.
 
-The case data itself is pulled with `src/data/cases/pull_case.py`, one Parquet file per source table plus the two production fusion tables, all columns. The bq JSON export rounds timestamps to whole seconds, so `src/data/cases/add_micros.py` recovers the exact microseconds from BigQuery's cached query results and stores them in `<column>_us` columns. The loader prefers those.
+The case data itself is pulled with `src/data/cases/pull_case.py`, one Parquet file per source table plus the two production fusion tables, all columns. The bq JSON export rounds timestamps to whole seconds, so `src/data/cases/add_micros.py` recovers the exact microseconds from BigQuery's cached query results and stores them in `<column>_us` columns. The loader prefers those. Many cases at once go through `src/data/cases/pull_cases.py`: one query per source and day for all cases of that day, since a case costs a full day scan whatever its box, with the `_us` columns added in the query. The `fw01` to `fw30` cases were pulled that way from the visible error finder's Flyways list.
 
 ## Things noticed on the first case
 
