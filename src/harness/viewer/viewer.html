@@ -891,7 +891,7 @@ function crossTrack(lat1, lon1, lat2, lon2, lat, lon) {
 // ---------- charts ----------
 // each chart: how to get a value for a raw plot and for a strategy plot
 const CHARTS = [   // raw: value for a raw plot index; run: value for a strategy plot index
-  { id:"alt", title:"Altitude, shared altitude_ft field", unit:"ft", raw:i => RAW.alt[i], run:(r, i) => r.alt[i], note:"What every consumer reads. uAvionix puts its geometric (GPS) height here; all other sources put barometric altitude here, so uAvionix sits hundreds to thousands of feet above the rest of the same aircraft." },
+  { id:"alt", title:"Altitude, shared altitude_ft field", unit:"ft", raw:i => RAW.alt[i], run:(r, i) => r.alt[i], note:"What every consumer reads: the barometric altitude, for every source. The uAvionix plots in the cases were corrected to this with src/data/cases/fix_uavionix.py after the integration fix of 22 September 2026; before that uAvionix put its GPS height here." },
   { id:"gs", title:"Ground speed", unit:"kt", raw:i => RAW.gs[i], run:(r, i) => r.gs[i] },
   { id:"trk", title:"Track angle", unit:"deg", raw:i => RAW.trk[i] ?? RAW.hdg[i], run:(r, i) => r.trk[i] ?? r.hdg[i] },
   { id:"late", title:"Lateness, received minus position time", unit:"s", raw:i => (RAW.r[i] - RAW.t[i]) / 1000, run:(r, i) => (r.r[i] - r.t[i]) / 1000 },

@@ -1,32 +1,36 @@
 {
- "name": "vancouver-ual517-2026-09-16",
- "day": "2026-09-16",
- "t_start": "2026-09-16 05:00:00",
- "t_end": "2026-09-16 06:00:00",
- "box": {
-  "lat_min": 48.6,
-  "lat_max": 49.8,
-  "lon_min": -123.775,
-  "lon_max": -122.575
- },
- "suspect": {
-  "callsign": "UAL517",
-  "hex": "A28904",
-  "fused_track_id": "AIR.19653"
- },
- "found_by": "case finder rule altitude_spike, case id altitude_spike-AIR.19653-051646",
- "reason": "Track UAL517 went from 0 ft to 45,850 ft in 6.2 s at 05:16:46 UTC over Vancouver, both plots from ADS-B Exchange. Real climbs stay well under 10,000 ft per minute.",
- "notes": "Box is twice the case finder box, centred on the hit. Window is the hour around the hit so only one day partition is scanned.",
- "rows": {
-  "adsbx": 57157,
-  "planefinder": 10378,
-  "uavionix": 18110,
-  "stdds": 0,
-  "tfms_ti": 676,
-  "tfms_or": 0,
-  "ual": 0,
-  "asa": 0,
-  "fusion_append": 14168,
-  "fusion_final": 26942
- }
+  "name": "vancouver-ual517-2026-09-16",
+  "day": "2026-09-16",
+  "t_start": "2026-09-16 05:00:00",
+  "t_end": "2026-09-16 06:00:00",
+  "box": {
+    "lat_min": 48.6,
+    "lat_max": 49.8,
+    "lon_min": -123.775,
+    "lon_max": -122.575
+  },
+  "suspect": {
+    "callsign": "UAL517",
+    "hex": "A28904",
+    "fused_track_id": "AIR.19653"
+  },
+  "found_by": "case finder rule altitude_spike, case id altitude_spike-AIR.19653-051646",
+  "reason": "Track UAL517 went from 0 ft to 45,850 ft in 6.2 s at 05:16:46 UTC over Vancouver, both plots from ADS-B Exchange. Real climbs stay well under 10,000 ft per minute.",
+  "notes": "Box is twice the case finder box, centred on the hit. Window is the hour around the hit so only one day partition is scanned.",
+  "rows": {
+    "adsbx": 57157,
+    "planefinder": 10378,
+    "uavionix": 18110,
+    "stdds": 0,
+    "tfms_ti": 676,
+    "tfms_or": 0,
+    "ual": 0,
+    "asa": 0,
+    "fusion_append": 14168,
+    "fusion_final": 26942
+  },
+  "fixes": [
+    "uavionix altitude_ft = flight_level * 100 (TS-1927)",
+    "uavionix ground_speed_kt = NM/s * 3600 (#114)"
+  ]
 }

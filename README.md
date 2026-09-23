@@ -14,6 +14,7 @@ Linear: https://linear.app/airspace-intelligence/project/create-state-estimator-
 
 ## What is in this repo
 
+- `src/data/cases/fix_uavionix.py`: brings the uAvionix plots of a case in line with the fixed integration (barometric altitude, knots), raw and production tables alike; `case.json` records that it ran.
 - `src/data/case_finder/`: scans a day of production fusion output for things that cannot be true and lets you review and mark the hits as test cases. Its own README explains the rules.
 - `src/data/cases/<case>/`: one folder per test case with the raw plots of every source, the production fusion output for the same hour, the SQL that pulled them, and the runs of every strategy on it.
 - `src/harness/`: replays a case through a strategy and shows the result next to production in a local viewer. Its README explains the strategy interface and the viewer.

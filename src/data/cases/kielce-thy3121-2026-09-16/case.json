@@ -1,32 +1,36 @@
 {
- "name": "kielce-thy3121-2026-09-16",
- "day": "2026-09-16",
- "t_start": "2026-09-16 04:40:00",
- "t_end": "2026-09-16 05:40:00",
- "box": {
-  "lat_min": 50.19,
-  "lat_max": 51.39,
-  "lon_min": 19.94,
-  "lon_max": 21.19
- },
- "suspect": {
-  "callsign": "THY3121",
-  "hex": "4BA8CF",
-  "fused_track_id": "AIR.20234"
- },
- "found_by": "case finder rule source_zigzag, case id source_zigzag-AIR.20234-050719",
- "reason": "At 05:07:19 UTC over southern Poland three consecutive fused plots of THY3121 go ADS-B Exchange, PlaneFinder, ADS-B Exchange within 25 s, the PlaneFinder plot 1.9 km off the line between its neighbours. Two sources disagree on where the aircraft is and fusion switches between them.",
- "notes": "Box is twice the case finder box, centred on the hit. Window is the hour around the hit, 04:40 to 05:40, inside one day partition.",
- "rows": {
-  "adsbx": 12508,
-  "planefinder": 10307,
-  "uavionix": 0,
-  "stdds": 0,
-  "tfms_ti": 0,
-  "tfms_or": 0,
-  "ual": 0,
-  "asa": 0,
-  "fusion_append": 3146,
-  "fusion_final": 5035
- }
+  "name": "kielce-thy3121-2026-09-16",
+  "day": "2026-09-16",
+  "t_start": "2026-09-16 04:40:00",
+  "t_end": "2026-09-16 05:40:00",
+  "box": {
+    "lat_min": 50.19,
+    "lat_max": 51.39,
+    "lon_min": 19.94,
+    "lon_max": 21.19
+  },
+  "suspect": {
+    "callsign": "THY3121",
+    "hex": "4BA8CF",
+    "fused_track_id": "AIR.20234"
+  },
+  "found_by": "case finder rule source_zigzag, case id source_zigzag-AIR.20234-050719",
+  "reason": "At 05:07:19 UTC over southern Poland three consecutive fused plots of THY3121 go ADS-B Exchange, PlaneFinder, ADS-B Exchange within 25 s, the PlaneFinder plot 1.9 km off the line between its neighbours. Two sources disagree on where the aircraft is and fusion switches between them.",
+  "notes": "Box is twice the case finder box, centred on the hit. Window is the hour around the hit, 04:40 to 05:40, inside one day partition.",
+  "rows": {
+    "adsbx": 12508,
+    "planefinder": 10307,
+    "uavionix": 0,
+    "stdds": 0,
+    "tfms_ti": 0,
+    "tfms_or": 0,
+    "ual": 0,
+    "asa": 0,
+    "fusion_append": 3146,
+    "fusion_final": 5035
+  },
+  "fixes": [
+    "uavionix altitude_ft = flight_level * 100 (TS-1927)",
+    "uavionix ground_speed_kt = NM/s * 3600 (#114)"
+  ]
 }
