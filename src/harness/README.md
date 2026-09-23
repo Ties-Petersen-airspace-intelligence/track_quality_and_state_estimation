@@ -91,6 +91,23 @@ Click a legend item to hide or show a series, shift click to show only that one,
 
 **Pins.** Shift click a plot on the map, or click a point in a chart, to pin it. Hovering a point anywhere rings it on the map and in every chart, and the card on the map names the kind of plot inside the source where a source has more than one: ADS-B, MLAT, ADS-R or TIS-B for ADS-B Exchange, ADS-B, PlaneFinder MLAT or third party MLAT for PlaneFinder. Up to two pins, numbered on the map and the charts, with the differences between them listed above the charts: seconds apart in position time, metres apart, the speed that distance would need, feet and knots apart, and how far apart we received them. Click a pin's card to remove it, escape clears both.
 
+### The brand font
+
+The viewer asks for Simplon ASI, the ASI brand typeface, in three families. Simplon ASI Norm carries the body text, Simplon ASI Mono the numbers and technical labels, and Simplon ASI Caps Mono and Caps Norm the headings. The font files are licensed to ASI for design and development, so they are not in this repository. `.gitignore` keeps `src/harness/viewer/fonts/` out.
+
+Without them the page still works and still looks close to right. Each `font-family` in the stylesheet names Simplon ASI first and then an ordinary stack, so a browser that cannot find Simplon ASI falls through to Inter or the system sans for text, and to SF Mono, Menlo or Consolas for the mono. Every heading that relies on a caps face also carries `text-transform: uppercase`, so the capitals survive the fallback. The letter shapes and the line widths change a little. Nothing moves or breaks.
+
+To get the real faces, download `Simplon_ASI.zip` from the Brand Identity 4.0 page in Notion, and copy the eight files from its `WOFF2` folders into `src/harness/viewer/fonts/`, keeping their names:
+
+```
+SimplonASINorm-Regular-Web.woff2      SimplonASINorm-Medium-Web.woff2
+SimplonASIMono-Regular-Web.woff2      SimplonASIMono-Medium-Web.woff2
+SimplonASICapsNorm-Regular-Web.woff2  SimplonASICapsNorm-Medium-Web.woff2
+SimplonASICapsMono-Regular-Web.woff2  SimplonASICapsMono-Medium-Web.woff2
+```
+
+The viewer server serves that folder already, because it changes into the viewer directory and hands anything it does not recognise to the standard static file handler. Reload the page and the real faces appear.
+
 ## About the protos
 
 The source schemas import the shared `Common` plot from `uni_track_plot_schema/proto/plot.proto`, a path that no checkout has any more because the file moved into uni-proto under a new package name. `protos/uni_track_plot_schema/proto/plot.proto` is a copy of the uni-proto version with the old package name, so the source schemas compile unchanged. The fields and numbers are identical, and a raw `Common` is copied into a `FusedPlot.common` by serialising and parsing, which works because the wire format is the same.
