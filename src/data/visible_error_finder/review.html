@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Visible fusion errors</title>
+<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
+<style>
+  body { margin: 0; font: 14px/1.4 -apple-system, system-ui, sans-serif; background: #111418; color: #e6e6e6; }
+  header { position: sticky; top: 0; z-index: 5; background: #181c21; padding: 10px 16px; border-bottom: 1px solid #2a2f36;
+           display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  header b { font-size: 16px; }
+  select, button, input { font: inherit; background: #22272e; color: #e6e6e6; border: 1px solid #3a414a; border-radius: 4px; padding: 3px 8px; }
+  button { cursor: pointer; }
+  main { padding: 16px; display: flex; flex-direction: column; gap: 20px; max-width: 1500px; margin: auto; }
+  .card { background: #181c21; border: 1px solid #2a2f36; border-radius: 6px; padding: 12px; }
+  .card.current { outline: 2px solid #c8ff00; }
+  .card.good { border-color: #3fb950; } .card.bad { opacity: 0.55; }
+  .card h2 { font-size: 15px; margin: 0 0 4px; }
+  .card p { margin: 4px 0; color: #b8bec6; }
+  .row { display: flex; gap: 8px; align-items: center; margin-top: 8px; flex-wrap: wrap; }
+  .row input { flex: 1; min-width: 200px; }
+  button.on.good { background: #1f6f33; } button.on.bad { background: #7a2323; }
+  .tag { font-size: 12px; padding: 1px 6px; border-radius: 3px; background: #2a2f36; }
+  .live { margin-top: 8px; background: white; border-radius: 4px; padding: 6px; color: #222; }
+  .maps { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .maps > div { min-width: 0; }
+  .maptitle { font-size: 12px; color: #444; margin: 2px 4px; }
+  .map { height: 470px; }
+  .charts { height: 560px; margin-top: 6px; }
+  .views { display: flex; gap: 6px; margin: 4px; flex-wrap: wrap; }
+  .views button { background: #eef0f3; color: #222; border-color: #c9ced6; font-size: 12px; }
+  .empty { height: 440px; display: flex; align-items: center; justify-content: center; color: #888; background: #f4f5f7; }
+  a { color: #8ab4f8; }
+  .flyways { font-size: 15px; margin-top: 10px !important; } .flyways a { font-weight: 600; }
+  @media (max-width: 800px) { .maps { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <b>Visible fusion errors</b>
+  <label>kind <select id="kind"><option value="">all</option></select></label>
+  <label>show <select id="show"><option value="">all</option><option value="unmarked">unmarked</option>
+    <option value="good">good</option><option value="bad">bad</option></select></label>
+  <span id="count"></span>
+  <span style="color:#8b949e">keys: j / k next and previous, g good, b bad, u clear. Maps: scroll to zoom, drag to pan. Charts: drag a box to zoom, double-click to reset.</span>
+</header>
+<main id="list"></main>
+<script>
+const MAP_SECONDS = 150;
+let items = [], marks = {}, current = 0;
+const cache = {};
+
+async function load() {
+  items = await (await fetch("/shortlist")).json();
+  marks = await (await fetch("/marks")).json();
+  for (const k of [...new Set(items.map(i => i.kind))]) document.getElementById("kind").add(new Option(k, k));
+  render();
+}
+
+function visible() {
+  const kind = document.getElementById("kind").value, show = document.getElementById("show").value;
+  return items.filter(i => (!kind || i.kind === kind) &&
+    (!show || (show === "unmarked" ? !(marks[i.id] || {}).mark : (marks[i.id] || {}).mark === show)));
+}
+
+function counts() {
+  const good = Object.values(marks).filter(m => m.mark === "good").length;
+  const bad = Object.values(marks).filter(m => m.mark === "bad").length;
+  document.getElementById("count").textContent = `${visible().length} shown, ${good} good, ${bad} bad of ${items.length}`;
+}
+
+// ---------- cards ----------
+
+function render() {
+  const list = document.getElementById("list");
+  list.querySelectorAll(".card").forEach(unrenderLive);
+  list.innerHTML = "";
+  visible().forEach((item, n) => list.appendChild(makeCard(item, n)));
+  counts();
+  highlight();
+}
+
+function makeCard(item, n) {
+  const card = document.createElement("div");
+  card.className = "card";
+  card.id = item.id;
+  card.dataset.index = n;
+  const time = new Date(item.t_event * 1000).toISOString().slice(11, 19);
+  card.innerHTML = `
+    <h2>${n + 1}. ${item.title}</h2>
+    <p><span class="tag">${item.kind}</span> <span class="tag">${item.day}</span> <span class="tag">${item.fusion}</span>
+      <span class="tag">${item.speed_kt ?? "?"} kt</span> ${item.over_us ? '<span class="tag">US</span>' : ""}
+      ${item.regular_plots === 0 ? '<span class="tag">no regular fusion plots</span>' : ""}
+      ${item.who} &nbsp; ${time} UTC</p>
+    <p>${item.what_you_see}</p>
+    <p style="color:#8b949e">${item.summary} &nbsp; <a href="${item.picture}" target="_blank">static picture</a></p>
+    <div class="live">
+      <div class="views">
+        <button data-view="jump">fit the jump</button>
+        <button data-view="before">fit the path before the event</button>
+        <button data-view="after">fit the path after the event</button>
+        <button data-view="all">fit the whole 20 minutes</button>
+      </div>
+      <div class="maps">
+        <div><div class="maptitle">append fusion</div><div class="map" data-fusion="append"></div></div>
+        <div><div class="maptitle">regular fusion</div><div class="map" data-fusion="regular"></div></div>
+      </div>
+      <div class="charts"></div>
+    </div>
+    ${item.flyways_url ? `<p class="flyways"><a href="${item.flyways_url}" target="_blank">Open in Flyways</a>
+      &nbsp; regular fusion, shows ${item.flyways_window}, track ${item.flyways_track}${item.flight_plan ? " (flight plan)" : " (no flight plan, regular track id)"}
+      ${item.note_for_ties ? `<br><span style="color:#e3b341">${item.note_for_ties}</span>` : ""}</p>` : ""}
+    <div class="row">
+      <button class="good">good (g)</button>
+      <button class="bad">bad (b)</button>
+      <input placeholder="note">
+    </div>`;
+  card.querySelector("button.good").onclick = e => { e.stopPropagation(); save(item.id, "good"); };
+  card.querySelector("button.bad").onclick = e => { e.stopPropagation(); save(item.id, "bad"); };
+  card.querySelector("input").onchange = e => save(item.id, (marks[item.id] || {}).mark || "", e.target.value);
+  card.querySelectorAll(".views button").forEach(b => b.onclick = () => fitView(card, b.dataset.view));
+  card.onclick = () => { current = n; highlight(); };
+  paintMark(card, item.id);
+  observer.observe(card);
+  return card;
+}
+
+function paintMark(card, id) {
+  const mark = marks[id] || {};
+  card.classList.toggle("good", mark.mark === "good");
+  card.classList.toggle("bad", mark.mark === "bad");
+  card.querySelector("button.good").classList.toggle("on", mark.mark === "good");
+  card.querySelector("button.bad").classList.toggle("on", mark.mark === "bad");
+  card.querySelector("input").value = mark.note || "";
+}
+
+async function save(id, mark, note) {
+  const entry = { mark, note: note ?? (marks[id] || {}).note ?? "" };
+  marks[id] = entry;
+  await fetch("/mark", { method: "POST", body: JSON.stringify({ id, ...entry }) });
+  const card = document.getElementById(id);
+  if (card) paintMark(card, id);
+  counts();
+}
+
+function highlight(scroll) {
+  const cards = document.querySelectorAll(".card");
+  cards.forEach((c, n) => c.classList.toggle("current", n === current));
+  if (scroll && cards[current]) cards[current].scrollIntoView({ block: "start" });
+}
+
+// ---------- live maps and charts, only for cards near the screen (browsers allow few map canvases) ----------
+
+const observer = new IntersectionObserver(entries => {
+  for (const e of entries) e.isIntersecting ? renderLive(e.target) : unrenderLive(e.target);
+}, { rootMargin: "400px 0px" });
+
+async function renderLive(card) {
+  if (card.dataset.live) return;
+  card.dataset.live = "1";
+  const data = cache[card.id] ??= await (await fetch(`/plots/${card.id}`)).json();
+  if (!card.dataset.live) return;
+  for (const div of card.querySelectorAll(".map")) drawMap(div, data, div.dataset.fusion);
+  syncMaps(card);
+  drawCharts(card.querySelector(".charts"), data);
+}
+
+function unrenderLive(card) {
+  if (!card.dataset.live) return;
+  delete card.dataset.live;
+  card.querySelectorAll(".map, .charts").forEach(div => { Plotly.purge(div); div.innerHTML = ""; div.className = div.className.replace(" empty", ""); });
+}
+
+function utc(t) { return new Date(t * 1000).toISOString().slice(11, 21); }
+// Plotly shows date strings as written, so UTC strings keep the axis in UTC
+function utcString(t) { return new Date(t * 1000).toISOString().replace("Z", ""); }
+
+function hover(track, i, sources) {
+  return `${utc(track.t[i])} UTC<br>${sources[track.src[i]]?.name ?? track.src[i]}<br>` +
+         `${track.alt[i] ?? "?"} ft, ${track.gs[i] ?? "?"} kt reported, ${track.implied[i] ?? "?"} kt from positions`;
+}
+
+function drawMap(div, data, fusion) {
+  const track = data.tracks[fusion];
+  div.previousElementSibling.textContent = track ? `${fusion} fusion, track ${track.tid}, ${track.t.length} plots` : `${fusion} fusion`;
+  if (!track) { div.classList.add("empty"); div.textContent = "no plots for this aircraft"; return; }
+  const traces = [{
+    type: "scattermap", mode: "lines", lat: track.lat, lon: track.lon, hoverinfo: "skip",
+    line: { color: "#888", width: 1 }, name: "path", showlegend: false,
+  }];
+  for (const src of [...new Set(track.src)]) {
+    const idx = track.src.map((s, i) => s === src ? i : -1).filter(i => i >= 0);
+    traces.push({
+      type: "scattermap", mode: "markers", name: data.sources[src]?.name ?? String(src),
+      lat: idx.map(i => track.lat[i]), lon: idx.map(i => track.lon[i]),
+      text: idx.map(i => hover(track, i, data.sources)), hoverinfo: "text",
+      marker: { size: 7, color: data.sources[src]?.colour ?? "#444" },
+    });
+  }
+  traces.push({
+    type: "scattermap", mode: "markers", name: "event", lat: [data.event.lat], lon: [data.event.lon], hoverinfo: "skip",
+    marker: { size: 22, color: "red", opacity: 0.3 },
+  });
+  const layout = {
+    map: { style: "carto-positron", ...view(div, pointsFor(data, "jump")) },
+    margin: { l: 0, r: 0, t: 0, b: 28 }, legend: { orientation: "h", x: 0, y: 0, yanchor: "top" }, showlegend: true,
+  };
+  Plotly.newPlot(div, traces, layout, { scrollZoom: true, displaylogo: false, responsive: true });
+}
+
+// points that a view should frame, taken from whichever fusion has plots
+function pointsFor(data, which) {
+  const e = data.event, lats = [], lons = [];
+  for (const track of Object.values(data.tracks)) {
+    if (!track) continue;
+    track.t.forEach((t, i) => {
+      const d = t - e.t;
+      const take = which === "all" || (which === "jump" && Math.abs(d) <= MAP_SECONDS) ||
+                   (which === "before" && d < 0 && d >= -MAP_SECONDS) || (which === "after" && d > 0 && d <= MAP_SECONDS);
+      if (take && track.lat[i] != null) { lats.push(track.lat[i]); lons.push(track.lon[i]); }
+    });
+  }
+  if (which === "jump") { lats.push(e.lat); lons.push(e.lon); if (e.plat != null) { lats.push(e.plat); lons.push(e.plon); } }
+  if (!lats.length) { lats.push(e.lat); lons.push(e.lon); }
+  return { lats, lons };
+}
+
+// centre and zoom that fit the points into the map div
+function view(div, { lats, lons }) {
+  const mercator = lat => Math.log(Math.tan(Math.PI / 4 + lat * Math.PI / 360));
+  const latMin = Math.min(...lats), latMax = Math.max(...lats), lonMin = Math.min(...lons), lonMax = Math.max(...lons);
+  const width = div.clientWidth || 600, height = (div.clientHeight || 440) - 28;
+  const lonSpan = Math.max(lonMax - lonMin, 0.005) * 1.4;
+  const ySpan = Math.max(Math.abs(mercator(latMax) - mercator(latMin)), 0.00008) * 1.4;
+  const zoom = Math.min(Math.log2(width * 360 / (512 * lonSpan)), Math.log2(height * 2 * Math.PI / (512 * ySpan)));
+  return { center: { lat: (latMin + latMax) / 2, lon: (lonMin + lonMax) / 2 }, zoom: Math.max(0, Math.min(zoom, 17)) };
+}
+
+function fitView(card, which) {
+  const data = cache[card.id];
+  if (!data || !card.dataset.live) return;
+  for (const div of card.querySelectorAll(".map")) {
+    if (!div.classList.contains("empty")) Plotly.relayout(div, { "map.center": view(div, pointsFor(data, which)).center, "map.zoom": view(div, pointsFor(data, which)).zoom });
+  }
+}
+
+// moving one map moves the other one too
+function syncMaps(card) {
+  const divs = [...card.querySelectorAll(".map")].filter(d => !d.classList.contains("empty"));
+  let busy = false;
+  for (const div of divs) {
+    div.on("plotly_relayout", change => {
+      if (busy || !("map.center" in change || "map.zoom" in change)) return;
+      busy = true;
+      const map = div._fullLayout.map;
+      Promise.all(divs.filter(d => d !== div).map(d => Plotly.relayout(d, { "map.center": map.center, "map.zoom": map.zoom })))
+        .finally(() => { busy = false; });
+    });
+  }
+}
+
+function drawCharts(div, data) {
+  const panels = [["alt", "altitude (ft)"], ["gs", "reported ground speed (kt)"], ["implied", "speed from positions (kt)"], ["trk", "reported track angle (deg)"]];
+  const traces = [];
+  panels.forEach(([column], p) => {
+    for (const fusion of ["append", "regular"]) {
+      const track = data.tracks[fusion];
+      if (!track) continue;
+      traces.push({
+        type: "scatter", mode: "markers", name: `${fusion} fusion`, legendgroup: fusion, showlegend: p === 0,
+        x: track.t.map(utcString), y: track[column],
+        xaxis: p ? `x${p + 1}` : "x", yaxis: p ? `y${p + 1}` : "y",
+        text: track.t.map((_, i) => hover(track, i, data.sources)), hoverinfo: "text",
+        marker: fusion === "append"
+          ? { size: 5, color: track.src.map(s => data.sources[s]?.colour ?? "#444") }
+          : { size: 8, symbol: "square-open", color: track.src.map(s => data.sources[s]?.colour ?? "#444") },
+      });
+    }
+  });
+  const event = utcString(data.event.t);
+  const layout = {
+    grid: { rows: 2, columns: 2, pattern: "independent", xgap: 0.08, ygap: 0.14 },
+    margin: { l: 60, r: 20, t: 30, b: 40 }, legend: { orientation: "h", y: 1.08 }, hovermode: "closest",
+    shapes: panels.map((_, p) => ({ type: "line", xref: p ? `x${p + 1}` : "x", yref: `${p ? `y${p + 1}` : "y"} domain`,
+                                    x0: event, x1: event, y0: 0, y1: 1, line: { color: "red", width: 1, dash: "dash" } })),
+  };
+  panels.forEach(([, label], p) => {
+    const x = p ? `xaxis${p + 1}` : "xaxis", y = p ? `yaxis${p + 1}` : "yaxis";
+    layout[x] = { type: "date", tickformat: "%H:%M", title: p >= 2 ? { text: "UTC", font: { size: 11 } } : undefined, ...(p ? { matches: "x" } : {}) };
+    layout[y] = { title: { text: label, font: { size: 11 } } };
+  });
+  Plotly.newPlot(div, traces, layout, { displaylogo: false, responsive: true });
+}
+
+// ---------- keys ----------
+
+document.addEventListener("keydown", e => {
+  if (e.target.tagName === "INPUT") return;
+  const shown = visible();
+  if (e.key === "j") { current = Math.min(current + 1, shown.length - 1); highlight(true); }
+  if (e.key === "k") { current = Math.max(current - 1, 0); highlight(true); }
+  const item = shown[current];
+  if (!item) return;
+  if (e.key === "g") save(item.id, "good");
+  if (e.key === "b") save(item.id, "bad");
+  if (e.key === "u") save(item.id, "");
+});
+document.getElementById("kind").onchange = () => { current = 0; render(); };
+document.getElementById("show").onchange = () => { current = 0; render(); };
+load();
+</script>
+</body>
+</html>
