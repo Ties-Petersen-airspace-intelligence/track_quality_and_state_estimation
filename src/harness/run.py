@@ -3,11 +3,12 @@
 usage: uv run -m harness.run --case src/data/cases/<name> --strategy baseline [--note "..."]
        uv run -m harness.run --case src/data/cases --strategy baseline      # every case in the folder
 
-Output goes to <case>/runs/<strategy>/<label>/, a fresh folder every time (labels r001, r002, ...):
-events.bin holds every FusionChangedEvent as length-prefixed protobuf bytes, fused_plots.parquet
-holds one row per fused plot with the event it came from, used_raw.parquet says for every raw plot
-which track took it in or that it was dropped, and run.json says what produced it (see runs.py).
-The viewer reads the last three.
+Output goes to <case>/runs/<strategy>_append/<label>/, a fresh folder every time (labels r001, r002, ...),
+the same split as production: the append path (APPEND_ONLY events) in one run, later rewrites (REGULAR
+and RECORRELATION events) in <strategy>_regular. Rewrites are not supported yet; a strategy that emits one
+stops the run with an error. In a run folder, events.bin holds every FusionChangedEvent as
+length-prefixed protobuf bytes, fused_plots.parquet holds one row per fused plot with the event it came
+from, and run.json says what produced it (see runs.py). The viewer reads the last two.
 """
 from __future__ import annotations
 
@@ -16,7 +17,7 @@ import argparse, pathlib, struct, time
 import pandas as pd
 
 from . import protos_path  # noqa: F401
-from uni.protobuf.uni_track_schemas.fusion.v1beta.fusion_changed_event_pb2 import FusionChangedEvent, FusionQuality
+from uni.protobuf.uni_track_schemas.fusion.v1beta.fusion_changed_event_pb2 import APPEND_ONLY, FusionChangedEvent, FusionQuality
 from .raw_plots import load_case
 from .strategies.baseline import Baseline
 from . import runs
@@ -36,7 +37,7 @@ def main():
 
 
 def run_one(case: pathlib.Path, name: str, note: str, batch: str, git: dict) -> None:
-    out, label = runs.new_run(case, name)
+    label = runs.next_label(case, name)
     started = time.time()
 
     # load the raw plots in receipt order
@@ -47,27 +48,29 @@ def run_one(case: pathlib.Path, name: str, note: str, batch: str, git: dict) -> 
     # feed them to the strategy one by one
     strategy = STRATEGIES[name]()
     t0 = time.time()
-    events, used = [], []
-    asks = hasattr(strategy, "used")
+    events = []
     for plot in plots:
         events += strategy.on_plot(plot)
-        track = strategy.used(plot) if asks else ""     # "" means used, track unknown
-        used.append(dict(source=plot.source, position_us=plot.position_us, source_track_identifier=plot.proto.common.track_identifier, track_id=track))
     events += strategy.finish()
     print(f"  {len(events)} events emitted in {time.time() - t0:.1f} s")
 
+    # the append path and the rewrites are stored apart, like production's two tables
+    appended = [e for e in events if e.quality == APPEND_ONLY]
+    if len(appended) < len(events):
+        raise NotImplementedError(f"{name} emitted {len(events) - len(appended)} REGULAR or RECORRELATION events; the harness only stores the append path for now")
+    if not appended:
+        print("  nothing appended, no run written")
+        return
+    out = runs.new_run(case, name + "_append", label)
+
     # store the events exactly as protobuf, and flattened for the viewer
-    write_events(events, out / "events.bin")
-    rows = flatten(events)
+    write_events(appended, out / "events.bin")
+    rows = flatten(appended)
     frame = with_valid_to(pd.DataFrame(rows))
     frame.to_parquet(out / "fused_plots.parquet", index=False)
-    # which raw plots the strategy took in, and into which track; track_id None means dropped
-    pd.DataFrame(used).to_parquet(out / "used_raw.parquet", index=False)
-    dropped = sum(1 for u in used if u["track_id"] is None)
-    counts = dict(raw_plots=len(plots), events=len(events), fused_plots=len(rows), tracks=int(frame["track_id"].nunique()) if len(frame) else 0,
-                  raw_used=len(used) - dropped, raw_dropped=dropped, rewritten=int(frame["valid_to_us"].notna().sum()) if len(frame) else 0)
+    counts = dict(raw_plots=len(plots), events=len(appended), fused_plots=len(rows), tracks=int(frame["track_id"].nunique()), rewritten=int(frame["valid_to_us"].notna().sum()))
     runs.write_manifest(out, name, label, batch, case, params=dict(getattr(strategy, "params", {}) or {}), note=note, counts=counts, duration_s=time.time() - started, git=git)
-    print(f"  {len(rows)} fused plots written to {out}, {dropped} raw plots dropped")
+    print(f"  {len(rows)} fused plots written to {out}")
 
 
 def write_events(events: list[FusionChangedEvent], path: pathlib.Path) -> None:

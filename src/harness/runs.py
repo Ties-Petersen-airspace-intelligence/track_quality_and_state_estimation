@@ -1,6 +1,8 @@
 """Bookkeeping for runs: where a run lives, its automatic label, and the manifest that says what produced it.
 
-A run is one strategy applied to one case once. It lives in <case>/runs/<strategy>/<label>/ and its
+A run is one strategy applied to one case once. Like production it is stored in two parts, the plots the
+strategy appended and the rewrites it made later: <case>/runs/<strategy>_append/<label>/ and
+<case>/runs/<strategy>_regular/<label>/, and a part that has no events gets no folder. Each folder's
 run.json records the strategy, the label, the batch it belongs to, the git commit of this repo at the
 time, the strategy's parameters, a free note, and a few counts of what came out. Labels are r001, r002,
 ... per strategy per case, so nothing is ever overwritten. A batch is one invocation of a command, shared
@@ -43,17 +45,19 @@ def new_batch() -> str:
 
 
 def next_label(case: pathlib.Path, strategy: str) -> str:
-    folder = case / "runs" / strategy
-    used = [int(m.group(1)) for p in folder.glob("r*") if (m := LABEL.match(p.name))] if folder.exists() else []
-    return f"r{(max(used) + 1 if used else 1):03d}"
+    """The next free label for a strategy. Its _append and _regular folders count as one, so one
+    execution that fills both gets one label, and a later one moves the counter for both."""
+    taken = []
+    for folder in (case / "runs").glob(f"{strategy}_*") if (case / "runs").exists() else []:
+        taken += [int(m.group(1)) for p in folder.glob("r*") if (m := LABEL.match(p.name))]
+    return f"r{(max(taken) + 1 if taken else 1):03d}"
 
 
-def new_run(case: pathlib.Path, strategy: str) -> tuple[pathlib.Path, str]:
-    """A fresh, empty run folder and its label."""
-    label = next_label(case, strategy)
-    folder = case / "runs" / strategy / label
+def new_run(case: pathlib.Path, folder_name: str, label: str) -> pathlib.Path:
+    """A fresh, empty run folder runs/<folder_name>/<label>/."""
+    folder = case / "runs" / folder_name / label
     folder.mkdir(parents=True)
-    return folder, label
+    return folder
 
 
 def write_manifest(folder: pathlib.Path, strategy: str, label: str, batch: str, case: pathlib.Path, *, params: dict, note: str, counts: dict, duration_s: float, git: dict) -> dict:

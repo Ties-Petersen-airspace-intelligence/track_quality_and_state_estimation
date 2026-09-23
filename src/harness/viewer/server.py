@@ -83,11 +83,10 @@ def load_raw(case: pathlib.Path, t0_us: int) -> dict:
             sil=num(f, {"adsbx": "sil", "uavionix": "quality_indicators.sil", "stdds": "status.sil"}.get(source)),
             # the kind of plot inside the source: ADS-B Exchange's type, PlaneFinder's data_source; empty when the source has only one kind
             kind=plot_kind(f, source),
-            _pos_us=micros("position_timestamp").astype("Int64"),
         )))
     frame = pd.concat(parts, ignore_index=True).sort_values("r").reset_index(drop=True)
-    out = columnar(frame.drop(columns=["_pos_us"]))
-    out["_pos_us"] = frame["_pos_us"].tolist(); out["_t0_us"] = t0_us   # server side only, stripped before sending
+    out = columnar(frame)
+    out["_t0_us"] = t0_us   # server side only, stripped before sending
     return out
 
 
@@ -104,23 +103,6 @@ def load_run(case: pathlib.Path, name: str, t0_us: int) -> dict:
     return columnar(frame)
 
 
-def load_used(case: pathlib.Path, name: str, raw: dict) -> dict:
-    """For every raw plot, in the page's raw order: the strategy track that took it, "" if the strategy
-    used it without saying which track, or None if it was dropped."""
-    path = case / "runs" / name / "used_raw.parquet"
-    if not path.exists():
-        return dict(track=None)
-    used = pd.read_parquet(path)
-    key = list(zip(used["source"], pd.to_numeric(used["position_us"]).astype("Int64").tolist(), used["source_track_identifier"].fillna("")))
-    lookup = dict(zip(key, used["track_id"].tolist()))
-    t0 = raw["_t0_us"]
-    out = []
-    for src, t_ms, tid, pos_us in zip(raw["src"], raw["t"], raw["tid"], raw["_pos_us"]):
-        v = lookup.get((src, pos_us, tid), None)
-        out.append(None if v is None or (isinstance(v, float) and np.isnan(v)) or v is pd.NA else v)
-    return dict(track=out)
-
-
 def list_cases(root: pathlib.Path) -> list[dict]:
     out = []
     for folder in sorted(p for p in root.iterdir() if (p / "case.json").exists()):
@@ -131,7 +113,7 @@ def list_cases(root: pathlib.Path) -> list[dict]:
 
 
 def make_handler(root: pathlib.Path):
-    cache = {}   # case name -> dict(info, t0_us, t1_us, runs, raw, run data, used data)
+    cache = {}   # case name -> dict(info, t0_us, t1_us, runs, raw, run data)
 
     def open_case(name: str) -> dict:
         if name in cache:
@@ -173,16 +155,12 @@ def make_handler(root: pathlib.Path):
                 if kind == "raw":
                     c["data"].setdefault("raw", load_raw(c["path"], c["t0_us"]))
                     return self._json({k: v for k, v in c["data"]["raw"].items() if not k.startswith("_")})
-                if kind in ("run", "used") and len(parts) == 5:
+                if kind == "run" and len(parts) == 5:
                     run = parts[3] + "/" + parts[4]
                     if run not in [r["id"] for r in c["runs"]]:
                         return self._json(dict(error="no such strategy"), 404)
-                    if kind == "run":
-                        c["data"].setdefault("run:" + run, load_run(c["path"], run, c["t0_us"]))
-                        return self._json(c["data"]["run:" + run])
-                    c["data"].setdefault("raw", load_raw(c["path"], c["t0_us"]))
-                    c["data"].setdefault("used:" + run, load_used(c["path"], run, c["data"]["raw"]))
-                    return self._json(c["data"]["used:" + run])
+                    c["data"].setdefault("run:" + run, load_run(c["path"], run, c["t0_us"]))
+                    return self._json(c["data"]["run:" + run])
             return SimpleHTTPRequestHandler.do_GET(self)
 
         def do_POST(self):

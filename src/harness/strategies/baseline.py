@@ -27,6 +27,3 @@ class Baseline:
 
     def finish(self) -> list[FusionChangedEvent]:
         return []
-
-    def used(self, plot: RawPlot) -> str | None:
-        return f"{plot.source}:{plot.proto.common.track_identifier}"

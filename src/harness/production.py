@@ -38,29 +38,6 @@ def common_columns(f: pd.DataFrame, created: str, position: str) -> pd.DataFrame
     ))
 
 
-RAW_SOURCES = {4: "adsbx", 3: "planefinder", 11: "uavionix", 10: "stdds", 1: "tfms_ti", 2: "tfms_or", 6: "ual", 5: "asa"}
-
-
-def used_raw(case: pathlib.Path, fused: pd.DataFrame) -> pd.DataFrame:
-    """Which raw plots production took in. Production copies a raw plot into a fused plot, so a raw plot
-    was used when a fused plot from the same source has the same position time to the microsecond."""
-    rows = []
-    for src_id, name in RAW_SOURCES.items():
-        path = case / f"{name}.parquet"
-        if not path.exists():
-            continue
-        raw = pd.read_parquet(path)
-        if raw.empty:
-            continue
-        col = "common_position_timestamp_us" if "common_position_timestamp_us" in raw.columns else "common.position_timestamp"
-        pos = pd.to_numeric(raw[col], errors="coerce").astype("Int64")
-        f = fused[fused["source_identifier"] == src_id]
-        taken = f.drop_duplicates("position_us").set_index("position_us")["track_id"]
-        rows.append(pd.DataFrame(dict(source=name, position_us=pos, source_track_identifier=raw["common.track_identifier"].fillna(""),
-                                      track_id=pos.map(taken).astype("string"))))
-    return pd.concat(rows, ignore_index=True) if rows else pd.DataFrame(columns=["source", "position_us", "source_track_identifier", "track_id"])
-
-
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--case", required=True, nargs="+", help="case folder(s), or a folder that holds case folders")
@@ -72,6 +49,8 @@ def main():
 
 
 def convert(case: pathlib.Path, note: str, batch: str, git: dict) -> None:
+    label = runs.next_label(case, "prod_fusion")   # one label for both production runs of a case
+
     # the append path: one row per emitted plot, event_created_at is when fusion produced it
     started = time.time()
     f = pd.read_parquet(case / "fusion_append.parquet")
@@ -80,7 +59,7 @@ def convert(case: pathlib.Path, note: str, batch: str, git: dict) -> None:
     frame["quality"] = "APPEND_ONLY"
     frame["valid_to_us"] = pd.array([None] * len(frame), dtype="Int64")
     frame["flight_id"] = f["flight_id"].fillna("")
-    store(case, "prod_fusion_append", frame, note or "production append path, from flyways-aws-prod.uni_track_fusion.append_only_plots", batch, git, started)
+    store(case, "prod_fusion_append", frame, note or "production append path, from flyways-aws-prod.uni_track_fusion.append_only_plots", batch, git, started, label)
 
     # the final table: created_at and valid_to say when each version of a plot was current
     started = time.time()
@@ -91,17 +70,15 @@ def convert(case: pathlib.Path, note: str, batch: str, git: dict) -> None:
     frame["valid_to_us"] = num(f["valid_to_us"], "Int64")
     frame["flight_id"] = f["flight_plan_id"].fillna("")
     frame["source_track_identifier"] = ""   # the provider table does not keep the source's own track id
-    store(case, "prod_fusion_regular", frame, note or "production after regular and recorrelation rewrites, from flyways.uni_track_provider.fused_plots_aws", batch, git, started)
+    store(case, "prod_fusion_regular", frame, note or "production after regular and recorrelation rewrites, from flyways.uni_track_provider.fused_plots_aws", batch, git, started, label)
 
 
-def store(case: pathlib.Path, name: str, frame: pd.DataFrame, note: str, batch: str, git: dict, started: float) -> None:
-    out, label = runs.new_run(case, name)
+def store(case: pathlib.Path, name: str, frame: pd.DataFrame, note: str, batch: str, git: dict, started: float, label: str) -> None:
+    out = runs.new_run(case, name, label)
     frame.to_parquet(out / "fused_plots.parquet", index=False)
-    used = used_raw(case, frame); used.to_parquet(out / "used_raw.parquet", index=False)
-    n_used = int(used["track_id"].notna().sum())
-    counts = dict(raw_plots=len(used), fused_plots=len(frame), tracks=int(frame["track_id"].nunique()), raw_used=n_used, raw_dropped=len(used) - n_used, rewritten=int(frame["valid_to_us"].notna().sum()))
+    counts = dict(fused_plots=len(frame), tracks=int(frame["track_id"].nunique()), rewritten=int(frame["valid_to_us"].notna().sum()))
     runs.write_manifest(out, name, label, batch, case, params={}, note=note, counts=counts, duration_s=time.time() - started, git=git)
-    print(f"{case.name} {name}/{label}: {len(frame)} fused plots, {counts['tracks']} tracks, {counts['rewritten']} later rewritten, {n_used} of {len(used)} raw plots used")
+    print(f"{case.name} {name}/{label}: {len(frame)} fused plots, {counts['tracks']} tracks, {counts['rewritten']} later rewritten")
 
 
 if __name__ == "__main__":

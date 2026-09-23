@@ -221,7 +221,7 @@ __marimo__/
 .DS_Store
 
 # derived run output, regenerated with harness.run
-src/data/cases/*/runs/baseline/
+src/data/cases/*/runs/baseline_append/
 
 # the Simplon ASI font files: licensed to ASI for design and development, so they are not redistributed here
 src/harness/viewer/fonts/
