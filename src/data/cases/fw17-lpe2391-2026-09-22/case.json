@@ -1,0 +1,44 @@
+{
+ "name": "fw17-lpe2391-2026-09-22",
+ "day": "2026-09-22",
+ "t_start": "2026-09-22 00:39:27",
+ "t_end": "2026-09-22 01:39:27",
+ "box": {
+  "lat_min": -12.521,
+  "lat_max": -4.833,
+  "lon_min": -77.813,
+  "lon_max": -75.731
+ },
+ "suspect": {
+  "callsign": "LPE2391",
+  "hex": "E80272",
+  "fused_track_id": "AIR.74856"
+ },
+ "found_by": "visible error finder, set regular_spikes, candidate altitude_spike-AIR.74856-010927",
+ "reason": "altitude spike: 38000 ft to 40750 ft and back to 38000 ft in 33 s, ADS-B Exchange to ADS-B Exchange, 2 jumps, seen in regular fusion only",
+ "notes": "very small but good",
+ "flyways": {
+  "number": 17,
+  "url": "https://asi.app.airspace-intelligence.com/ual/asd/#/?timeMachine=2026-09-22T01%3A39Z%3BSNAPSHOT&track=SKCG20260921T2225LAN2391",
+  "track": "SKCG20260921T2225LAN2391",
+  "notion": "https://app.notion.com/p/airspaceintelligence/Examples-in-FlyWays-3e4bd6d804a880e6b5d9ee4894b186de"
+ },
+ "event": {
+  "t": "2026-09-22T01:09:27.711999893",
+  "lat": -9.16434,
+  "lon": -76.96351,
+  "kind": "altitude spike"
+ },
+ "rows": {
+  "adsbx": 71850,
+  "planefinder": 10169,
+  "uavionix": 0,
+  "stdds": 0,
+  "tfms_ti": 0,
+  "tfms_or": 0,
+  "ual": 0,
+  "asa": 0,
+  "fusion_append": 19913,
+  "fusion_final": 22491
+ }
+}

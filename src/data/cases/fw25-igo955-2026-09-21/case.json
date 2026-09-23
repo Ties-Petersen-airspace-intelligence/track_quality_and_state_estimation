@@ -1,0 +1,44 @@
+{
+ "name": "fw25-igo955-2026-09-21",
+ "day": "2026-09-21",
+ "t_start": "2026-09-21 16:15:26",
+ "t_end": "2026-09-21 17:15:26",
+ "box": {
+  "lat_min": 19.8,
+  "lat_max": 27.582,
+  "lon_min": 72.889,
+  "lon_max": 76.484
+ },
+ "suspect": {
+  "callsign": "IGO955",
+  "hex": "80149C",
+  "fused_track_id": "AIR.75753"
+ },
+ "found_by": "visible error finder, set regular_spikes, candidate altitude_spike-AIR.75753-164526",
+ "reason": "altitude spike: 38000 ft to 40575 ft and back to 37975 ft in 16 s, ADS-B Exchange to ADS-B Exchange, 2 jumps, seen in regular fusion only",
+ "notes": "subtle but okay",
+ "flyways": {
+  "number": 25,
+  "url": "https://asi.app.airspace-intelligence.com/ual/asd/#/?timeMachine=2026-09-21T17%3A15Z%3BSNAPSHOT&track=VIDP20260921T1450IGO955",
+  "track": "VIDP20260921T1450IGO955",
+  "notion": "https://app.notion.com/p/airspaceintelligence/Examples-in-FlyWays-3e4bd6d804a880e6b5d9ee4894b186de"
+ },
+ "event": {
+  "t": "2026-09-21T16:45:26.269000053",
+  "lat": 23.73546,
+  "lon": 74.57113,
+  "kind": "altitude spike"
+ },
+ "rows": {
+  "adsbx": 88593,
+  "planefinder": 30146,
+  "uavionix": 0,
+  "stdds": 0,
+  "tfms_ti": 0,
+  "tfms_or": 0,
+  "ual": 0,
+  "asa": 0,
+  "fusion_append": 35540,
+  "fusion_final": 40254
+ }
+}

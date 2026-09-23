@@ -1,0 +1,44 @@
+{
+ "name": "fw16-ryr7sn-2026-09-22",
+ "day": "2026-09-22",
+ "t_start": "2026-09-22 03:29:51",
+ "t_end": "2026-09-22 04:29:51",
+ "box": {
+  "lat_min": 51.326,
+  "lat_max": 57.131,
+  "lon_min": 10.102,
+  "lon_max": 21.96
+ },
+ "suspect": {
+  "callsign": "RYR7SN",
+  "hex": "48C12D",
+  "fused_track_id": "AIR.57667"
+ },
+ "found_by": "visible error finder, set regular_spikes, candidate position_spike-AIR.57667-035951",
+ "reason": "position spike: 25.4 km off the path, 2 jumps in 70 s, at 498 kt, seen in regular fusion only",
+ "notes": "good",
+ "flyways": {
+  "number": 16,
+  "url": "https://asi.app.airspace-intelligence.com/ual/asd/#/?timeMachine=2026-09-22T04%3A29Z%3BSNAPSHOT&track=EVRA20260922T0315RYR3290",
+  "track": "EVRA20260922T0315RYR3290",
+  "notion": "https://app.notion.com/p/airspaceintelligence/Examples-in-FlyWays-3e4bd6d804a880e6b5d9ee4894b186de"
+ },
+ "event": {
+  "t": "2026-09-22T03:59:51.084000111",
+  "lat": 55.06684,
+  "lon": 14.8993,
+  "kind": "position spike"
+ },
+ "rows": {
+  "adsbx": 371946,
+  "planefinder": 128961,
+  "uavionix": 0,
+  "stdds": 0,
+  "tfms_ti": 0,
+  "tfms_or": 0,
+  "ual": 0,
+  "asa": 0,
+  "fusion_append": 124549,
+  "fusion_final": 136314
+ }
+}

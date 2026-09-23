@@ -1,0 +1,44 @@
+{
+ "name": "fw09-cmp886-2026-09-21",
+ "day": "2026-09-21",
+ "t_start": "2026-09-21 00:12:43",
+ "t_end": "2026-09-21 01:12:43",
+ "box": {
+  "lat_min": 8.328,
+  "lat_max": 11.796,
+  "lon_min": -79.854,
+  "lon_max": -72.352
+ },
+ "suspect": {
+  "callsign": "CMP886",
+  "hex": "0C21A7",
+  "fused_track_id": "AIR.19096"
+ },
+ "found_by": "visible error finder, set regular_spikes, candidate altitude_spike-AIR.19096-004243",
+ "reason": "altitude spike: 37000 ft to 39550 ft and back to 37000 ft in 33 s, PlaneFinder to ADS-B Exchange, 2 jumps, seen in regular fusion only",
+ "notes": "small but nice",
+ "flyways": {
+  "number": 9,
+  "url": "https://asi.app.airspace-intelligence.com/ual/asd/#/?timeMachine=2026-09-21T01%3A12Z%3BSNAPSHOT&track=AIR.19096",
+  "track": "AIR.19096",
+  "notion": "https://app.notion.com/p/airspaceintelligence/Examples-in-FlyWays-3e4bd6d804a880e6b5d9ee4894b186de"
+ },
+ "event": {
+  "t": "2026-09-21T00:42:43.914000034",
+  "lat": 9.54355,
+  "lon": -76.42699,
+  "kind": "altitude spike"
+ },
+ "rows": {
+  "adsbx": 72293,
+  "planefinder": 15036,
+  "uavionix": 0,
+  "stdds": 0,
+  "tfms_ti": 0,
+  "tfms_or": 0,
+  "ual": 0,
+  "asa": 0,
+  "fusion_append": 25999,
+  "fusion_final": 30653
+ }
+}

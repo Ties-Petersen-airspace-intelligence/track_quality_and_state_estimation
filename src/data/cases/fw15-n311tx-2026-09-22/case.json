@@ -1,0 +1,44 @@
+{
+ "name": "fw15-n311tx-2026-09-22",
+ "day": "2026-09-22",
+ "t_start": "2026-09-22 00:39:09",
+ "t_end": "2026-09-22 01:39:09",
+ "box": {
+  "lat_min": 31.321,
+  "lat_max": 33.177,
+  "lon_min": -97.367,
+  "lon_max": -95.07
+ },
+ "suspect": {
+  "callsign": "N311TX",
+  "hex": "A34C47",
+  "fused_track_id": "AIR.66471"
+ },
+ "found_by": "visible error finder, set regular_spikes, candidate altitude_spike-AIR.66471-010909",
+ "reason": "altitude spike: 5800 ft to 0 ft and back to 5800 ft in 22 s, uAvionix to ADS-B Exchange, 2 jumps, seen in regular fusion only",
+ "notes": "good",
+ "flyways": {
+  "number": 15,
+  "url": "https://asi.app.airspace-intelligence.com/ual/asd/#/?timeMachine=2026-09-22T01%3A39Z%3BSNAPSHOT&track=AIR.66471",
+  "track": "AIR.66471",
+  "notion": "https://app.notion.com/p/airspaceintelligence/Examples-in-FlyWays-3e4bd6d804a880e6b5d9ee4894b186de"
+ },
+ "event": {
+  "t": "2026-09-22T01:09:09.940999985",
+  "lat": 32.26556,
+  "lon": -96.26556,
+  "kind": "altitude spike"
+ },
+ "rows": {
+  "adsbx": 343311,
+  "planefinder": 135955,
+  "uavionix": 318615,
+  "stdds": 316456,
+  "tfms_ti": 3773,
+  "tfms_or": 0,
+  "ual": 2,
+  "asa": 2,
+  "fusion_append": 133497,
+  "fusion_final": 163354
+ }
+}

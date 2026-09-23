@@ -1,0 +1,44 @@
+{
+ "name": "fw03-fhaux-2026-09-22",
+ "day": "2026-09-22",
+ "t_start": "2026-09-22 07:47:42",
+ "t_end": "2026-09-22 08:47:42",
+ "box": {
+  "lat_min": 44.896,
+  "lat_max": 47.562,
+  "lon_min": 4.961,
+  "lon_max": 6.958
+ },
+ "suspect": {
+  "callsign": "FHAUX",
+  "hex": "398297",
+  "fused_track_id": "AIR.265378"
+ },
+ "found_by": "visible error finder, set first run, candidate position_spike-398297-081742",
+ "reason": "position spike: 33.5 km off the path, 3 jumps in 178 s, at 145 kt, seen in append fusion only",
+ "notes": "perfect, love it",
+ "flyways": {
+  "number": 3,
+  "url": "https://asi.app.airspace-intelligence.com/ual/asd/#/?timeMachine=2026-09-22T08%3A47Z%3BSNAPSHOT&track=AIR.265378",
+  "track": "AIR.265378",
+  "notion": "https://app.notion.com/p/airspaceintelligence/Examples-in-FlyWays-3e4bd6d804a880e6b5d9ee4894b186de"
+ },
+ "event": {
+  "t": "2026-09-22T08:17:42.226999998",
+  "lat": 46.207969665527344,
+  "lon": 6.066780090332031,
+  "kind": "position spike"
+ },
+ "rows": {
+  "adsbx": 348244,
+  "planefinder": 94429,
+  "uavionix": 0,
+  "stdds": 0,
+  "tfms_ti": 0,
+  "tfms_or": 0,
+  "ual": 0,
+  "asa": 0,
+  "fusion_append": 96960,
+  "fusion_final": 103829
+ }
+}

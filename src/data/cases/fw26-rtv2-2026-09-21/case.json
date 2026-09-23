@@ -1,0 +1,44 @@
+{
+ "name": "fw26-rtv2-2026-09-21",
+ "day": "2026-09-21",
+ "t_start": "2026-09-21 10:41:06",
+ "t_end": "2026-09-21 11:41:06",
+ "box": {
+  "lat_min": 40.751,
+  "lat_max": 42.054,
+  "lon_min": -9.302,
+  "lon_max": -7.912
+ },
+ "suspect": {
+  "callsign": "RTV2",
+  "hex": "34430E",
+  "fused_track_id": "AIR.2320994"
+ },
+ "found_by": "visible error finder, set regular_spikes, candidate position_spike-AIR.2320994-111106",
+ "reason": "position spike: 8.6 km off the path, 2 jumps in 65 s, at 335 kt, seen in regular fusion only",
+ "notes": "good, very noisy and jittery track overall",
+ "flyways": {
+  "number": 26,
+  "url": "https://asi.app.airspace-intelligence.com/ual/asd/#/?timeMachine=2026-09-21T11%3A41Z%3BSNAPSHOT&track=AIR.2320994",
+  "track": "AIR.2320994",
+  "notion": "https://app.notion.com/p/airspaceintelligence/Examples-in-FlyWays-3e4bd6d804a880e6b5d9ee4894b186de"
+ },
+ "event": {
+  "t": "2026-09-21T11:11:06.346999884",
+  "lat": 41.42049,
+  "lon": -8.41404,
+  "kind": "position spike"
+ },
+ "rows": {
+  "adsbx": 63000,
+  "planefinder": 15592,
+  "uavionix": 0,
+  "stdds": 0,
+  "tfms_ti": 0,
+  "tfms_or": 0,
+  "ual": 0,
+  "asa": 0,
+  "fusion_append": 20057,
+  "fusion_final": 22202
+ }
+}

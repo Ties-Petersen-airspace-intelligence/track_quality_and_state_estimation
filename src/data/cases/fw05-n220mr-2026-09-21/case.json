@@ -1,0 +1,44 @@
+{
+ "name": "fw05-n220mr-2026-09-21",
+ "day": "2026-09-21",
+ "t_start": "2026-09-21 05:32:21",
+ "t_end": "2026-09-21 06:32:21",
+ "box": {
+  "lat_min": 59.479,
+  "lat_max": 61.221,
+  "lon_min": 10.502,
+  "lon_max": 13.319
+ },
+ "suspect": {
+  "callsign": "N220MR",
+  "hex": "A1E224",
+  "fused_track_id": "AIR.2728413"
+ },
+ "found_by": "visible error finder, set regular_spikes, candidate position_spike-AIR.2728413-060221",
+ "reason": "position spike: 16.0 km off the path, 3 jumps in 97 s, at 152 kt, seen in regular fusion only",
+ "notes": "perfect",
+ "flyways": {
+  "number": 5,
+  "url": "https://asi.app.airspace-intelligence.com/ual/asd/#/?timeMachine=2026-09-21T06%3A32Z%3BSNAPSHOT&track=AIR.2728413",
+  "track": "AIR.2728413",
+  "notion": "https://app.notion.com/p/airspaceintelligence/Examples-in-FlyWays-3e4bd6d804a880e6b5d9ee4894b186de"
+ },
+ "event": {
+  "t": "2026-09-21T06:02:21.809000015",
+  "lat": 60.12695,
+  "lon": 11.07318,
+  "kind": "position spike"
+ },
+ "rows": {
+  "adsbx": 64170,
+  "planefinder": 15637,
+  "uavionix": 0,
+  "stdds": 0,
+  "tfms_ti": 0,
+  "tfms_or": 0,
+  "ual": 0,
+  "asa": 0,
+  "fusion_append": 17746,
+  "fusion_final": 20672
+ }
+}

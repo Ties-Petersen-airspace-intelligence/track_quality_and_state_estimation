@@ -1,0 +1,44 @@
+{
+ "name": "fw27-eju525-2026-09-21",
+ "day": "2026-09-21",
+ "t_start": "2026-09-21 19:10:44",
+ "t_end": "2026-09-21 20:10:44",
+ "box": {
+  "lat_min": 40.392,
+  "lat_max": 43.368,
+  "lon_min": 11.931,
+  "lon_max": 15.297
+ },
+ "suspect": {
+  "callsign": "EJU525",
+  "hex": "440053",
+  "fused_track_id": "AIR.703"
+ },
+ "found_by": "visible error finder, set regular_spikes, candidate position_spike-AIR.703-194044",
+ "reason": "position spike: 3.5 km off the path, 2 jumps in 59 s, at 227 kt, seen in regular fusion only",
+ "notes": "good, should have been a circle probably",
+ "flyways": {
+  "number": 27,
+  "url": "https://asi.app.airspace-intelligence.com/ual/asd/#/?timeMachine=2026-09-21T20%3A10Z%3BSNAPSHOT&track=LIMC20260921T1755EZY3581",
+  "track": "LIMC20260921T1755EZY3581",
+  "notion": "https://app.notion.com/p/airspaceintelligence/Examples-in-FlyWays-3e4bd6d804a880e6b5d9ee4894b186de"
+ },
+ "event": {
+  "t": "2026-09-21T19:40:44.954999924",
+  "lat": 41.12313,
+  "lon": 14.66113,
+  "kind": "position spike"
+ },
+ "rows": {
+  "adsbx": 222256,
+  "planefinder": 55375,
+  "uavionix": 0,
+  "stdds": 0,
+  "tfms_ti": 0,
+  "tfms_or": 0,
+  "ual": 0,
+  "asa": 0,
+  "fusion_append": 54484,
+  "fusion_final": 74069
+ }
+}

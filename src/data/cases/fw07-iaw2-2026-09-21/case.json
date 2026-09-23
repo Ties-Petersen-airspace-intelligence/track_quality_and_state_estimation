@@ -1,0 +1,44 @@
+{
+ "name": "fw07-iaw2-2026-09-21",
+ "day": "2026-09-21",
+ "t_start": "2026-09-21 08:12:01",
+ "t_end": "2026-09-21 09:12:01",
+ "box": {
+  "lat_min": 59.65,
+  "lat_max": 64.117,
+  "lon_min": 4.099,
+  "lon_max": 12.228
+ },
+ "suspect": {
+  "callsign": "IAW2",
+  "hex": "728683",
+  "fused_track_id": "AIR.35308"
+ },
+ "found_by": "visible error finder, set regular_spikes, candidate position_spike-AIR.35308-084201",
+ "reason": "position spike: 28.7 km off the path, 3 jumps in 165 s, at 446 kt, seen in regular fusion only",
+ "notes": "good. BTW, in flyways its entire trajectory is fucked up",
+ "flyways": {
+  "number": 7,
+  "url": "https://asi.app.airspace-intelligence.com/ual/asd/#/?timeMachine=2026-09-21T09%3A12Z%3BSNAPSHOT&track=AIR.35308",
+  "track": "AIR.35308",
+  "notion": "https://app.notion.com/p/airspaceintelligence/Examples-in-FlyWays-3e4bd6d804a880e6b5d9ee4894b186de"
+ },
+ "event": {
+  "t": "2026-09-21T08:42:01.757999897",
+  "lat": 61.41441,
+  "lon": 9.12313,
+  "kind": "position spike"
+ },
+ "rows": {
+  "adsbx": 154220,
+  "planefinder": 34309,
+  "uavionix": 0,
+  "stdds": 0,
+  "tfms_ti": 0,
+  "tfms_or": 0,
+  "ual": 0,
+  "asa": 0,
+  "fusion_append": 44755,
+  "fusion_final": 49948
+ }
+}

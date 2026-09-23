@@ -1,0 +1,44 @@
+{
+ "name": "fw13-qtr8954-2026-09-21",
+ "day": "2026-09-21",
+ "t_start": "2026-09-21 16:06:05",
+ "t_end": "2026-09-21 17:06:05",
+ "box": {
+  "lat_min": 24.255,
+  "lat_max": 25.933,
+  "lon_min": 51.106,
+  "lon_max": 57.551
+ },
+ "suspect": {
+  "callsign": "QTR8954",
+  "hex": "06A1E6",
+  "fused_track_id": "AIR.26554"
+ },
+ "found_by": "visible error finder, set regular_spikes, candidate altitude_spike-AIR.26554-163605",
+ "reason": "altitude spike: 22900 ft to 39000 ft and back to 23375 ft in 18 s, ADS-B Exchange to PlaneFinder, 2 jumps, seen in regular fusion only",
+ "notes": "nice, super clean altitude spike example case",
+ "flyways": {
+  "number": 13,
+  "url": "https://asi.app.airspace-intelligence.com/ual/asd/#/?timeMachine=2026-09-21T17%3A06Z%3BSNAPSHOT&track=OTHH20260921T1615TR8954Z",
+  "track": "OTHH20260921T1615TR8954Z",
+  "notion": "https://app.notion.com/p/airspaceintelligence/Examples-in-FlyWays-3e4bd6d804a880e6b5d9ee4894b186de"
+ },
+ "event": {
+  "t": "2026-09-21T16:36:05",
+  "lat": 25.0741,
+  "lon": 52.72252,
+  "kind": "altitude spike"
+ },
+ "rows": {
+  "adsbx": 153125,
+  "planefinder": 72555,
+  "uavionix": 0,
+  "stdds": 0,
+  "tfms_ti": 0,
+  "tfms_or": 0,
+  "ual": 0,
+  "asa": 0,
+  "fusion_append": 55744,
+  "fusion_final": 65218
+ }
+}

@@ -1,0 +1,44 @@
+{
+ "name": "fw12-arg1708-2026-09-21",
+ "day": "2026-09-21",
+ "t_start": "2026-09-21 10:16:50",
+ "t_end": "2026-09-21 11:16:50",
+ "box": {
+  "lat_min": -35.044,
+  "lat_max": -32.962,
+  "lon_min": -60.371,
+  "lon_max": -57.879
+ },
+ "suspect": {
+  "callsign": "ARG1708",
+  "hex": "E0311A",
+  "fused_track_id": "AIR.12044"
+ },
+ "found_by": "visible error finder, set regular_spikes, candidate position_spike-AIR.12044-104650",
+ "reason": "position spike: 6.4 km off the path, 2 jumps in 33 s, at 272 kt, seen in regular fusion only",
+ "notes": "super interesting, good case since there is a lot of difference between regular fusion and append fusion as well",
+ "flyways": {
+  "number": 12,
+  "url": "https://asi.app.airspace-intelligence.com/ual/asd/#/?timeMachine=2026-09-21T11%3A16Z%3BSNAPSHOT&track=SABE20260921T1030ARG1708",
+  "track": "SABE20260921T1030ARG1708",
+  "notion": "https://app.notion.com/p/airspaceintelligence/Examples-in-FlyWays-3e4bd6d804a880e6b5d9ee4894b186de"
+ },
+ "event": {
+  "t": "2026-09-21T10:46:50.167999983",
+  "lat": -34.33956,
+  "lon": -58.63908,
+  "kind": "position spike"
+ },
+ "rows": {
+  "adsbx": 45211,
+  "planefinder": 30307,
+  "uavionix": 0,
+  "stdds": 0,
+  "tfms_ti": 0,
+  "tfms_or": 0,
+  "ual": 0,
+  "asa": 0,
+  "fusion_append": 15877,
+  "fusion_final": 18777
+ }
+}

@@ -1,0 +1,44 @@
+{
+ "name": "fw06-n970wc-2026-09-22",
+ "day": "2026-09-22",
+ "t_start": "2026-09-22 00:18:55",
+ "t_end": "2026-09-22 01:18:55",
+ "box": {
+  "lat_min": 39.691,
+  "lat_max": 41.145,
+  "lon_min": -112.514,
+  "lon_max": -111.186
+ },
+ "suspect": {
+  "callsign": "N970WC",
+  "hex": "AD859C",
+  "fused_track_id": "AIR.338834"
+ },
+ "found_by": "visible error finder, set regular_spikes, candidate altitude_spike-AIR.338834-004855",
+ "reason": "altitude spike: 0 ft to 5750 ft and back to 0 ft in 25 s, ADS-B Exchange to uAvionix, 2 jumps, seen in regular fusion only",
+ "notes": "good, not sure if kalman can fix this, but lets keep it",
+ "flyways": {
+  "number": 6,
+  "url": "https://asi.app.airspace-intelligence.com/ual/asd/#/?timeMachine=2026-09-22T01%3A18Z%3BSNAPSHOT&track=AIR.338834",
+  "track": "AIR.338834",
+  "notion": "https://app.notion.com/p/airspaceintelligence/Examples-in-FlyWays-3e4bd6d804a880e6b5d9ee4894b186de"
+ },
+ "event": {
+  "t": "2026-09-22T00:48:55.921875",
+  "lat": 40.57118,
+  "lon": -111.99049,
+  "kind": "altitude spike"
+ },
+ "rows": {
+  "adsbx": 280916,
+  "planefinder": 52148,
+  "uavionix": 154973,
+  "stdds": 139827,
+  "tfms_ti": 1786,
+  "tfms_or": 0,
+  "ual": 1,
+  "asa": 2,
+  "fusion_append": 75417,
+  "fusion_final": 82157
+ }
+}

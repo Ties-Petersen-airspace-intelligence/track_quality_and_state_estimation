@@ -1,0 +1,44 @@
+{
+ "name": "fw22-spskl-2026-09-21",
+ "day": "2026-09-21",
+ "t_start": "2026-09-21 07:36:17",
+ "t_end": "2026-09-21 08:36:17",
+ "box": {
+  "lat_min": 50.111,
+  "lat_max": 51.157,
+  "lon_min": 19.321,
+  "lon_max": 21.152
+ },
+ "suspect": {
+  "callsign": "SPSKL",
+  "hex": "48C52B",
+  "fused_track_id": "AIR.45474"
+ },
+ "found_by": "visible error finder, set regular_spikes, candidate position_spike-AIR.45474-080617",
+ "reason": "position spike: 11.0 km off the path, 2 jumps in 74 s, at 150 kt, seen in regular fusion only",
+ "notes": "some kind of surveliance flight, good zig zag",
+ "flyways": {
+  "number": 22,
+  "url": "https://asi.app.airspace-intelligence.com/ual/asd/#/?timeMachine=2026-09-21T08%3A36Z%3BSNAPSHOT&track=AIR.45474",
+  "track": "AIR.45474",
+  "notion": "https://app.notion.com/p/airspaceintelligence/Examples-in-FlyWays-3e4bd6d804a880e6b5d9ee4894b186de"
+ },
+ "event": {
+  "t": "2026-09-21T08:06:17.611000061",
+  "lat": 50.61072,
+  "lon": 20.15896,
+  "kind": "position spike"
+ },
+ "rows": {
+  "adsbx": 46570,
+  "planefinder": 14059,
+  "uavionix": 0,
+  "stdds": 0,
+  "tfms_ti": 0,
+  "tfms_or": 0,
+  "ual": 0,
+  "asa": 0,
+  "fusion_append": 14802,
+  "fusion_final": 16476
+ }
+}

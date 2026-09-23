@@ -1,0 +1,44 @@
+{
+ "name": "fw24-nak276-2026-09-21",
+ "day": "2026-09-21",
+ "t_start": "2026-09-21 09:16:04",
+ "t_end": "2026-09-21 10:16:04",
+ "box": {
+  "lat_min": 42.798,
+  "lat_max": 44.336,
+  "lon_min": 0.18,
+  "lon_max": 2.417
+ },
+ "suspect": {
+  "callsign": "NAK276",
+  "hex": "3926E1",
+  "fused_track_id": "AIR.30762"
+ },
+ "found_by": "visible error finder, set regular_spikes, candidate position_spike-AIR.30762-094604",
+ "reason": "position spike: 9.2 km off the path, 2 jumps in 116 s, at 240 kt, seen in regular fusion only",
+ "notes": "good",
+ "flyways": {
+  "number": 24,
+  "url": "https://asi.app.airspace-intelligence.com/ual/asd/#/?timeMachine=2026-09-21T10%3A16Z%3BSNAPSHOT&track=AIR.30762",
+  "track": "AIR.30762",
+  "notion": "https://app.notion.com/p/airspaceintelligence/Examples-in-FlyWays-3e4bd6d804a880e6b5d9ee4894b186de"
+ },
+ "event": {
+  "t": "2026-09-21T09:46:04.832999945",
+  "lat": 43.48701,
+  "lon": 1.22688,
+  "kind": "position spike"
+ },
+ "rows": {
+  "adsbx": 213017,
+  "planefinder": 61908,
+  "uavionix": 0,
+  "stdds": 0,
+  "tfms_ti": 0,
+  "tfms_or": 0,
+  "ual": 0,
+  "asa": 0,
+  "fusion_append": 63976,
+  "fusion_final": 73785
+ }
+}

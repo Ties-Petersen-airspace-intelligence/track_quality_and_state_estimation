@@ -1,0 +1,44 @@
+{
+ "name": "fw01-nvd8524-2026-09-21",
+ "day": "2026-09-21",
+ "t_start": "2026-09-21 09:30:10",
+ "t_end": "2026-09-21 10:30:10",
+ "box": {
+  "lat_min": 51.043,
+  "lat_max": 55.394,
+  "lon_min": 22.221,
+  "lon_max": 25.902
+ },
+ "suspect": {
+  "callsign": "NVD8524",
+  "hex": "4D2450",
+  "fused_track_id": "AIR.35826"
+ },
+ "found_by": "visible error finder, set first run, candidate position_spike-AIR.35826-100010",
+ "reason": "position spike: 36.2 km off the path, 2 jumps in 112 s, at 282 kt, seen in regular fusion only",
+ "notes": "",
+ "flyways": {
+  "number": 1,
+  "url": "https://asi.app.airspace-intelligence.com/ual/asd/#/?timeMachine=2026-09-21T10%3A03Z%3BSNAPSHOT&track=AIR.35826",
+  "track": "AIR.35826",
+  "notion": "https://app.notion.com/p/airspaceintelligence/Examples-in-FlyWays-3e4bd6d804a880e6b5d9ee4894b186de"
+ },
+ "event": {
+  "t": "2026-09-21T10:00:10",
+  "lat": 54.87483,
+  "lon": 24.41097,
+  "kind": "position spike"
+ },
+ "rows": {
+  "adsbx": 48944,
+  "planefinder": 26243,
+  "uavionix": 0,
+  "stdds": 0,
+  "tfms_ti": 0,
+  "tfms_or": 0,
+  "ual": 0,
+  "asa": 0,
+  "fusion_append": 20265,
+  "fusion_final": 21544
+ }
+}

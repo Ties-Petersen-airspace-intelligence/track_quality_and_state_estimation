@@ -1,0 +1,44 @@
+{
+ "name": "fw11-sxs1en-2026-09-21",
+ "day": "2026-09-21",
+ "t_start": "2026-09-21 21:32:23",
+ "t_end": "2026-09-21 22:32:23",
+ "box": {
+  "lat_min": 52.146,
+  "lat_max": 56.132,
+  "lon_min": 12.137,
+  "lon_max": 18.157
+ },
+ "suspect": {
+  "callsign": "SXS1EN",
+  "hex": "4BCCAF",
+  "fused_track_id": "AIR.3194"
+ },
+ "found_by": "visible error finder, set regular_spikes, candidate position_spike-AIR.3194-220223",
+ "reason": "position spike: 5.1 km off the path, 2 jumps in 39 s, at 326 kt, seen in regular fusion only",
+ "notes": "nice",
+ "flyways": {
+  "number": 11,
+  "url": "https://asi.app.airspace-intelligence.com/ual/asd/#/?timeMachine=2026-09-21T22%3A32Z%3BSNAPSHOT&track=LTAI20260921T1825SXS572",
+  "track": "LTAI20260921T1825SXS572",
+  "notion": "https://app.notion.com/p/airspaceintelligence/Examples-in-FlyWays-3e4bd6d804a880e6b5d9ee4894b186de"
+ },
+ "event": {
+  "t": "2026-09-21T22:02:23.367000103",
+  "lat": 54.95842,
+  "lon": 14.3807,
+  "kind": "position spike"
+ },
+ "rows": {
+  "adsbx": 100074,
+  "planefinder": 41373,
+  "uavionix": 0,
+  "stdds": 0,
+  "tfms_ti": 0,
+  "tfms_or": 0,
+  "ual": 0,
+  "asa": 0,
+  "fusion_append": 32737,
+  "fusion_final": 36686
+ }
+}

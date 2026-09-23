@@ -1,0 +1,44 @@
+{
+ "name": "fw29-fys33la-2026-09-21",
+ "day": "2026-09-21",
+ "t_start": "2026-09-21 12:01:44",
+ "t_end": "2026-09-21 13:01:44",
+ "box": {
+  "lat_min": 39.773,
+  "lat_max": 41.592,
+  "lon_min": -4.76,
+  "lon_max": -3.254
+ },
+ "suspect": {
+  "callsign": "FYS33LA",
+  "hex": "34309A",
+  "fused_track_id": "AIR.2318071"
+ },
+ "found_by": "visible error finder, set regular_spikes, candidate position_spike-AIR.2318071-123144",
+ "reason": "position spike: 5.8 km off the path, 2 jumps in 64 s, at 116 kt, seen in regular fusion only",
+ "notes": "okay",
+ "flyways": {
+  "number": 29,
+  "url": "https://asi.app.airspace-intelligence.com/ual/asd/#/?timeMachine=2026-09-21T13%3A01Z%3BSNAPSHOT&track=AIR.2318071",
+  "track": "AIR.2318071",
+  "notion": "https://app.notion.com/p/airspaceintelligence/Examples-in-FlyWays-3e4bd6d804a880e6b5d9ee4894b186de"
+ },
+ "event": {
+  "t": "2026-09-21T12:31:44.516000032",
+  "lat": 40.59132,
+  "lon": -4.04851,
+  "kind": "position spike"
+ },
+ "rows": {
+  "adsbx": 196344,
+  "planefinder": 83550,
+  "uavionix": 0,
+  "stdds": 0,
+  "tfms_ti": 0,
+  "tfms_or": 0,
+  "ual": 0,
+  "asa": 0,
+  "fusion_append": 57927,
+  "fusion_final": 70199
+ }
+}

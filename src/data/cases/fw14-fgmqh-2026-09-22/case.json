@@ -1,0 +1,44 @@
+{
+ "name": "fw14-fgmqh-2026-09-22",
+ "day": "2026-09-22",
+ "t_start": "2026-09-22 09:48:49",
+ "t_end": "2026-09-22 10:48:49",
+ "box": {
+  "lat_min": 44.556,
+  "lat_max": 45.865,
+  "lon_min": 4.321,
+  "lon_max": 5.847
+ },
+ "suspect": {
+  "callsign": "FGMQH",
+  "hex": "393207",
+  "fused_track_id": "AIR.80771"
+ },
+ "found_by": "visible error finder, set regular_spikes, candidate position_spike-AIR.80771-101849",
+ "reason": "position spike: 6.6 km off the path, 2 jumps in 45 s, at 218 kt, seen in regular fusion only",
+ "notes": "nice, its entire path is shitty btw",
+ "flyways": {
+  "number": 14,
+  "url": "https://asi.app.airspace-intelligence.com/ual/asd/#/?timeMachine=2026-09-22T10%3A48Z%3BSNAPSHOT&track=AIR.80771",
+  "track": "AIR.80771",
+  "notion": "https://app.notion.com/p/airspaceintelligence/Examples-in-FlyWays-3e4bd6d804a880e6b5d9ee4894b186de"
+ },
+ "event": {
+  "t": "2026-09-22T10:18:49.539999962",
+  "lat": 45.05625,
+  "lon": 5.08679,
+  "kind": "position spike"
+ },
+ "rows": {
+  "adsbx": 123374,
+  "planefinder": 33251,
+  "uavionix": 0,
+  "stdds": 0,
+  "tfms_ti": 0,
+  "tfms_or": 0,
+  "ual": 0,
+  "asa": 0,
+  "fusion_append": 34325,
+  "fusion_final": 38125
+ }
+}

@@ -1,0 +1,44 @@
+{
+ "name": "fw21-hbztn-2026-09-21",
+ "day": "2026-09-21",
+ "t_start": "2026-09-21 06:30:38",
+ "t_end": "2026-09-21 07:30:38",
+ "box": {
+  "lat_min": 46.405,
+  "lat_max": 48.092,
+  "lon_min": 6.93,
+  "lon_max": 8.079
+ },
+ "suspect": {
+  "callsign": "HBZTN",
+  "hex": "4B43FF",
+  "fused_track_id": "AIR.2797036"
+ },
+ "found_by": "visible error finder, set regular_spikes, candidate position_spike-AIR.2797036-070038",
+ "reason": "position spike: 14.7 km off the path, 2 jumps in 55 s, at 147 kt, seen in regular fusion only",
+ "notes": "good",
+ "flyways": {
+  "number": 21,
+  "url": "https://asi.app.airspace-intelligence.com/ual/asd/#/?timeMachine=2026-09-21T07%3A30Z%3BSNAPSHOT&track=AIR.2797036",
+  "track": "AIR.2797036",
+  "notion": "https://app.notion.com/p/airspaceintelligence/Examples-in-FlyWays-3e4bd6d804a880e6b5d9ee4894b186de"
+ },
+ "event": {
+  "t": "2026-09-21T07:00:38.986999989",
+  "lat": 47.42892,
+  "lon": 7.57816,
+  "kind": "position spike"
+ },
+ "rows": {
+  "adsbx": 94236,
+  "planefinder": 42211,
+  "uavionix": 0,
+  "stdds": 0,
+  "tfms_ti": 0,
+  "tfms_or": 0,
+  "ual": 0,
+  "asa": 0,
+  "fusion_append": 29460,
+  "fusion_final": 31135
+ }
+}

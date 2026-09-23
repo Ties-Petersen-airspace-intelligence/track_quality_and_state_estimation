@@ -1,0 +1,44 @@
+{
+ "name": "fw20-n998m-2026-09-21",
+ "day": "2026-09-21",
+ "t_start": "2026-09-21 15:54:52",
+ "t_end": "2026-09-21 16:54:52",
+ "box": {
+  "lat_min": 39.81,
+  "lat_max": 41.278,
+  "lon_min": -107.801,
+  "lon_max": -106.497
+ },
+ "suspect": {
+  "callsign": "N998M",
+  "hex": "ADF16E",
+  "fused_track_id": "AIR.100604"
+ },
+ "found_by": "visible error finder, set regular_spikes, candidate altitude_spike-AIR.100604-162452",
+ "reason": "altitude spike: 7300 ft to 0 ft and back to 7300 ft in 10 s, ADS-B Exchange to ADS-B Exchange, 2 jumps, seen in regular fusion only",
+ "notes": "lots of weird drops in altitude along its flight, good",
+ "flyways": {
+  "number": 20,
+  "url": "https://asi.app.airspace-intelligence.com/ual/asd/#/?timeMachine=2026-09-21T16%3A54Z%3BSNAPSHOT&track=AIR.100604",
+  "track": "AIR.100604",
+  "notion": "https://app.notion.com/p/airspaceintelligence/Examples-in-FlyWays-3e4bd6d804a880e6b5d9ee4894b186de"
+ },
+ "event": {
+  "t": "2026-09-21T16:24:52.015000105",
+  "lat": 40.4729,
+  "lon": -107.21959,
+  "kind": "altitude spike"
+ },
+ "rows": {
+  "adsbx": 56059,
+  "planefinder": 6088,
+  "uavionix": 25949,
+  "stdds": 0,
+  "tfms_ti": 620,
+  "tfms_or": 0,
+  "ual": 2,
+  "asa": 1,
+  "fusion_append": 13851,
+  "fusion_final": 17757
+ }
+}

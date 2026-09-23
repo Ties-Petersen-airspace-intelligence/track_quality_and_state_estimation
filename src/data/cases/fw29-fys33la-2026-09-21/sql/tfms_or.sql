@@ -1,0 +1,7 @@
+
+SELECT t.* FROM `flyways.tfms_or_positions.tfms_or_positions` t JOIN UNNEST([
+    STRUCT('fw29-fys33la-2026-09-21' AS case_name, TIMESTAMP('2026-09-21 12:01:44') AS t0, TIMESTAMP('2026-09-21 13:01:44') AS t1, 39.773 AS lat_min, 41.592 AS lat_max, -4.76 AS lon_min, -3.254 AS lon_max)
+  ]) c ON t.common.position_timestamp >= c.t0 AND t.common.position_timestamp < c.t1 AND t.common.latitude BETWEEN c.lat_min AND c.lat_max AND t.common.longitude BETWEEN c.lon_min AND c.lon_max
+WHERE DATE(t.position_timestamp) = '2026-09-21'
+  AND ((t.common.position_timestamp >= TIMESTAMP('2026-09-21 12:01:44') AND t.common.position_timestamp < TIMESTAMP('2026-09-21 13:01:44') AND t.common.latitude BETWEEN 39.773 AND 41.592 AND t.common.longitude BETWEEN -4.76 AND -3.254))
+

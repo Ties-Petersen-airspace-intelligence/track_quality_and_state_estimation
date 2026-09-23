@@ -1,0 +1,44 @@
+{
+ "name": "fw04-n535gw-2026-09-21",
+ "day": "2026-09-21",
+ "t_start": "2026-09-21 14:52:17",
+ "t_end": "2026-09-21 15:52:17",
+ "box": {
+  "lat_min": 37.931,
+  "lat_max": 39.667,
+  "lon_min": -108.397,
+  "lon_max": -105.212
+ },
+ "suspect": {
+  "callsign": "N535GW",
+  "hex": "A6C3AB",
+  "fused_track_id": "AIR.53073"
+ },
+ "found_by": "visible error finder, set regular_spikes, candidate position_spike-AIR.53073-152217",
+ "reason": "position spike: 25.8 km off the path, 2 jumps in 60 s, at 137 kt, seen in regular fusion only",
+ "notes": "Good, didn't we see this one already?",
+ "flyways": {
+  "number": 4,
+  "url": "https://asi.app.airspace-intelligence.com/ual/asd/#/?timeMachine=2026-09-21T15%3A52Z%3BSNAPSHOT&track=AIR.53073",
+  "track": "AIR.53073",
+  "notion": "https://app.notion.com/p/airspaceintelligence/Examples-in-FlyWays-3e4bd6d804a880e6b5d9ee4894b186de"
+ },
+ "event": {
+  "t": "2026-09-21T15:22:17.585000038",
+  "lat": 38.44436,
+  "lon": -107.27061,
+  "kind": "position spike"
+ },
+ "rows": {
+  "adsbx": 272593,
+  "planefinder": 40079,
+  "uavionix": 175906,
+  "stdds": 0,
+  "tfms_ti": 2628,
+  "tfms_or": 0,
+  "ual": 14,
+  "asa": 16,
+  "fusion_append": 67019,
+  "fusion_final": 84649
+ }
+}

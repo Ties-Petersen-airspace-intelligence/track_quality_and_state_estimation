@@ -1,0 +1,44 @@
+{
+ "name": "fw08-aee4552-2026-09-21",
+ "day": "2026-09-21",
+ "t_start": "2026-09-21 06:02:42",
+ "t_end": "2026-09-21 07:02:42",
+ "box": {
+  "lat_min": 52.744,
+  "lat_max": 61.604,
+  "lon_min": 22.216,
+  "lon_max": 24.101
+ },
+ "suspect": {
+  "callsign": "AEE4552",
+  "hex": "4692D1",
+  "fused_track_id": "AIR.403987"
+ },
+ "found_by": "visible error finder, set regular_spikes, candidate position_spike-AIR.403987-063242",
+ "reason": "position spike: 14.8 km off the path, 2 jumps in 83 s, at 480 kt, seen in regular fusion only",
+ "notes": "very nice",
+ "flyways": {
+  "number": 8,
+  "url": "https://asi.app.airspace-intelligence.com/ual/asd/#/?timeMachine=2026-09-21T07%3A02Z%3BSNAPSHOT&track=AIR.403987",
+  "track": "AIR.403987",
+  "notion": "https://app.notion.com/p/airspaceintelligence/Examples-in-FlyWays-3e4bd6d804a880e6b5d9ee4894b186de"
+ },
+ "event": {
+  "t": "2026-09-21T06:32:42.309999943",
+  "lat": 57.32954,
+  "lon": 23.60095,
+  "kind": "position spike"
+ },
+ "rows": {
+  "adsbx": 37499,
+  "planefinder": 19336,
+  "uavionix": 0,
+  "stdds": 0,
+  "tfms_ti": 0,
+  "tfms_or": 0,
+  "ual": 0,
+  "asa": 0,
+  "fusion_append": 13865,
+  "fusion_final": 15965
+ }
+}

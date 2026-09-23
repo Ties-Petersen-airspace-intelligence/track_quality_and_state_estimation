@@ -1,0 +1,44 @@
+{
+ "name": "fw10-rsx324-2026-09-21",
+ "day": "2026-09-21",
+ "t_start": "2026-09-21 02:39:14",
+ "t_end": "2026-09-21 03:39:14",
+ "box": {
+  "lat_min": 46.228,
+  "lat_max": 54.056,
+  "lon_min": 21.362,
+  "lon_max": 23.169
+ },
+ "suspect": {
+  "callsign": "RSX324",
+  "hex": "010276",
+  "fused_track_id": "AIR.2316876"
+ },
+ "found_by": "visible error finder, set regular_spikes, candidate position_spike-AIR.2316876-030914",
+ "reason": "position spike: 10.6 km off the path, 2 jumps in 66 s, at 412 kt, seen in regular fusion only",
+ "notes": "nice, btw its entire track is shitty in general",
+ "flyways": {
+  "number": 10,
+  "url": "https://asi.app.airspace-intelligence.com/ual/asd/#/?timeMachine=2026-09-21T03%3A39Z%3BSNAPSHOT&track=AIR.2316876",
+  "track": "AIR.2316876",
+  "notion": "https://app.notion.com/p/airspaceintelligence/Examples-in-FlyWays-3e4bd6d804a880e6b5d9ee4894b186de"
+ },
+ "event": {
+  "t": "2026-09-21T03:09:14.032000065",
+  "lat": 50.13215,
+  "lon": 21.87394,
+  "kind": "position spike"
+ },
+ "rows": {
+  "adsbx": 102401,
+  "planefinder": 56824,
+  "uavionix": 0,
+  "stdds": 0,
+  "tfms_ti": 0,
+  "tfms_or": 0,
+  "ual": 0,
+  "asa": 0,
+  "fusion_append": 32377,
+  "fusion_final": 34644
+ }
+}

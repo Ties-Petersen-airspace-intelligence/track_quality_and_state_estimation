@@ -1,0 +1,7 @@
+
+SELECT t.* FROM `flyways.uni_track_provider.fused_plots_aws` t JOIN UNNEST([
+    STRUCT('fw30-vampyr1-2026-09-21' AS case_name, TIMESTAMP('2026-09-21 19:00:06') AS t0, TIMESTAMP('2026-09-21 20:00:06') AS t1, 30.907 AS lat_min, 33.016 AS lat_max, -115.287 AS lon_min, -109.754 AS lon_max)
+  ]) c ON t.position_timestamp >= c.t0 AND t.position_timestamp < c.t1 AND t.latitude BETWEEN c.lat_min AND c.lat_max AND t.longitude BETWEEN c.lon_min AND c.lon_max
+WHERE DATE(t.position_timestamp) = '2026-09-21'
+  AND ((t.position_timestamp >= TIMESTAMP('2026-09-21 19:00:06') AND t.position_timestamp < TIMESTAMP('2026-09-21 20:00:06') AND t.latitude BETWEEN 30.907 AND 33.016 AND t.longitude BETWEEN -115.287 AND -109.754))
+
