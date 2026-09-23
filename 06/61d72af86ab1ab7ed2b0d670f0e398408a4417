@@ -1,0 +1,37 @@
+README.md
+  903f4d8c81dee544 18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.5",
+  "base_commit_sha": "0661d72af86ab1ab7ed2b0d670f0e398408a4417",
+  "prompts": {
+    "903f4d8c81dee544": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "32fe905e-eb15-48cc-b061-a3aa7b739e06",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Ties Petersen",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0,
+      "messages_url": "https://uni-git-ai-cas.sre.aws.ai-internal.com//cas/6c59e658219c69947008eee0c389ebfae8123135b5d95a2ff03758cbadb3602a",
+      "context_window_samples": [
+        {
+          "used_tokens": 524635,
+          "timestamp": "2026-09-23T16:43:24.727Z"
+        }
+      ],
+      "skill_usages": [
+        {
+          "name": "office-task",
+          "timestamp": "2026-09-23T09:51:33.460Z",
+          "source": "slash_command"
+        }
+      ]
+    }
+  }
+}
