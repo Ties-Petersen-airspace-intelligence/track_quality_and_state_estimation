@@ -1,44 +1,48 @@
 {
- "name": "fw30-vampyr1-2026-09-21",
- "day": "2026-09-21",
- "t_start": "2026-09-21 19:00:06",
- "t_end": "2026-09-21 20:00:06",
- "box": {
-  "lat_min": 30.907,
-  "lat_max": 33.016,
-  "lon_min": -115.287,
-  "lon_max": -109.754
- },
- "suspect": {
-  "callsign": "VAMPYR1",
-  "hex": "ABC123",
-  "fused_track_id": "AIR.17214"
- },
- "found_by": "visible error finder, set first run, candidate teleport-AIR.17214-193006",
- "reason": "teleport: 425.2 km off the path, 1 jumps in 62 s, at 100 kt, seen in regular fusion only",
- "notes": "it is a good case, and it is true and showing in flyways, but it might be a correlation error or something",
- "flyways": {
-  "number": 30,
-  "url": "https://asi.app.airspace-intelligence.com/ual/asd/#/?timeMachine=2026-09-21T20%3A00Z%3BSNAPSHOT&track=AIR.17214",
-  "track": "AIR.17214",
-  "notion": "https://app.notion.com/p/airspaceintelligence/Examples-in-FlyWays-3e4bd6d804a880e6b5d9ee4894b186de"
- },
- "event": {
-  "t": "2026-09-21T19:30:06.246999979",
-  "lat": 32.47372,
-  "lon": -114.70013,
-  "kind": "teleport"
- },
- "rows": {
-  "adsbx": 448156,
-  "planefinder": 82027,
-  "uavionix": 111998,
-  "stdds": 0,
-  "tfms_ti": 2804,
-  "tfms_or": 0,
-  "ual": 10,
-  "asa": 1,
-  "fusion_append": 111034,
-  "fusion_final": 134438
- }
+  "name": "fw30-vampyr1-2026-09-21",
+  "day": "2026-09-21",
+  "t_start": "2026-09-21 19:00:06",
+  "t_end": "2026-09-21 20:00:06",
+  "box": {
+    "lat_min": 30.907,
+    "lat_max": 33.016,
+    "lon_min": -115.287,
+    "lon_max": -109.754
+  },
+  "suspect": {
+    "callsign": "VAMPYR1",
+    "hex": "ABC123",
+    "fused_track_id": "AIR.17214"
+  },
+  "found_by": "visible error finder, set first run, candidate teleport-AIR.17214-193006",
+  "reason": "teleport: 425.2 km off the path, 1 jumps in 62 s, at 100 kt, seen in regular fusion only",
+  "notes": "it is a good case, and it is true and showing in flyways, but it might be a correlation error or something",
+  "flyways": {
+    "number": 30,
+    "url": "https://asi.app.airspace-intelligence.com/ual/asd/#/?timeMachine=2026-09-21T20%3A00Z%3BSNAPSHOT&track=AIR.17214",
+    "track": "AIR.17214",
+    "notion": "https://app.notion.com/p/airspaceintelligence/Examples-in-FlyWays-3e4bd6d804a880e6b5d9ee4894b186de"
+  },
+  "event": {
+    "t": "2026-09-21T19:30:06.246999979",
+    "lat": 32.47372,
+    "lon": -114.70013,
+    "kind": "teleport"
+  },
+  "rows": {
+    "adsbx": 448156,
+    "planefinder": 82027,
+    "uavionix": 111998,
+    "stdds": 0,
+    "tfms_ti": 2804,
+    "tfms_or": 0,
+    "ual": 10,
+    "asa": 1,
+    "fusion_append": 111034,
+    "fusion_final": 134438
+  },
+  "fixes": [
+    "uavionix altitude_ft = flight_level * 100 (TS-1927)",
+    "uavionix ground_speed_kt = NM/s * 3600 (#114)"
+  ]
 }

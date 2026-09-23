@@ -1,44 +1,48 @@
 {
- "name": "fw28-n7407w-2026-09-22",
- "day": "2026-09-22",
- "t_start": "2026-09-22 01:46:49",
- "t_end": "2026-09-22 02:46:49",
- "box": {
-  "lat_min": 39.69,
-  "lat_max": 40.752,
-  "lon_min": -112.269,
-  "lon_max": -111.193
- },
- "suspect": {
-  "callsign": "N7407W",
-  "hex": "A9F5EC",
-  "fused_track_id": "AIR.50442"
- },
- "found_by": "visible error finder, set regular_spikes, candidate altitude_spike-AIR.50442-021649",
- "reason": "altitude spike: 4800 ft to 0 ft and back to 4600 ft in 15 s, ADS-B Exchange to ADS-B Exchange, 2 jumps, seen in regular fusion only",
- "notes": "good, mutliple altitude drops close together along the entire track",
- "flyways": {
-  "number": 28,
-  "url": "https://asi.app.airspace-intelligence.com/ual/asd/#/?timeMachine=2026-09-22T02%3A46Z%3BSNAPSHOT&track=AIR.50442",
-  "track": "AIR.50442",
-  "notion": "https://app.notion.com/p/airspaceintelligence/Examples-in-FlyWays-3e4bd6d804a880e6b5d9ee4894b186de"
- },
- "event": {
-  "t": "2026-09-22T02:16:49.121000051",
-  "lat": 40.23992,
-  "lon": -111.74084,
-  "kind": "altitude spike"
- },
- "rows": {
-  "adsbx": 130563,
-  "planefinder": 21381,
-  "uavionix": 78572,
-  "stdds": 7677,
-  "tfms_ti": 1055,
-  "tfms_or": 0,
-  "ual": 0,
-  "asa": 1,
-  "fusion_append": 34446,
-  "fusion_final": 36155
- }
+  "name": "fw28-n7407w-2026-09-22",
+  "day": "2026-09-22",
+  "t_start": "2026-09-22 01:46:49",
+  "t_end": "2026-09-22 02:46:49",
+  "box": {
+    "lat_min": 39.69,
+    "lat_max": 40.752,
+    "lon_min": -112.269,
+    "lon_max": -111.193
+  },
+  "suspect": {
+    "callsign": "N7407W",
+    "hex": "A9F5EC",
+    "fused_track_id": "AIR.50442"
+  },
+  "found_by": "visible error finder, set regular_spikes, candidate altitude_spike-AIR.50442-021649",
+  "reason": "altitude spike: 4800 ft to 0 ft and back to 4600 ft in 15 s, ADS-B Exchange to ADS-B Exchange, 2 jumps, seen in regular fusion only",
+  "notes": "good, mutliple altitude drops close together along the entire track",
+  "flyways": {
+    "number": 28,
+    "url": "https://asi.app.airspace-intelligence.com/ual/asd/#/?timeMachine=2026-09-22T02%3A46Z%3BSNAPSHOT&track=AIR.50442",
+    "track": "AIR.50442",
+    "notion": "https://app.notion.com/p/airspaceintelligence/Examples-in-FlyWays-3e4bd6d804a880e6b5d9ee4894b186de"
+  },
+  "event": {
+    "t": "2026-09-22T02:16:49.121000051",
+    "lat": 40.23992,
+    "lon": -111.74084,
+    "kind": "altitude spike"
+  },
+  "rows": {
+    "adsbx": 130563,
+    "planefinder": 21381,
+    "uavionix": 78572,
+    "stdds": 7677,
+    "tfms_ti": 1055,
+    "tfms_or": 0,
+    "ual": 0,
+    "asa": 1,
+    "fusion_append": 34446,
+    "fusion_final": 36155
+  },
+  "fixes": [
+    "uavionix altitude_ft = flight_level * 100 (TS-1927)",
+    "uavionix ground_speed_kt = NM/s * 3600 (#114)"
+  ]
 }
