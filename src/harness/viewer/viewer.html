@@ -154,6 +154,12 @@
   #pick .item:last-child { border-bottom:none; } #pick .item:hover { background:var(--raised); } #pick .item .muted { margin-left:auto; white-space:nowrap; font-size:0.6875rem; text-transform:uppercase; letter-spacing:0.06em; }
   #pick .item .muted::after { content:" ›"; color:var(--dim); }
   #selbox { position:absolute; display:none; z-index:9; pointer-events:none; border:1px solid var(--accent); background:rgba(204,255,0,0.08); }
+  /* raw plot filters: groups of checkboxes built from the case, plus the outcome of one strategy run */
+  #rawFilters .grp { margin-top:0.6rem; } #rawFilters .grp .label { display:block; margin-bottom:0.25rem; }
+  #rawFilters .opts { display:flex; flex-wrap:wrap; gap:0.15rem 0.9rem; } #rawFilters .opts label { display:inline-flex; align-items:center; gap:0.35rem; font: 0.75rem var(--mono); color:var(--body); cursor:pointer; white-space:nowrap; }
+  #rawFilters .opts label .n { color:var(--dim); font-size:0.625rem; }
+  #rawFilters .field .asel, #rawFilters .field select { flex:1; }
+  #rawFilters .off { color:var(--dim); font: 0.6875rem var(--sans); margin-top:0.3rem; }
   /* the runs panel: every run of the case as a table, over the left edge of the map */
   #runsPanel { position:absolute; top:0; left:0; bottom:0; width:var(--runs, 52rem); max-width:90%; z-index:11; display:none; flex-direction:column; background:rgba(17,17,17,0.97); border-right:1px solid var(--line-strong); box-shadow:0 0 32px rgb(0 0 0 / 60%); }
   #runsPanel.open { display:flex; }
@@ -243,7 +249,7 @@
   <h1><span class="pfx">&#9656;&#9656;&#9656;</span> Track harness</h1>
   <select id="caseSel" title="switch case"><option>loading…</option></select>
   <button id="resetView" title="back to the default view of this case: nothing compared, timeline at the start, all toggles as they open">reset view</button>
-  <div class="right"><span id="sub"></span><span class="dim">viewer build 2026-09-23 16:10</span><span class="asimark">[ ASI ]</span></div>
+  <div class="right"><span id="sub"></span><span class="dim">viewer build 2026-09-23 22:00</span><span class="asimark">[ ASI ]</span></div>
 </header>
 
 <aside id="left">
@@ -260,7 +266,7 @@
     <div class="field"><span class="label">strategy colour</span><select id="runColour"><option value="run">by strategy</option><option value="track">by track id (TOID)</option></select></div>
     <div class="field"><span class="label">fade over</span><select id="fadeWin"><option value="10">10 s</option><option value="30">30 s</option><option value="60">1 min</option><option value="120">2 min</option><option value="300">5 min</option><option value="900" selected>15 min</option><option value="0">never</option><option value="custom">custom…</option></select><input type="text" id="fadeCustom" placeholder="seconds" style="width:5rem; display:none"></div>
     <div class="field"><span class="label">raw plot size</span><select id="rawSize"><option value="fixed">fixed</option><option value="nacp">NACp accuracy radius</option><option value="nic">NIC containment radius</option></select></div>
-    <div class="row" style="margin-top:0.4rem"><label><input type="checkbox" id="qualityOnly"> only plots that carry NIC or NACp</label></div>
+    <div class="field"><span class="label">strategy ring size</span><select id="runSize"><option value="fixed">fixed</option><option value="s95">95% radius, 2.45 sigma</option><option value="s2">2 sigma</option><option value="s1">1 sigma</option></select></div>
     <div class="row"><label><input type="checkbox" id="greyOthers" checked> grey out tracks not being compared</label></div>
   </section>
   <div class="hatch"></div>
@@ -271,6 +277,23 @@
       <label class="row"><input type="radio" name="filterMode" value="only"> only the compared tracks</label>
       <label class="row"><input type="radio" name="filterMode" value="others"> everything except the compared tracks</label>
     </div>
+  </section>
+  <div class="hatch"></div>
+  <section>
+    <details id="rawFilters">
+      <summary><h2 style="display:inline">Raw plot filters</h2><span class="dim mono" id="rawFilterCount" style="margin-left:0.5rem; font-size:0.625rem"></span></summary>
+      <div class="help" style="margin-top:0.4rem">Narrow the raw plots to the ones a strategy can use, or any other slice. Plots that fail a filter turn dark grey, or disappear.</div>
+      <div class="grp"><span class="label">plots that fail a filter</span><div class="opts"><label><input type="radio" name="filterFail" value="grey" checked> grey out</label><label><input type="radio" name="filterFail" value="hide"> hide</label></div></div>
+      <div class="grp" id="kindGroups"></div>
+      <div class="field"><span class="label">NACp</span><select id="fNacp"><option value="any">any</option><option value="present">present</option><option value="8">at least 8</option><option value="9">at least 9</option><option value="10">at least 10</option></select></div>
+      <div class="field"><span class="label">lateness</span><select id="fLate"><option value="any">any</option><option value="5">under 5 s</option><option value="10">under 10 s</option><option value="60">under 1 min</option></select></div>
+      <div class="grp"><span class="label">must have</span><div class="opts"><label><input type="checkbox" id="fAlt"> an altitude</label><label><input type="checkbox" id="fHex"> a hex</label><label><input type="checkbox" id="fAir"> not on the ground</label><label><input type="checkbox" id="qualityOnly"> NIC or NACp</label></div></div>
+      <div class="grp"><span class="label">outcome in a strategy run</span>
+        <div class="field" style="margin-top:0.2rem"><select id="fOutcomeRun"><option value="">none</option></select></div>
+        <div class="opts" id="fStates" style="margin-top:0.3rem"></div>
+        <div class="opts" id="fReasons" style="margin-top:0.3rem"></div>
+      </div>
+    </details>
   </section>
   <div class="hatch"></div>
   <section>
@@ -349,12 +372,12 @@
     <div id="gripRuns"></div>
     <div class="panel-head"><span class="label">strategy runs</span><span class="n" id="runsCount"></span><span class="spacer"></span><button class="small" id="runsClose">close</button></div>
     <div class="body">
-      <div class="help">Every run of a strategy on this case, one row each. Labels count up per strategy and nothing is overwritten. Tick a row to show it on the map, click a row for its parameters, commit and command, tick two rows under "diff" to see what differs. Notes are editable in place and saved to the run's run.json.</div>
+      <div class="help">Every run of a strategy on this case, one row each. Labels count up per strategy and nothing is overwritten. Tick "active" to put a run in the toolbar and the menus, then switch it on there to draw it. Click a row for its parameters, commit and command, tick two rows under "diff" to see what differs. Notes are editable in place and saved to the run's run.json.</div>
       <table id="runsTable"></table>
       <div class="diff" id="runsDiff"></div>
     </div>
   </div>
-  <div id="dbg"><div class="kv"><span class="k">raw plots</span><span class="v" id="status"></span><span class="k">now</span><span class="v" id="dbgNow"></span><span class="k">lat (mouse)</span><span class="v" id="dbgLat">–</span><span class="k">lon (mouse)</span><span class="v" id="dbgLon">–</span><span class="k">zoom</span><span class="v" id="dbgZoom">–</span></div></div>
+  <div id="dbg"><div class="kv"><span class="k">raw plots</span><span class="v" id="status"></span><span class="k">filtered out</span><span class="v" id="dbgFiltered">0</span><span class="k">now</span><span class="v" id="dbgNow"></span><span class="k">lat (mouse)</span><span class="v" id="dbgLat">–</span><span class="k">lon (mouse)</span><span class="v" id="dbgLon">–</span><span class="k">zoom</span><span class="v" id="dbgZoom">–</span></div></div>
   <div id="tip"></div>
   <div id="pick"></div>
   <div id="selbox"></div>
@@ -388,11 +411,14 @@ const RUN_COLORS = [[204,255,0],[253,29,136],[235,141,7],[170,130,255],[255,255,
 const SHORT_SOURCE = {adsbx:"ADS-B X", planefinder:"PlaneFinder", uavionix:"uAvionix", stdds:"STDDS", tfms_ti:"TFMS TI", tfms_or:"TFMS OR", ual:"United", asa:"Alaska"};
 // a run id is "strategy/label"; the label is shown unless the strategy has only one run in this case
 const shortStrategy = s => s.replace(/^prod_fusion_/, "prod_").replace(/_/g, " ");
-const shortRun = id => { const [s, l] = id.split("/"); return shortStrategy(s) + (CASE && CASE.runs.filter(r => r.strategy === s).length > 1 ? " " + l : ""); };
+const shortRun = id => { const [s, l] = id.split("/"); return shortStrategy(s) + (CASE && CASE.runs.filter(r => r.id.split("/")[0] === s).length > 1 ? " " + l : ""); };
 const runById = id => CASE.runs.find(r => r.id === id);
 let runChecked = new Set();                                   // runs shown on the map
+let runActive = new Set();                                    // runs in the toolbar and the menus; the runs panel adds and removes them
 const rgb = c => `rgb(${c})`;
-let CASE, RAW, RUNS = {}, runColor = {}, map, overlay, now = 0, playing = false, lastTick = 0;
+let CASE, RAW, RUNS = {}, OUTCOMES = {}, runColor = {}, map, overlay, now = 0, playing = false, lastTick = 0;
+const STATE_COLOR = { used:[80,200,120], skipped:[110,116,122], dropped:[235,141,7], rejected:[227,27,35], unknown:[70,74,80] };
+const FILTERED = [58, 62, 68];                                 // a raw plot that fails a filter, when not hidden
 const CASE_NAME = new URLSearchParams(location.search).get("case");
 const api = path => fetch(`/api/${path}`).then(r => r.json());
 let baseLayers = [], hover = null, pins = [], win = null;   // hover/pins: {kind:"raw"|runName, i}; win: zoomed time window [ms, ms] or null
@@ -449,13 +475,17 @@ async function init() {
   $("splashWhat").textContent = `${RAW.n.toLocaleString()} raw plots · drawing`;
   const srcs = [...new Set(RAW.src)];
   $("sources").innerHTML = srcs.map(s => `<label class="tb" title="${RAW.src.filter(x => x === s).length.toLocaleString()} plots"><input type="checkbox" class="srcOn" value="${s}" checked><span class="sw" style="background:${rgb(SOURCE_COLOR[s])}"></span>${SHORT_SOURCE[s] || s}</label>`).join("");
+  defaultActive();
+  buildRawFilters();
   renderRunToolbar();
   $("runsMore").onchange = () => { $("runsPanel").classList.toggle("open", $("runsMore").checked); if ($("runsMore").checked) renderRunsPanel(); };
   $("runsClose").onclick = () => { $("runsMore").checked = false; $("runsPanel").classList.remove("open"); };
   map.on("mousemove", e => { $("dbgLat").textContent = e.lngLat.lat.toFixed(4); $("dbgLon").textContent = e.lngLat.lng.toFixed(4); });
   map.on("move", () => { $("dbgZoom").textContent = map.getZoom().toFixed(2); }); $("dbgZoom").textContent = map.getZoom().toFixed(2);
   document.querySelectorAll(".srcOn").forEach(cb => cb.onchange = () => { rebuildCharts(); draw(); });
-  ["rawOn", "runsOn", "rawColour", "runColour", "rawSize", "qualityOnly", "greyOthers", "runLines", "runRings"].forEach(id => $(id).onchange = draw);
+  ["rawOn", "runsOn", "rawColour", "runColour", "rawSize", "runSize", "qualityOnly", "greyOthers", "runLines", "runRings", "fNacp", "fLate", "fAlt", "fHex", "fAir"].forEach(id => $(id).onchange = draw);
+  document.querySelectorAll('input[name="filterFail"]').forEach(r => r.onchange = draw);
+  $("fOutcomeRun").onchange = async () => { const id = $("fOutcomeRun").value; if (id) await loadOutcomes(id); renderOutcomeFilter(); draw(); };
   document.querySelectorAll('input[name="filterMode"]').forEach(r => r.onchange = draw);
   $("fadeWin").onchange = () => { $("fadeCustom").style.display = $("fadeWin").value === "custom" ? "inline-block" : "none"; draw(); };
   $("fadeCustom").oninput = draw;
@@ -480,21 +510,78 @@ async function loadRun(name) {
   const lab = $(`runlabel-${name}`); if (lab) lab.title = `${r.n.toLocaleString()} plots, ${new Set(r.track).size} tracks emitted by this strategy`;
   $("status").textContent = RAW.n.toLocaleString();
 }
+// ---------- raw plot filters ----------
+async function loadOutcomes(id) { if (OUTCOMES[id]) return OUTCOMES[id]; OUTCOMES[id] = await api(`outcomes/${CASE.name}/${id}`); return OUTCOMES[id]; }
+function buildRawFilters() {
+  // one group of checkboxes per source that has more than one kind of plot, every kind ticked
+  const counts = {};
+  for (let i = 0; i < RAW.n; i++) if (RAW.kind[i]) { const k = RAW.src[i] + "|" + RAW.kind[i]; counts[k] = (counts[k] || 0) + 1; }
+  const bySrc = {}; for (const k of Object.keys(counts)) { const [src, kind] = k.split("|"); (bySrc[src] ||= []).push(kind); }
+  $("kindGroups").innerHTML = Object.entries(bySrc).map(([src, kinds]) => `<div class="grp"><span class="label">${SHORT_SOURCE[src] || src} plot kind</span><div class="opts">` +
+    kinds.sort().map(k => `<label><input type="checkbox" class="fKind" data-src="${src}" value="${k}" checked> ${k} <span class="n">${counts[src + "|" + k].toLocaleString()}</span></label>`).join("") + `</div></div>`).join("");
+  document.querySelectorAll(".fKind").forEach(cb => cb.onchange = draw);
+  syncRunMenus();
+}
+function renderOutcomeFilter() {
+  const id = $("fOutcomeRun").value, o = id && OUTCOMES[id];
+  if (!o || !o.state) { $("fStates").innerHTML = id ? `<span class="off">this run has no outcomes recorded</span>` : ""; $("fReasons").innerHTML = ""; return; }
+  const states = {}, reasons = {};
+  for (let i = 0; i < RAW.n; i++) { const st = o.state[i] || "not seen"; states[st] = (states[st] || 0) + 1; if (o.reason[i]) { const k = st + ": " + o.reason[i]; reasons[k] = (reasons[k] || 0) + 1; } }
+  const keepS = new Set([...document.querySelectorAll(".fState:checked")].map(c => c.value)), keepR = new Set([...document.querySelectorAll(".fReason:checked")].map(c => c.value));
+  const fresh = !document.querySelector(".fState");
+  $("fStates").innerHTML = Object.entries(states).map(([st, n]) => `<label><input type="checkbox" class="fState" value="${st}" ${fresh || keepS.has(st) ? "checked" : ""}><span class="sw" style="background:${rgb(STATE_COLOR[st] || FILTERED)}"></span> ${st} <span class="n">${n.toLocaleString()}</span></label>`).join("");
+  $("fReasons").innerHTML = Object.entries(reasons).sort((a, b) => b[1] - a[1]).map(([k, n]) => `<label><input type="checkbox" class="fReason" value="${k}" ${fresh || keepR.has(k) ? "checked" : ""}> ${k.split(": ")[1]} <span class="n">${n.toLocaleString()}</span></label>`).join("");
+  document.querySelectorAll(".fState, .fReason").forEach(cb => cb.onchange = draw);
+}
+function filterSignature() { return [...document.querySelectorAll("#rawFilters input, #rawFilters select")].map(e => e.type === "checkbox" || e.type === "radio" ? (e.checked ? "1" : "0") : e.value).join(""); }
+// one function that says whether a raw plot passes every filter; built once per draw so the loops stay cheap
+function rawFilter() {
+  const kinds = new Set([...document.querySelectorAll(".fKind:checked")].map(c => c.dataset.src + "|" + c.value));
+  const kindSources = new Set([...document.querySelectorAll(".fKind")].map(c => c.dataset.src));
+  const nacp = $("fNacp").value, late = $("fLate").value, needAlt = $("fAlt").checked, needHex = $("fHex").checked, needAir = $("fAir").checked, needQuality = $("qualityOnly").checked;
+  const id = $("fOutcomeRun").value, o = id && OUTCOMES[id] && OUTCOMES[id].state ? OUTCOMES[id] : null;
+  const states = o ? new Set([...document.querySelectorAll(".fState:checked")].map(c => c.value)) : null;
+  const reasons = o ? new Set([...document.querySelectorAll(".fReason:checked")].map(c => c.value)) : null;
+  return i => {
+    if (kindSources.has(RAW.src[i]) && !kinds.has(RAW.src[i] + "|" + RAW.kind[i])) return false;
+    if (nacp !== "any" && (RAW.nacp[i] == null || (nacp !== "present" && RAW.nacp[i] < +nacp))) return false;
+    if (late !== "any" && (RAW.r[i] - RAW.t[i]) / 1000 >= +late) return false;
+    if (needAlt && RAW.alt[i] == null) return false;
+    if (needHex && !RAW.hex[i]) return false;
+    if (needAir && RAW.ground[i]) return false;
+    if (needQuality && !hasQuality(i)) return false;
+    if (o) { const st = o.state[i] || "not seen"; if (!states.has(st)) return false; if (o.reason[i] && !reasons.has(st + ": " + o.reason[i])) return false; }
+    return true;
+  };
+}
+
 // the toolbar lists the newest run of every strategy plus any older run that is switched on
-function toolbarRuns() { const latest = new Set(); for (const r of CASE.runs) latest.add(r.strategy); const ids = []; for (const s of latest) { const of = CASE.runs.filter(r => r.strategy === s); ids.push(of[of.length - 1].id); } for (const id of runChecked) if (!ids.includes(id)) ids.push(id); return CASE.runs.map(r => r.id).filter(id => ids.includes(id)); }
+function toolbarRuns() { return CASE.runs.map(r => r.id).filter(id => runActive.has(id)); }
+function defaultActive() { for (const r of CASE.runs) if (r.id.startsWith("prod_fusion")) runActive.add(r.id); }
+// an active run appears in the toolbar, in the outcome filter and in the raw colour menu; an inactive one nowhere
+function setRunActive(id, on) {
+  if (on) runActive.add(id); else { runActive.delete(id); runChecked.delete(id); if ($("rawColour").value === "outcome:" + id) $("rawColour").value = "source"; if ($("fOutcomeRun").value === id) { $("fOutcomeRun").value = ""; renderOutcomeFilter(); } }
+  syncRunMenus(); renderRunToolbar(); if ($("runsPanel").classList.contains("open")) renderRunsPanel(); rebuildCharts(); draw();
+}
+function syncRunMenus() {
+  const rc = $("rawColour"); [...rc.options].filter(o => o.value.startsWith("outcome:") && !runActive.has(o.value.slice(8))).forEach(o => o.remove());
+  for (const id of toolbarRuns()) if (![...rc.options].some(o => o.value === "outcome:" + id)) { const o = document.createElement("option"); o.value = "outcome:" + id; o.textContent = `outcome for ${shortRun(id)}`; rc.appendChild(o); }
+  const keep = $("fOutcomeRun").value; $("fOutcomeRun").innerHTML = `<option value="">none</option>` + toolbarRuns().map(id => `<option value="${id}">${shortRun(id)}</option>`).join(""); if (runActive.has(keep)) $("fOutcomeRun").value = keep;
+  refreshSelects();
+}
 function colorFor(id) { if (runColor[id]) return runColor[id]; const used = Object.values(runColor).map(String); runColor[id] = RUN_COLORS.find(c => !used.includes(String(c))) || RUN_COLORS[Object.keys(runColor).length % RUN_COLORS.length]; return runColor[id]; }
 function renderRunToolbar() {
   $("runs").innerHTML = toolbarRuns().map(id => `<label class="tb" id="runlabel-${id}"><input type="checkbox" class="runOn" value="${id}" ${runChecked.has(id) ? "checked" : ""}><span class="sw line" style="background:${rgb(colorFor(id))}"></span>${shortRun(id)}</label>`).join("");
   document.querySelectorAll(".runOn").forEach(cb => cb.onchange = () => setRunShown(cb.value, cb.checked));
 }
 async function setRunShown(id, on) {
-  if (on) { runChecked.add(id); if (!RUNS[id]) await loadRun(id); } else runChecked.delete(id);
+  if (on) { runActive.add(id); runChecked.add(id); if (!RUNS[id]) await loadRun(id); } else runChecked.delete(id);
   renderRunToolbar(); if ($("runsPanel").classList.contains("open")) renderRunsPanel(); rebuildCharts(); draw();
 }
 // ---------- the runs panel ----------
 let runsSort = { key:"created", asc:true }, runsOpen = null, runsDiff = [];
 const RUN_COLS = [
-  { key:"on", title:"map", cell:r => `<input type="checkbox" class="rp-on" data-id="${r.id}" ${runChecked.has(r.id) ? "checked" : ""}> <span class="sw" style="background:${runChecked.has(r.id) ? rgb(colorFor(r.id)) : "transparent"}"></span>` },
+  { key:"on", title:"active", val:r => runActive.has(r.id) ? 1 : 0, cell:r => `<input type="checkbox" class="rp-on" data-id="${r.id}" ${runActive.has(r.id) ? "checked" : ""}> <span class="sw" style="background:${runChecked.has(r.id) ? rgb(colorFor(r.id)) : "transparent"}"></span>` },
   { key:"diff", title:"diff", cell:r => `<input type="checkbox" class="rp-diff" data-id="${r.id}" ${runsDiff.includes(r.id) ? "checked" : ""}>` },
   { key:"strategy", title:"strategy", val:r => r.id.split("/")[0], cell:r => shortStrategy(r.id.split("/")[0]) },
   { key:"label", title:"label", cls:"lab", cell:r => r.label },
@@ -522,7 +609,7 @@ function renderRunsPanel() {
   $("runsTable").innerHTML = html + "</tbody>";
   $("runsTable").querySelectorAll("th").forEach(th => th.onclick = () => { const k = th.dataset.key; if (runsSort.key === k) runsSort.asc = !runsSort.asc; else runsSort = { key:k, asc:true }; renderRunsPanel(); });
   $("runsTable").querySelectorAll("tr.run").forEach(tr => tr.onclick = e => { if (e.target.closest("input, td.note")) return; runsOpen = runsOpen === tr.dataset.id ? null : tr.dataset.id; renderRunsPanel(); });
-  $("runsTable").querySelectorAll(".rp-on").forEach(cb => cb.onchange = () => setRunShown(cb.dataset.id, cb.checked));
+  $("runsTable").querySelectorAll(".rp-on").forEach(cb => cb.onchange = () => setRunActive(cb.dataset.id, cb.checked));
   $("runsTable").querySelectorAll(".rp-diff").forEach(cb => cb.onchange = () => { runsDiff = cb.checked ? [...runsDiff.filter(x => x !== cb.dataset.id), cb.dataset.id].slice(-2) : runsDiff.filter(x => x !== cb.dataset.id); renderRunsPanel(); });
   $("runsTable").querySelectorAll("td.note").forEach(td => { td.onkeydown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); td.blur(); } if (e.key === "Escape") { td.textContent = (runById(td.dataset.id).note || ""); td.blur(); } }; td.onblur = () => saveNote(td.dataset.id, td.textContent.trim()); td.onfocus = () => td.classList.remove("empty"); });
   renderRunsDiff();
@@ -607,6 +694,7 @@ const NIC_M = {11:7.5, 10:25, 9:75, 8:185.2, 7:370.4, 6:1111.2, 5:1852, 4:3704, 
 const hasQuality = i => RAW.nacp[i] != null || RAW.nic[i] != null;
 function plotRadiusM(i, mode) { return mode === "nacp" ? NACP_M[RAW.nacp[i]] : mode === "nic" ? (NIC_M[RAW.nic[i]] ?? (RAW.rc[i] || null)) : null; }
 function rawColor(i, mode) {
+  if (mode.startsWith("outcome:")) { const o = OUTCOMES[mode.slice(8)]; if (!o || !o.state) return SOURCE_COLOR[RAW.src[i]]; return STATE_COLOR[o.state[i]] || FILTERED; }
   if (mode === "key") return hashColor(displayKey(RAW, i));
   if (mode === "lateness") { const late = (RAW.r[i] - RAW.t[i]) / 1000; return late < 2 ? [204,255,0] : late < 5 ? [235,141,7] : late < 15 ? [255,26,94] : [170,130,255]; }
   return SOURCE_COLOR[RAW.src[i]];
@@ -626,14 +714,20 @@ function dimBasemap() {
     } catch (e) {}
   }
 }
+let filterStamp = 0;
 function draw() {
   if (!RAW) return;
+  filterStamp = filterSignature() + "|" + Object.keys(OUTCOMES).filter(k => OUTCOMES[k] && OUTCOMES[k].state).join(",");
   $("now").textContent = fmt(now); $("dbgNow").textContent = fmt(now);
   const pct = (now / CASE.span_ms * 100) + "%"; $("nowMark").style.left = pct; $("played").style.width = pct; $("nowChip").style.left = `clamp(1.2rem, ${pct}, calc(100% - 1.2rem))`; $("nowChip").textContent = fmt(now).slice(0, 5);
   const layers = [], b = CASE.case.box;
   layers.push(new deck.PathLayer({ id:"box", data:[{ path:[[b.lon_min,b.lat_min],[b.lon_max,b.lat_min],[b.lon_max,b.lat_max],[b.lon_min,b.lat_max],[b.lon_min,b.lat_min]] }], getPath:d => d.path, getColor:[183,192,202,90], getWidth:1, widthUnits:"pixels" }));
-  const mode = $("rawColour").value, fadeMs = fadeWindowMs(), sizeMode = $("rawSize").value, qualityOnly = $("qualityOnly").checked;
-  const passes = i => !qualityOnly || hasQuality(i);
+  const mode = $("rawColour").value, fadeMs = fadeWindowMs(), sizeMode = $("rawSize").value;
+  const filterPass = rawFilter(), hideFailed = document.querySelector('input[name="filterFail"]:checked').value === "hide";
+  let failed = 0;
+  const passes = i => { const ok = filterPass(i); if (!ok) failed++; return ok || !hideFailed; };
+  const isFiltered = i => !filterPass(i);
+  if (mode.startsWith("outcome:") && !OUTCOMES[mode.slice(8)]) { loadOutcomes(mode.slice(8)).then(draw); }
   const inWin = t => !win || (t >= win[0] && t <= win[1]);
   // opacity falls in a straight line from full at the plot's position time to zero at the end of the fade window
   const alpha = t => { if (!fadeMs) return 210; const age = now - t; return age >= fadeMs ? 0 : Math.round(210 * (1 - age / fadeMs)); };
@@ -661,14 +755,18 @@ function draw() {
       updateTriggers:{ getFillColor:[now, fadeMs, showLate, sizeMode], getLineColor:[now, fadeMs, compare, showLate], getRadius:[compare], getLineWidth:[compare] } }));
     rawLayers.push(new deck.ScatterplotLayer({ id:"raw", data:sizedIdx, getPosition:i => [RAW.lon[i], RAW.lat[i]], radiusUnits:sized ? "meters" : "pixels", radiusMinPixels:sized ? 1.5 : 0,
       getRadius:i => sized ? plotRadiusM(i, sizeMode) : (emph("raw", i) ? 3.5 : 2.2),
-      getFillColor:i => [...(grey && !emph("raw", i) ? GREY : rawColor(i, mode)), sized ? Math.round(alpha(RAW.t[i]) * 0.18) : alpha(RAW.t[i])],
-      getLineColor:i => { const c = emph("raw", i); return sized ? [...(c ? c.color : grey && !c ? GREY : rawColor(i, mode)), alpha(RAW.t[i])] : c ? [...c.color, alpha(RAW.t[i])] : [0, 0, 0, 0]; }, stroked:true, lineWidthUnits:"pixels", getLineWidth:i => sized ? 1 : (emph("raw", i) ? 1.5 : 0),
+      getFillColor:i => [...(isFiltered(i) ? FILTERED : grey && !emph("raw", i) ? GREY : rawColor(i, mode)), sized ? Math.round(alpha(RAW.t[i]) * 0.18) : alpha(RAW.t[i])],
+      getLineColor:i => { const c = emph("raw", i); return sized ? [...(c ? c.color : isFiltered(i) ? FILTERED : grey && !c ? GREY : rawColor(i, mode)), alpha(RAW.t[i])] : c ? [...c.color, alpha(RAW.t[i])] : [0, 0, 0, 0]; }, stroked:true, lineWidthUnits:"pixels", getLineWidth:i => sized ? 1 : (emph("raw", i) ? 1.5 : 0),
       pickable:true, onHover:info => mapHover(info, "raw"),
-      updateTriggers:{ getFillColor:[now, fadeMs, mode, grey, compare, showLate, sizeMode], getLineColor:[now, fadeMs, compare, mode2, showLate, sizeMode, mode, grey], getRadius:[compare, sizeMode], getLineWidth:[compare, sizeMode] } }));
+      updateTriggers:{ getFillColor:[now, fadeMs, mode, grey, compare, showLate, sizeMode, filterStamp], getLineColor:[now, fadeMs, compare, mode2, showLate, sizeMode, mode, grey, filterStamp], getRadius:[compare, sizeMode], getLineWidth:[compare, sizeMode] } }));
+    $("rawFilterCount").textContent = failed ? `${failed.toLocaleString()} ${hideFailed ? "hidden" : "greyed"}` : "";
+    $("dbgFiltered").textContent = failed ? failed.toLocaleString() : "0";
   }
-  const runMode = $("runColour").value;
+  const runMode = $("runColour").value, runSize = $("runSize").value, sigmaFactor = { s95: 2.45, s2: 2, s1: 1 }[runSize];
   for (const name of activeRuns()) {
     const run = RUNS[name], color = colorFor(name), idx = [], paths = {};
+    // the filter's own uncertainty as a ring in metres; a run without sigmas, or the fixed mode, keeps the pixel rings
+    const sizedRun = sigmaFactor && run.sigma_horizontal_m, ringM = i => { const v = run.sigma_horizontal_m[i]; return v == null ? null : v * sigmaFactor; };
     const runBase = i => runMode === "track" ? hashColor(run.track[i]) : color;   // a compared track keeps its own colour either way
     const take = i => {
       const vt = run.valid_to[i]; if (vt != null && vt <= now) return;         // already replaced by a later event
@@ -680,10 +778,12 @@ function draw() {
     visible.runs[name] = idx;
     const lines = Object.entries(paths).map(([track, ids]) => { ids.sort((a, b) => run.t[a] - run.t[b]); const c = compare.find(x => x.kind === name && x.track === track); return { track, cmp:c, first:ids[0], newest:run.t[ids[ids.length - 1]], path: ids.map(i => [run.lon[i], run.lat[i]]) }; });
     if ($("runLines").checked) layers.push(new deck.PathLayer({ id:"run-lines-" + name, data:lines, getPath:d => d.path, getColor:d => [...(d.cmp ? d.cmp.color : grey ? GREY : runBase(d.first)), Math.max(40, alpha(d.newest))], getWidth:d => d.cmp ? 3 : 1.2, widthUnits:"pixels", updateTriggers:{ getColor:[now, fadeMs, compare, grey, runMode], getWidth:[compare] } }));
-    if ($("runRings").checked) ringLayers.push(new deck.ScatterplotLayer({ id:"run-dots-" + name, data:idx, getPosition:i => [run.lon[i], run.lat[i]], radiusUnits:"pixels", getRadius:i => emph(name, i) ? 6 : 4.5,
-      filled:false, stroked:true, lineWidthUnits:"pixels", getLineWidth:i => emph(name, i) ? 2 : 1.2, getLineColor:i => { const c = emph(name, i); return [...(c ? c.color : grey ? GREY : runBase(i)), alpha(run.t[i])]; },
+    if ($("runRings").checked || sizedRun) ringLayers.push(new deck.ScatterplotLayer({ id:"run-dots-" + name, data:sizedRun ? idx.filter(i => ringM(i) != null) : idx, getPosition:i => [run.lon[i], run.lat[i]],
+      radiusUnits:sizedRun ? "meters" : "pixels", radiusMinPixels:sizedRun ? 1.5 : 0, getRadius:i => sizedRun ? ringM(i) : (emph(name, i) ? 6 : 4.5),
+      filled:!!sizedRun, getFillColor:i => [...(emph(name, i) ? emph(name, i).color : grey && !emph(name, i) ? GREY : runBase(i)), Math.round(alpha(run.t[i]) * 0.12)],
+      stroked:true, lineWidthUnits:"pixels", getLineWidth:i => emph(name, i) ? 2 : 1.2, getLineColor:i => { const c = emph(name, i); return [...(c ? c.color : grey ? GREY : runBase(i)), alpha(run.t[i])]; },
       pickable:true, onHover:info => mapHover(info, name),
-      updateTriggers:{ getLineColor:[now, fadeMs, compare, grey, runMode], getRadius:[compare], getLineWidth:[compare] } }));
+      updateTriggers:{ getLineColor:[now, fadeMs, compare, grey, runMode], getFillColor:[now, fadeMs, compare, grey, runMode], getRadius:[compare, runSize], getLineWidth:[compare] } }));
   }
   baseLayers = [...layers, ...rawLayers, ...ringLayers];
   drawHighlight();
@@ -773,7 +873,11 @@ function setHover(h, x, y) {
 }
 function describe(p) {
   const d = table(p.kind), i = p.i, raw = p.kind === "raw";
-  return `<b>${d.cs[i] || "no callsign"}</b> · hex ${d.hex[i] || "–"} · tail ${d.tail[i] || "–"}<br>${raw ? "raw plot" : p.kind + " · track " + d.track[i] + " · " + d.quality[i]} · ${srcName(p.kind, i)}${raw && RAW.kind && RAW.kind[i] ? " · " + RAW.kind[i] : ""}<br>position ${fmtMs(d.t[i])} · received ${fmt(d.r[i])} (${((d.r[i] - d.t[i]) / 1000).toFixed(2)} s late)${!raw ? `<br>emitted ${fmt(d.created[i])}${d.valid_to[i] != null ? ` · replaced ${fmt(d.valid_to[i])}` : ""}` : ""}<br>alt ${d.alt[i] ?? "–"} ft · ${d.gs[i] ?? "–"} kt · trk ${d.trk[i] ?? "–"} · hdg ${d.hdg[i] ?? "–"}${raw ? ` · source track ${d.tid[i]}` : ""}${raw ? qualityLine(i) : ""}`;
+  return `<b>${d.cs[i] || "no callsign"}</b> · hex ${d.hex[i] || "–"} · tail ${d.tail[i] || "–"}<br>${raw ? "raw plot" : p.kind + " · track " + d.track[i] + " · " + d.quality[i]} · ${srcName(p.kind, i)}${raw && RAW.kind && RAW.kind[i] ? " · " + RAW.kind[i] : ""}<br>position ${fmtMs(d.t[i])} · received ${fmt(d.r[i])} (${((d.r[i] - d.t[i]) / 1000).toFixed(2)} s late)${!raw ? `<br>emitted ${fmt(d.created[i])}${d.valid_to[i] != null ? ` · replaced ${fmt(d.valid_to[i])}` : ""}` : ""}${!raw && d.sigma_horizontal_m ? `<br><span class="muted">filter sigma: ${d.sigma_east_m[i].toFixed(1)} m east · ${d.sigma_north_m[i].toFixed(1)} m north · ${d.sigma_up_m[i].toFixed(1)} m up · ${d.sigma_velocity_mps[i].toFixed(1)} m/s</span>` : ""}<br>alt ${d.alt[i] ?? "–"} ft · ${d.gs[i] ?? "–"} kt · trk ${d.trk[i] ?? "–"} · hdg ${d.hdg[i] ?? "–"}${raw ? ` · source track ${d.tid[i]}` : ""}${raw ? qualityLine(i) + outcomeLine(i) : ""}`;
+}
+function outcomeLine(i) {
+  const parts = Object.entries(OUTCOMES).filter(([, o]) => o.state).map(([n, o]) => `${shortRun(n)}: ${o.state[i] == null ? "not seen" : o.state[i] + (o.reason[i] ? " (" + o.reason[i] + ")" : o.track[i] ? " by " + o.track[i] : "")}`);
+  return parts.length ? `<br><span class="muted">${parts.join(" · ")}</span>` : "";
 }
 function qualityLine(i) {
   const parts = [];
@@ -898,6 +1002,8 @@ const CHARTS = [   // raw: value for a raw plot index; run: value for a strategy
   { id:"xtrack", title:"Cross track distance to the other source", unit:"m", raw:i => derived.xtrack[i], run:null, zero:true },
   { id:"gap", title:"Time since previous plot of the same source", unit:"s", raw:i => derived.gap[i], run:null },
   { id:"vrate", title:"Vertical rate from altitude changes", unit:"ft/min", raw:i => derived.vrate[i], run:null, zero:true },
+  { id:"sigPos", title:"Filter position sigma, horizontal", unit:"m", raw:null, run:(r, i) => r.sigma_horizontal_m ? r.sigma_horizontal_m[i] : null, zero:true, note:"Strategy tracks only, for strategies that report their uncertainty. The 95% ring on the map is 2.45 times this." },
+  { id:"sigVel", title:"Filter velocity sigma, horizontal", unit:"m/s", raw:null, run:(r, i) => r.sigma_velocity_mps ? r.sigma_velocity_mps[i] : null, zero:true, note:"Strategy tracks only. Starts at the track's start value and falls as plots come in." },
   { id:"altBaro", title:"Barometric altitude, source's own field", unit:"ft", raw:i => RAW.alt_baro[i], run:null, note:"Raw plots only. ADS-B Exchange alt_baro, PlaneFinder altitude, uAvionix flight_level × 100, TFMS and ACARS altitude_ft. Strategy plots carry one altitude of unknown kind, so they are not drawn here." },
   { id:"altGeo", title:"Geometric height, source's own field", unit:"ft", raw:i => RAW.alt_geo[i], run:null, note:"Raw plots only. ADS-B Exchange alt_geom and uAvionix geometric_height. PlaneFinder and TFMS send no geometric height, so their series stay empty." },
 ];
@@ -1086,6 +1192,23 @@ function renderSelectList(wrap) {
   list.querySelectorAll(".asel-item").forEach(it => it.onclick = () => { const i = +it.dataset.i; if (sel.options[i].disabled) return; sel.selectedIndex = i; sel.dispatchEvent(new Event("change")); refreshSelect(wrap); closeSelects(); });
 }
 
+// the raw plot filters in one string: kinds off, nacp, lateness, flags, outcome run with states and reasons off, grey or hide
+function filterState() {
+  const kindsOff = [...document.querySelectorAll(".fKind:not(:checked)")].map(c => c.dataset.src + "." + c.value).join("|");
+  const flags = ["fAlt", "fHex", "fAir", "qualityOnly"].filter(id => $(id).checked).join("|");
+  const statesOff = [...document.querySelectorAll(".fState:not(:checked)")].map(c => c.value).join("|"), reasonsOff = [...document.querySelectorAll(".fReason:not(:checked)")].map(c => c.value).join("|");
+  return [kindsOff, $("fNacp").value, $("fLate").value, flags, $("fOutcomeRun").value, statesOff, reasonsOff, document.querySelector('input[name="filterFail"]:checked').value].map(encodeURIComponent).join(";");
+}
+async function restoreFilterState(text) {
+  const [kindsOff, nacp, late, flags, run, statesOff, reasonsOff, fail] = text.split(";").map(decodeURIComponent);
+  const off = new Set(kindsOff.split("|").filter(Boolean)); document.querySelectorAll(".fKind").forEach(c => c.checked = !off.has(c.dataset.src + "." + c.value));
+  if ([...$("fNacp").options].some(o => o.value === nacp)) $("fNacp").value = nacp; if ([...$("fLate").options].some(o => o.value === late)) $("fLate").value = late;
+  const on = new Set(flags.split("|")); for (const id of ["fAlt", "fHex", "fAir", "qualityOnly"]) $(id).checked = on.has(id);
+  const r = document.querySelector(`input[name="filterFail"][value="${fail}"]`); if (r) r.checked = true;
+  if (run && runById(run)) { $("fOutcomeRun").value = run; await loadOutcomes(run); renderOutcomeFilter(); const so = new Set(statesOff.split("|").filter(Boolean)), ro = new Set(reasonsOff.split("|").filter(Boolean)); document.querySelectorAll(".fState").forEach(c => c.checked = !so.has(c.value)); document.querySelectorAll(".fReason").forEach(c => c.checked = !ro.has(c.value)); }
+  refreshSelects();
+}
+
 // ---------- the view in the address bar ----------
 let urlTimer = null;
 function pushUrl() {
@@ -1099,10 +1222,11 @@ function pushUrl() {
     const c = map.getCenter(); q.set("map", `${c.lng.toFixed(4)},${c.lat.toFixed(4)},${map.getZoom().toFixed(2)}`);
     if (compare.length) q.set("cmp", compare.map(x => x.kind === "raw" ? `raw:${x.src}:${x.tid}` : `${x.kind}:${x.track}`).join(";"));
     q.set("src", [...document.querySelectorAll(".srcOn:checked")].map(x => x.value).join(","));
-    q.set("strat", [...runChecked].join(","));
+    q.set("strat", [...runChecked].join(",")); q.set("act", [...runActive].join(","));
     const flags = ["rawOn", "runsOn", "runLines", "runRings", "greyOthers"].filter(id => $(id).checked); q.set("on", flags.join(","));
-    q.set("rc", $("rawColour").value); q.set("sc", $("runColour").value); q.set("rsz", $("rawSize").value); if ($("qualityOnly").checked) q.set("q", "1"); q.set("fade", $("fadeWin").value === "custom" ? String(fadeWindowMs() / 1000) : $("fadeWin").value);
+    q.set("rc", $("rawColour").value); q.set("sc", $("runColour").value); q.set("rsz", $("rawSize").value); q.set("ssz", $("runSize").value); if ($("qualityOnly").checked) q.set("q", "1"); q.set("fade", $("fadeWin").value === "custom" ? String(fadeWindowMs() / 1000) : $("fadeWin").value);
     q.set("show", document.querySelector('input[name="filterMode"]:checked').value);
+    q.set("flt", filterState());
     history.replaceState(null, "", "?" + q.toString());
   }, 150);
 }
@@ -1111,18 +1235,21 @@ async function restoreUrlState() {
   if (!q.has("t")) return;
   const list = (k) => (q.get(k) || "").split(",").filter(Boolean);
   if (q.has("src")) { const on = new Set(list("src")); document.querySelectorAll(".srcOn").forEach(x => x.checked = on.has(x.value)); }
-  if (q.has("strat")) { for (const name of list("strat")) if (runById(name)) { runChecked.add(name); if (!RUNS[name]) await loadRun(name); } renderRunToolbar(); }
+  if (q.has("act")) { runActive = new Set(list("act").filter(runById)); }
+  if (q.has("strat")) { for (const name of list("strat")) if (runById(name)) { runActive.add(name); runChecked.add(name); if (!RUNS[name]) await loadRun(name); } }
+  syncRunMenus(); renderRunToolbar();
   if (q.has("on")) { const on = new Set(list("on")); for (const id of ["rawOn", "runsOn", "runLines", "runRings", "greyOthers"]) $(id).checked = on.has(id); }
   if (q.has("rc")) { const v = q.get("rc"); if ([...$("rawColour").options].some(o => o.value === v)) { $("rawColour").value = v; } }
   if (q.has("sc")) $("runColour").value = q.get("sc");
-  if (q.has("rsz")) $("rawSize").value = q.get("rsz"); $("qualityOnly").checked = q.get("q") === "1";
+  if (q.has("rsz")) $("rawSize").value = q.get("rsz"); if (q.has("ssz")) $("runSize").value = q.get("ssz"); $("qualityOnly").checked = q.get("q") === "1";
   if (q.has("fade")) { const v = q.get("fade"); if ([...$("fadeWin").options].some(o => o.value === v)) $("fadeWin").value = v; else { $("fadeWin").value = "custom"; $("fadeCustom").value = v; $("fadeCustom").style.display = "inline-block"; } }
   if (q.has("show")) { const r = document.querySelector(`input[name="filterMode"][value="${q.get("show")}"]`); if (r) r.checked = true; }
+  if (q.has("flt")) await restoreFilterState(q.get("flt"));
   if (q.has("map")) { const [lng, lat, z] = q.get("map").split(",").map(Number); map.jumpTo({ center:[lng, lat], zoom:z }); }
   if (q.has("cmp")) for (const item of q.get("cmp").split(";")) {
     const [kind, ...rest] = item.split(":");
     if (kind === "raw") { const [src, tid] = [rest[0], rest.slice(1).join(":")]; let i = -1; for (let k = 0; k < RAW.n; k++) if (RAW.src[k] === src && RAW.tid[k] === tid) { i = k; break; } if (i >= 0) toggleTrack("raw", i, true); }
-    else { const track = rest.join(":"); if (!RUNS[kind]) { if (!runById(kind)) continue; runChecked.add(kind); await loadRun(kind); renderRunToolbar(); } const r = RUNS[kind]; let i = -1; for (let k = 0; k < r.n; k++) if (r.track[k] === track) { i = k; break; } if (i >= 0) toggleTrack(kind, i, true); }
+    else { const track = rest.join(":"); if (!RUNS[kind]) { if (!runById(kind)) continue; runActive.add(kind); runChecked.add(kind); await loadRun(kind); syncRunMenus(); renderRunToolbar(); } const r = RUNS[kind]; let i = -1; for (let k = 0; k < r.n; k++) if (r.track[k] === track) { i = k; break; } if (i >= 0) toggleTrack(kind, i, true); }
   }
   if (q.has("win")) { const [a, b] = q.get("win").split("-").map(Number); if (b > a) win = [a, b]; }
   now = clampNow(+q.get("t") || 0);
