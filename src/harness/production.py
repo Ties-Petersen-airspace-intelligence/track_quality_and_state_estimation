@@ -18,6 +18,8 @@ import pandas as pd
 
 from . import runs
 
+RAW_SOURCES = {4: "adsbx", 3: "planefinder", 11: "uavionix", 10: "stdds", 1: "tfms_ti", 2: "tfms_or", 6: "ual", 5: "asa"}
+
 SOURCE_TRACK_KEY = "track_identifier"
 
 
@@ -73,10 +75,34 @@ def convert(case: pathlib.Path, note: str, batch: str, git: dict) -> None:
     store(case, "prod_fusion_regular", frame, note or "production after regular and recorrelation rewrites, from flyways.uni_track_provider.fused_plots_aws", batch, git, started, label)
 
 
+def raw_outcomes(case: pathlib.Path, fused: pd.DataFrame) -> pd.DataFrame:
+    """Production copies a raw plot into a fused plot, so a raw plot was used when a fused plot from the same
+    source has the same position time to the microsecond. Production does not say why it left a plot out,
+    so every other plot is "unknown"."""
+    rows = []
+    for source_id, name in RAW_SOURCES.items():
+        path = case / f"{name}.parquet"
+        if not path.exists():
+            continue
+        raw = pd.read_parquet(path)
+        if raw.empty:
+            continue
+        col = "common_position_timestamp_us" if "common_position_timestamp_us" in raw.columns else "common.position_timestamp"
+        position_us = pd.to_numeric(raw[col], errors="coerce").astype("Int64")
+        taken = fused[fused["source_identifier"] == source_id].drop_duplicates("position_us").set_index("position_us")["track_id"]
+        track = position_us.map(taken)
+        rows.append(pd.DataFrame(dict(source=name, position_us=position_us, source_track_identifier=raw["common.track_identifier"].fillna(""),
+                                      state=track.notna().map({True: "used", False: "unknown"}), track_id=track.astype("string"), reason="")))
+    return pd.concat(rows, ignore_index=True) if rows else pd.DataFrame(columns=["source", "position_us", "source_track_identifier", "state", "track_id", "reason"])
+
+
 def store(case: pathlib.Path, name: str, frame: pd.DataFrame, note: str, batch: str, git: dict, started: float, label: str) -> None:
     out = runs.new_run(case, name, label)
     frame.to_parquet(out / "fused_plots.parquet", index=False)
-    counts = dict(fused_plots=len(frame), tracks=int(frame["track_id"].nunique()), rewritten=int(frame["valid_to_us"].notna().sum()))
+    outcomes = raw_outcomes(case, frame)
+    outcomes.to_parquet(out / "raw_outcomes.parquet", index=False)
+    counts = dict(raw_plots=len(outcomes), fused_plots=len(frame), tracks=int(frame["track_id"].nunique()), rewritten=int(frame["valid_to_us"].notna().sum()),
+                  outcomes=outcomes["state"].value_counts().to_dict(), reasons={})
     runs.write_manifest(out, name, label, batch, case, params={}, note=note, counts=counts, duration_s=time.time() - started, git=git)
     print(f"{case.name} {name}/{label}: {len(frame)} fused plots, {counts['tracks']} tracks, {counts['rewritten']} later rewritten")
 

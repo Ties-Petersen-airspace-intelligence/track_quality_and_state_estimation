@@ -8,7 +8,8 @@ the same split as production: the append path (APPEND_ONLY events) in one run, l
 and RECORRELATION events) in <strategy>_regular. Rewrites are not supported yet; a strategy that emits one
 stops the run with an error. In a run folder, events.bin holds every FusionChangedEvent as
 length-prefixed protobuf bytes, fused_plots.parquet holds one row per fused plot with the event it came
-from, and run.json says what produced it (see runs.py). The viewer reads the last two.
+from, raw_outcomes.parquet says for every raw plot what the strategy did with it (used, skipped, dropped,
+rejected) and why, and run.json says what produced it (see runs.py). The viewer reads the last three.
 """
 from __future__ import annotations
 
@@ -49,14 +50,20 @@ def run_one(case: pathlib.Path, name: str, note: str, batch: str, git: dict) -> 
     # feed them to the strategy one by one
     strategy = STRATEGIES[name]()
     t0 = time.time()
-    events = []
+    events, outcomes, extras = [], [], []
     for plot in plots:
-        events += strategy.on_plot(plot)
-    events += strategy.finish()
+        result = strategy.on_plot(plot)
+        events += result.events
+        extras += [result.fused_extras] * len(result.events)
+        outcomes.append(dict(source=plot.source, position_us=plot.position_us, source_track_identifier=plot.proto.common.track_identifier,
+                             state=result.outcome.state, track_id=result.outcome.track_id, reason=result.outcome.reason))
+    for event in strategy.finish():
+        events.append(event); extras.append({})
     print(f"  {len(events)} events emitted in {time.time() - t0:.1f} s")
 
     # the append path and the rewrites are stored apart, like production's two tables
     appended = [e for e in events if e.quality == APPEND_ONLY]
+    appended_extras = [x for e, x in zip(events, extras) if e.quality == APPEND_ONLY]
     if len(appended) < len(events):
         raise NotImplementedError(f"{name} emitted {len(events) - len(appended)} REGULAR or RECORRELATION events; the harness only stores the append path for now")
     if not appended:
@@ -66,12 +73,16 @@ def run_one(case: pathlib.Path, name: str, note: str, batch: str, git: dict) -> 
 
     # store the events exactly as protobuf, and flattened for the viewer
     write_events(appended, out / "events.bin")
-    rows = flatten(appended)
+    rows = flatten(appended, appended_extras)
     frame = with_valid_to(pd.DataFrame(rows))
     frame.to_parquet(out / "fused_plots.parquet", index=False)
-    counts = dict(raw_plots=len(plots), events=len(appended), fused_plots=len(rows), tracks=int(frame["track_id"].nunique()), rewritten=int(frame["valid_to_us"].notna().sum()))
+    # what happened to every raw plot, and how often each state and reason occurred
+    outcome_frame = pd.DataFrame(outcomes)
+    outcome_frame.to_parquet(out / "raw_outcomes.parquet", index=False)
+    counts = dict(raw_plots=len(plots), events=len(appended), fused_plots=len(rows), tracks=int(frame["track_id"].nunique()), rewritten=int(frame["valid_to_us"].notna().sum()),
+                  outcomes=outcome_frame["state"].value_counts().to_dict(), reasons=outcome_frame.loc[outcome_frame["reason"] != "", "reason"].value_counts().to_dict())
     runs.write_manifest(out, name, label, batch, case, params=dict(getattr(strategy, "params", {}) or {}), note=note, counts=counts, duration_s=time.time() - started, git=git)
-    print(f"  {len(rows)} fused plots written to {out}")
+    print(f"  {len(rows)} fused plots written to {out}; raw plots " + ", ".join(f"{k} {v}" for k, v in counts["outcomes"].items()))
 
 
 def write_events(events: list[FusionChangedEvent], path: pathlib.Path) -> None:
@@ -112,13 +123,14 @@ def with_valid_to(frame: pd.DataFrame) -> pd.DataFrame:
     return frame
 
 
-def flatten(events: list[FusionChangedEvent]) -> list[dict]:
+def flatten(events: list[FusionChangedEvent], extras: list[dict] | None = None) -> list[dict]:
+    """One row per fused plot, with the event it came from and the strategy's extra numbers for that event."""
     rows = []
     for i, event in enumerate(events):
         for j, segment in enumerate(event.changed_segments):
             for plot in segment.fused_track.plots:
                 c = plot.common
-                rows.append(dict(
+                rows.append(dict(**(extras[i] if extras else {}),
                     event=i, segment=j, track_id=event.track_id, created_at_us=event.created_at,
                     quality=FusionQuality.Name(event.quality), since_us=segment.since, until_us=segment.until,
                     position_us=c.position_timestamp, source_received_us=c.source_received_timestamp, asi_received_us=c.asi_received_timestamp,

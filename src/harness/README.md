@@ -25,7 +25,7 @@ A strategy's output is stored the way production stores its own: the plots it ap
 - when it ran and how long it took
 - the git commit of this repo at the time, and whether the working tree had uncommitted changes
 - the strategy's parameters, read from a `params` attribute on the strategy if it has one
-- the note, and a few counts: raw plots, events, fused plots, tracks, plots later rewritten
+- the note, and a few counts: raw plots, events, fused plots, tracks, plots later rewritten, raw plots per outcome state and per skip reason
 - the command line, so it can be pasted back
 
 The viewer's toolbar shows the newest run of every strategy. The "more…" button on the strategies group opens a table of every run of the case, sortable by any column, where any run can be switched on, the note can be edited in place, a click shows the full manifest, and two ticked runs are compared field by field. The note is the only thing the viewer ever writes, into that run's `run.json`.
@@ -34,11 +34,13 @@ Every run is committed, strategy runs and production runs alike, so a version in
 
 ## How a strategy works
 
-A strategy gets raw plots one at a time, in the order we received them, and answers with `FusionChangedEvent`s, the message uni-track-fusion publishes on Pulsar today. Look at `strategy.py` for the interface and `strategies/baseline.py` for the smallest possible one.
+A strategy gets raw plots one at a time, in the order we received them, and answers each with a `Result`: the `FusionChangedEvent`s it emits, the message uni-track-fusion publishes on Pulsar today, and the `Outcome` of that plot. Look at `strategy.py` for the interface and `strategies/baseline.py` for the smallest possible one.
 
 The raw plot is the real source proto, for example `ADSBXPlot` or `AsterixCat021`, with the shared `Common` block inside. The strategy can read every field the source sent, including the ADS-B quality numbers that production throws away.
 
 An event names a track, says when it was produced, carries a quality flag (APPEND_ONLY, REGULAR or RECORRELATION), and holds one or more changed segments. A segment is a time span plus the fused plots that now make up that span. An append is a segment with the new plot at the end. A rewrite is a segment covering a span in the past. The viewer replays these, so at any moment it shows each track as consumers would have known it then.
+
+An outcome is a state and a few words of reason. `used` means the plot went into a track as a measurement, and the outcome names the track. `skipped` means a fixed rule says this kind of plot is not for this strategy, with the rule as the reason, for example "type 7" or "no altitude". `dropped` means the right kind of plot whose timing made it unusable, "out of order" or "duplicate". `rejected` means the plot was checked against a track and refused, for a strategy with a distance check. Production runs only know `used`, found by matching position times, and `unknown` for the rest. The harness stores the outcomes in `raw_outcomes.parquet` and counts them per state and per reason in `run.json`; the viewer colours and filters raw plots by them.
 
 The baseline: one event per raw plot, quality APPEND_ONLY, track id `<source>:<source track id>`, one segment with the raw common block copied into a fused plot. No merging across sources, no filtering, no smoothing.
 
@@ -58,7 +60,7 @@ production.py          production tables -> runs/prod_fusion_append/<label> and 
 viewer/server.py       local server for a folder of cases, viewer/viewer.html the page (deck.gl map, uPlot charts)
 ```
 
-In a run folder, `events.bin` holds every event as length-prefixed protobuf bytes, exactly what a strategy emitted. `fused_plots.parquet` is the same flattened to one row per fused plot, with `created_at_us` (when the event was produced) and `valid_to_us` (when a later event on the same track replaced this plot, empty if never). The viewer shows a plot when `created_at <= now < valid_to`.
+In a run folder, `events.bin` holds every event as length-prefixed protobuf bytes, exactly what a strategy emitted. `fused_plots.parquet` is the same flattened to one row per fused plot, with `created_at_us` (when the event was produced) and `valid_to_us` (when a later event on the same track replaced this plot, empty if never). The viewer shows a plot when `created_at <= now < valid_to`. `raw_outcomes.parquet` has one row per raw plot with its state, the track it went into and the reason.
 
 ## The viewer
 
@@ -69,6 +71,8 @@ The viewer never decides which plots are one aircraft. The only groupings it kno
 **Toolbar over the map.** Which raw sources and which strategies to show, and whether a strategy is drawn as lines per track, rings on the plots, or both. The strategies group lists the newest run of each strategy; "more…" opens the table of all runs (see Runs and versions).
 
 **Left panel.** The case, then display: raw plot colour is by source, by lateness, or by a display key that is the hex, else the tail, else the source track id. That key is only a colour. Strategy colour is by strategy, or by fused track id so every track gets its own colour. Raw plot size is fixed, or the NACp accuracy radius, or the NIC containment radius, drawn as circles in metres so the accuracy of a plot is visible as an area; plots without the chosen number stay as light grey dots of the normal size in those modes, and plots that carry it as 0, meaning the aircraft calls its accuracy unknown, are bright white. "Only plots that carry NIC or NACp" hides the sources without accuracy numbers, PlaneFinder and TFMS. A collapsible reference under the display options holds the DO-260B tables for NACp and NIC and a short explanation of NACv, SIL, NICbaro, GVA and SDA. Plots fade to nothing over a window you choose, default 15 minutes. "Grey out tracks not being compared" keeps the other traffic but colourless, and "map shows" switches between everything, only the compared tracks, and everything except them. Under those, the keyboard and mouse controls sit in a collapsible list, open on a first visit and closed again on every later one once you close it.
+
+**Raw plot filters.** A collapsible section in the left panel narrows the raw plots to the ones a strategy can use, or to any other slice: the kind of plot inside a source (ADS-B Exchange's type, PlaneFinder's data source), NACp present or at least a value, an altitude present, not on the ground, a hex present, a lateness limit, and the outcome a chosen strategy run gave the plot, by state and by reason. Plots that fail a filter turn a dark grey, or disappear with the "hide" switch; the debug box counts them. The raw plot colour menu also offers "outcome for <strategy run>", one colour per state.
 
 **Adding tracks to the comparison.** Click a raw plot for that source's track, click a fused plot for that strategy's track, click again to remove. If several tracks overlap under the cursor a list asks which one. Shift and drag with the left button draws a box that adds every track with a visible plot inside it; the right button draws a red box that removes them. The box at the top right adds every source track and strategy track whose plots carry a hex, callsign or tail, and clear all empties the list. Each compared track gets its own colour, as a thicker outline on the map and as a series in the charts. Click a chip to remove that track.
 

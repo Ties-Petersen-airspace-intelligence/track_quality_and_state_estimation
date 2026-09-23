@@ -8,6 +8,7 @@ import pymap3d
 from .. import protos_path  # noqa: F401
 from uni.protobuf.uni_track_schemas.fusion.v1beta.fusion_changed_event_pb2 import APPEND_ONLY, FusionChangedEvent
 from ..raw_plots import RawPlot
+from ..strategy import Outcome, Result
 
 FEET = 0.3048                 # metres per foot
 KNOTS = 1.943844              # knots per metre per second
@@ -25,23 +26,28 @@ class Measurement:
     altitude_m: float   # barometric altitude
     nacp: int | None
 
-def accept(plot: RawPlot) -> Measurement | None:
-      """ADS-B Exchange and uAvionix plots of an ADS-B position with a hex and an altitude, in the air. Everything else is skipped."""
-      proto, common = plot.proto, plot.proto.common
-      if not common.adshex or not common.HasField("altitude_ft"):
-          return None
-      if plot.source == "adsbx":
-          if proto.type not in ADSB_TYPES or proto.alt_baro == "ground":
-              return None
-          nacp = proto.nac_p if proto.HasField("nac_p") else None
-      elif plot.source == "uavionix":
-          if proto.target_report_descriptor.is_ground_bit_set:
-              return None
-          nacp = proto.quality_indicators.nacp if proto.quality_indicators.HasField("nacp") else None
-      else:
-          return None
-      return Measurement(hex=common.adshex, timestamp_s=common.position_timestamp / 1e6, lat=common.latitude, lon=common.longitude,
-                         altitude_m=common.altitude_ft * FEET, nacp=nacp)
+def accept(plot: RawPlot) -> Measurement | str:
+    """ADS-B Exchange and uAvionix plots of an ADS-B position with a hex and an altitude, in the air.
+    Anything else comes back as the reason it was skipped, a few words the viewer can show."""
+    proto, common = plot.proto, plot.proto.common
+    if plot.source == "adsbx":
+        if proto.type not in ADSB_TYPES:
+            return f"type {proto.type}"
+        if proto.alt_baro == "ground":
+            return "on the ground"
+        nacp = proto.nac_p if proto.HasField("nac_p") else None
+    elif plot.source == "uavionix":
+        if proto.target_report_descriptor.is_ground_bit_set:
+            return "on the ground"
+        nacp = proto.quality_indicators.nacp if proto.quality_indicators.HasField("nacp") else None
+    else:
+        return "other source"
+    if not common.adshex:
+        return "no hex"
+    if not common.HasField("altitude_ft"):
+        return "no altitude"
+    return Measurement(hex=common.adshex, timestamp_s=common.position_timestamp / 1e6, lat=common.latitude, lon=common.longitude,
+                       altitude_m=common.altitude_ft * FEET, nacp=nacp)
 
 
 @dataclass
@@ -115,10 +121,10 @@ class Kalman:
         self.params = {**Kalman.params, **overrides}
         self.tracks: dict[str, Track] = {}
 
-    def on_plot(self, plot: RawPlot) -> list[FusionChangedEvent]:
+    def on_plot(self, plot: RawPlot) -> Result:
         measurement = accept(plot)
-        if measurement is None:
-            return []
+        if isinstance(measurement, str):
+            return Result([], Outcome("skipped", reason=measurement))
         z = np.array(pymap3d.geodetic2ecef(measurement.lat, measurement.lon, measurement.altitude_m))
         R = measurement_noise(measurement, self.params)
 
@@ -126,20 +132,32 @@ class Kalman:
         track = self.tracks.get(measurement.hex)
         if track is None:
             track = self.tracks[measurement.hex] = start(measurement, z, R, self.params)
-            return [make_event(track, plot)]
+            return Result([make_event(track, plot)], Outcome("used", track.hex), uncertainty(track))
 
         # an older or duplicate plot is dropped, the filter only moves forward in time
         if measurement.timestamp_s <= track.timestamp_s:
-            return []
+            return Result([], Outcome("dropped", track.hex, "duplicate" if measurement.timestamp_s == track.timestamp_s else "out of order"))
 
         # move the track to the plot's time, then pull it toward the plot
         predict(track, measurement.timestamp_s - track.timestamp_s, self.params["spectral_density"])
         update(track, z, R)
         track.timestamp_s = measurement.timestamp_s
-        return [make_event(track, plot)]
+        return Result([make_event(track, plot)], Outcome("used", track.hex), uncertainty(track))
 
     def finish(self) -> list[FusionChangedEvent]:
         return []
+
+
+def uncertainty(track: Track) -> dict[str, float]:
+    """The filter's own sigmas at this moment, in east, north, up metres and metres per second, for the viewer.
+    P is in ECEF, so its position and velocity blocks are rotated into east, north, up at the track's position."""
+    lat, lon, _ = pymap3d.ecef2geodetic(*track.x[:3])
+    rotation = np.array(pymap3d.enu2uvw(np.eye(3)[0], np.eye(3)[1], np.eye(3)[2], lat, lon))
+    position = rotation.T @ track.P[:3, :3] @ rotation
+    velocity = rotation.T @ track.P[3:, 3:] @ rotation
+    sigma = np.sqrt(np.diag(position)); sigma_velocity = np.sqrt(np.diag(velocity))
+    return dict(sigma_east_m=float(sigma[0]), sigma_north_m=float(sigma[1]), sigma_up_m=float(sigma[2]),
+                sigma_horizontal_m=float(np.sqrt((sigma[0] ** 2 + sigma[1] ** 2) / 2)), sigma_velocity_mps=float(np.sqrt(np.mean(sigma_velocity[:2] ** 2))))
 
 
 def make_event(track: Track, plot: RawPlot) -> FusionChangedEvent:
