@@ -20,9 +20,10 @@ from . import protos_path  # noqa: F401
 from uni.protobuf.uni_track_schemas.fusion.v1beta.fusion_changed_event_pb2 import APPEND_ONLY, FusionChangedEvent, FusionQuality
 from .raw_plots import load_case
 from .strategies.baseline import Baseline
+from .strategies.kalman import Kalman
 from . import runs
 
-STRATEGIES = {"baseline": Baseline}
+STRATEGIES = {"baseline": Baseline, "kalman": Kalman}
 
 
 def main():

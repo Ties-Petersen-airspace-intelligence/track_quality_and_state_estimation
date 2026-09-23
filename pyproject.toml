@@ -8,4 +8,9 @@ dependencies = [
     "pandas>=3.0.5",
     "protobuf>=7.36.1",
     "pyarrow>=25.0.1",
+    "pymap3d>=3.2.0",
 ]
+
+[[tool.uv.index]]
+url = "https://uni-codeartifact-209479306031.d.codeartifact.us-east-2.amazonaws.com/pypi/uni-codeartifact/simple/"
+default = true
