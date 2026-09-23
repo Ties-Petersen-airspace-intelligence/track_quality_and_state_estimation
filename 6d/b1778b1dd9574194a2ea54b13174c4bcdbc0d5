@@ -1,0 +1,65 @@
+src/data/cases/paris-tx-n464ae-2026-09-16/runs/kalman_append/r001/run.json
+  99744057feb3f626 1-28
+src/data/cases/kielce-thy3121-2026-09-16/runs/kalman_append/r001/run.json
+  99744057feb3f626 1-28
+src/harness/strategies/kalman.py
+  99744057feb3f626 1-24,26-162
+src/data/cases/vancouver-ual517-2026-09-16/runs/kalman_append/r001/run.json
+  99744057feb3f626 1-28
+src/data/cases/dubai-fr113-2026-09-16/runs/kalman_append/r001/run.json
+  99744057feb3f626 1-28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.5",
+  "base_commit_sha": "6db1778b1dd9574194a2ea54b13174c4bcdbc0d5",
+  "prompts": {
+    "99744057feb3f626": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "eaa358be-3819-4e20-b830-d4dddf19b6e8",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Ties Petersen",
+      "messages": [],
+      "total_additions": 398,
+      "total_deletions": 14,
+      "accepted_lines": 389,
+      "overriden_lines": 1,
+      "messages_url": "https://uni-git-ai-cas.sre.aws.ai-internal.com//cas/6e0dc295caaee6602b1a115033de54bc1960e929998b3afa4ecd51ce4ac20a85",
+      "context_window_samples": [
+        {
+          "used_tokens": 670401,
+          "timestamp": "2026-09-23T10:39:18.704Z"
+        },
+        {
+          "used_tokens": 674454,
+          "timestamp": "2026-09-23T11:18:04.449Z"
+        },
+        {
+          "used_tokens": 689192,
+          "timestamp": "2026-09-23T12:20:33.829Z"
+        },
+        {
+          "used_tokens": 690188,
+          "timestamp": "2026-09-23T12:21:01.143Z"
+        },
+        {
+          "used_tokens": 693358,
+          "timestamp": "2026-09-23T12:30:22.912Z"
+        },
+        {
+          "used_tokens": 718389,
+          "timestamp": "2026-09-23T12:57:28.924Z"
+        }
+      ],
+      "skill_usages": [
+        {
+          "name": "master-guide",
+          "timestamp": "2026-09-21T11:37:01.578Z",
+          "source": "skill_tool"
+        }
+      ]
+    }
+  }
+}
