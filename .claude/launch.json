@@ -4,8 +4,30 @@
     {
       "name": "visible-error-review",
       "runtimeExecutable": "uv",
-      "runtimeArgs": ["run", "--directory", "src", "data/visible_error_finder/review.py"],
+      "runtimeArgs": [
+        "run",
+        "--directory",
+        "src",
+        "data/visible_error_finder/review.py"
+      ],
       "port": 8771
+    },
+    {
+      "name": "harness-viewer",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": [
+        "run",
+        "--directory",
+        "src",
+        "-m",
+        "harness.viewer.server",
+        "--cases",
+        "data/cases",
+        "--port",
+        "8772",
+        "--no-browser"
+      ],
+      "port": 8772
     }
   ]
 }
