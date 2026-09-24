@@ -29,10 +29,10 @@ export async function loadOutcomes(id) {
   return once("outcomes|" + id, async () => (S.OUTCOMES[id] = await answer("outcomes", id)));
 }
 
-// the newest run of every strategy, and production, are listed when a case opens; none is drawn yet
+// the newest run of every strategy but baseline, and production, are listed when a case opens; none is drawn yet
 export function defaultActive() {
   const newest = {};
-  for (const r of S.CASE.runs) newest[strategyOf(r.id)] = r.id;   // list_runs gives labels in order
+  for (const r of S.CASE.runs) if (strategyOf(r.id) !== "baseline") newest[strategyOf(r.id)] = r.id;   // list_runs gives labels in order
   S.runActive = new Set(Object.values(newest));
 }
 
