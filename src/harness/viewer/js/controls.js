@@ -7,7 +7,7 @@ export function asiSelects(root = document) {
   for (const sel of root.querySelectorAll("select:not(.asel-native)")) {
     sel.classList.add("asel-native");
     const wrap = document.createElement("div"); wrap.className = "asel";
-    const btn = document.createElement("button"); btn.type = "button"; btn.className = "asel-btn"; btn.innerHTML = "<span></span><i>▾</i>";
+    const btn = document.createElement("button"); btn.type = "button"; btn.className = "asel-btn"; btn.innerHTML = '<span></span><svg viewBox="0 0 10 10"><path d="M1.5 3.2 5 6.7 8.5 3.2" fill="none" stroke="#c3c8cf" stroke-width="1.2"/></svg>';
     const list = document.createElement("div"); list.className = "asel-list";
     wrap.append(btn, list); sel.after(wrap); wrap._sel = sel; sel._wrap = wrap;
     // the list is fixed to the page, so a scrolling side panel cannot clip it; it opens upward near the bottom edge

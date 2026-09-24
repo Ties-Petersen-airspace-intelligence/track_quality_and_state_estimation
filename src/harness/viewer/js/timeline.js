@@ -28,7 +28,7 @@ export function setNow(ms) { S.now = clampNow(ms); $("time").value = S.now; bus.
 // the header clock, the played bar and the now chip
 export function paintTimeline() {
   const pct = (S.now / S.CASE.span_ms * 100) + "%";
-  $("now").textContent = fmt(S.now); $("dbgNow").textContent = fmt(S.now);
+  $("now").textContent = fmt(S.now); $("dbgNow").textContent = fmt(S.now); $("topNow").textContent = fmt(S.now);
   $("nowMark").style.left = pct; $("played").style.width = pct;
   $("nowChip").style.left = `clamp(1.2rem, ${pct}, calc(100% - 1.2rem))`; $("nowChip").textContent = fmt(S.now).slice(0, 5);
 }

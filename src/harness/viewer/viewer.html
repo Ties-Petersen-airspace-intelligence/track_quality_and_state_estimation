@@ -16,76 +16,92 @@
 <div id="splash">
   <div class="logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 581 171" fill="currentColor"><path d="M196.103 45.6127V81.6938H160.825L120.276 126.333H196.103V170.973H240.743V0.973145H155.194L0.772461 170.973L60.819 170.973L174.692 45.6127H196.103Z"/><path d="M517.517 0.973145V45.6127L303.247 45.6127V63.3572L517.517 63.3572V170.973H258.607V126.333L472.877 126.333V107.997L258.607 107.997V0.973145H517.517Z"/><path d="M535.371 0.973145H580.01V170.973H535.371V0.973145Z"/></svg></div>
   <div class="wordmark">Track<span>harness</span></div>
-  <div class="bar"><div class="dots"></div><div class="block"></div></div>
+  <div class="bar"><div class="dots"></div><div class="fill" id="splashFill"></div><div class="block"></div></div>
   <div class="what mono" id="splashWhat">loading case</div>
 </div>
 <header id="top">
-  <div class="mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 581 171" fill="currentColor"><path d="M196.103 45.6127V81.6938H160.825L120.276 126.333H196.103V170.973H240.743V0.973145H155.194L0.772461 170.973L60.819 170.973L174.692 45.6127H196.103Z"/><path d="M517.517 0.973145V45.6127L303.247 45.6127V63.3572L517.517 63.3572V170.973H258.607V126.333L472.877 126.333V107.997L258.607 107.997V0.973145H517.517Z"/><path d="M535.371 0.973145H580.01V170.973H535.371V0.973145Z"/></svg></div>
-  <h1><span class="pfx">&#9656;&#9656;&#9656;</span> Track harness</h1>
-  <select id="caseSel" title="switch case"><option>loading…</option></select>
-  <button id="resetView" title="load this case again with every control back at its default">reset view</button>
-  <div class="right"><span id="sub"></span><span class="dim">viewer build 2026-09-24 01:30</span><span class="asimark">[ ASI ]</span></div>
+  <div class="brand" title="Air Space Intelligence"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 581 171" fill="currentColor"><path d="M196.103 45.6127V81.6938H160.825L120.276 126.333H196.103V170.973H240.743V0.973145H155.194L0.772461 170.973L60.819 170.973L174.692 45.6127H196.103Z"/><path d="M517.517 0.973145V45.6127L303.247 45.6127V63.3572L517.517 63.3572V170.973H258.607V126.333L472.877 126.333V107.997L258.607 107.997V0.973145H517.517Z"/><path d="M535.371 0.973145H580.01V170.973H535.371V0.973145Z"/></svg></div>
+  <h1>Track harness</h1>
+  <div class="casebox" title="switch case"><svg class="caseicon" viewBox="0 0 16 16" fill="none" stroke="#ffffff" stroke-width="1.3"><rect x="2" y="3" width="12" height="10"/><path d="M2 6h12"/></svg><select id="caseSel" title="switch case"><option>loading…</option></select></div>
+  <button class="small" id="resetView" title="load this case again with every control back at its default">reset view</button>
+  <div class="clocks">
+    <span class="clock"><i></i><b id="topDay">–</b></span>
+    <span class="clock"><i></i><b id="topWindow">–</b><em>case</em></span>
+    <span class="clock"><i></i><b id="topNow">–</b><em>zulu</em></span>
+  </div>
 </header>
 
 <aside id="left">
   <div class="grip" id="gripLeft" title="drag to resize"></div>
   <div class="scroll">
-  <div class="panel-head"><h2>Case</h2></div>
-  <section><div class="kv" id="caseKv"></div></section>
+  <div class="panel-title"><div class="t1" id="caseTitle">case</div><div class="t2" id="caseSub"></div></div>
+  <section><div class="kvtable" id="caseKv"></div></section>
+  <div class="hatch"></div>
+
+  <section>
+    <h2>Time and comparing</h2>
+    <div class="field"><span class="label">fade over</span><select id="fadeWin"><option value="10">10 s</option><option value="30">30 s</option><option value="60">1 min</option><option value="120">2 min</option><option value="300" selected>5 min</option><option value="900">15 min</option><option value="1800">30 min</option><option value="3600">1 h</option><option value="0">never, whole case</option><option value="custom">custom…</option></select><input type="number" id="fadeCustom" placeholder="seconds" min="1" style="display:none"></div>
+    <div class="field"><span class="label">while comparing</span><select id="mapShows"><option value="all">show everything</option><option value="only">show only the compared tracks</option><option value="others">show everything but the compared tracks</option></select></div>
+    <div class="note">While the compare list has tracks, every compared track has its own colour and the rest turns grey.</div>
+  </section>
   <div class="hatch"></div>
 
   <section id="rawSection">
     <div class="section-head"><h2>Raw plots</h2><span class="spacer"></span><label class="label"><input type="checkbox" id="rawOn" checked>show</label></div>
-    <h3>colour<span class="rule"></span></h3>
-    <div id="rawColourGroup">
-      <div class="field"><span class="label">colour by</span><select id="rawColour"></select></div>
-      <div class="legend" id="rawColourLegend"></div>
+    <div class="block">
+      <div class="group">colour<span class="spacer"></span></div>
+      <div class="colour-control">
+        <div class="field"><span class="label">colour by</span><select id="rawColour"></select></div>
+        <div class="legend" id="rawColourLegend"></div>
+      </div>
+      <div class="override-note">The compare list sets the colours now. Clear it to use this again.</div>
     </div>
-    <div class="override-note">Compared tracks set the colours now. Clear the compare list to use this again.</div>
-    <h3>size<span class="rule"></span></h3>
-    <div class="field"><span class="label">size by</span><select id="rawSize"><option value="fixed">fixed</option><option value="nacp">NACp, 95 % radius in metres</option><option value="nic">NIC, containment radius in metres</option></select></div>
-    <div class="field"><span class="label" id="rawPxLabel">size</span><input type="range" class="slider" id="rawPx" min="1" max="10" step="0.5" value="2.5"><span class="value" id="rawPxValue"></span></div>
-    <div class="legend" id="rawSizeLegend"></div>
-    <h3>filters<span class="rule"></span><span class="dim mono" id="filterCount" style="font-size:0.625rem; letter-spacing:0"></span></h3>
-    <div class="filters-top">
-      <span class="seg" title="what happens to a plot that fails the filters"><label><input type="radio" name="fail" value="grey" checked>grey out</label><label><input type="radio" name="fail" value="hide">hide</label></span>
-      <span class="seg" title="how the switched on filters combine"><label><input type="radio" name="combine" value="and" checked>all must pass</label><label><input type="radio" name="combine" value="or">any passes</label></span>
+    <div class="block">
+      <div class="group">size<span class="spacer"></span></div>
+      <div class="field"><span class="label">size by</span><select id="rawSize"><option value="fixed">fixed</option><option value="nacp">NACp, 95 % radius in metres</option><option value="nic">NIC, containment radius in metres</option></select></div>
+      <div class="field" id="rawPxRow"><span class="label">size</span><input type="range" class="slider" id="rawPx" min="1" max="10" step="0.5" value="2.5"><span class="value" id="rawPxValue"></span></div>
+      <div class="field" id="rawMetresRow"><span class="label" id="rawMetresLabel">size without NACp</span><input type="range" class="slider" id="rawMetres" min="0" max="100" step="1" value="30"><span class="value" id="rawMetresValue"></span></div>
+      <div class="legend" id="rawSizeLegend"></div>
     </div>
-    <div id="filters"></div>
+    <div class="block">
+      <div class="group">filters<span class="spacer"></span><span class="count" id="filterCount"></span></div>
+      <div class="choice"><span class="label">a plot that fails the filters is</span><span class="seg"><label><input type="radio" name="fail" value="grey" checked>shown grey</label><label><input type="radio" name="fail" value="hide">hidden</label></span></div>
+      <div class="choice"><span class="label">a plot must pass</span><span class="seg" title="only the filters that are switched on count"><label><input type="radio" name="combine" value="and" checked>every filter</label><label><input type="radio" name="combine" value="or">at least one</label></span></div>
+      <div id="filters"></div>
+    </div>
   </section>
   <div class="hatch"></div>
 
   <section id="stratSection">
     <div class="section-head"><h2>Strategies</h2><span class="spacer"></span><button class="small" id="runsMore" title="every run of this case: versions, notes, numbers; tick a run active to list it here">all runs…</button></div>
     <div class="runlist" id="runList"></div>
-    <div id="stratColourGroup">
-      <h3><label><input type="checkbox" id="pointsOn" checked>points</label><span class="rule"></span></h3>
-      <div class="field"><span class="label">colour by</span><select id="pointColour"><option value="run">run</option><option value="strategy">strategy</option><option value="track">track id</option></select></div>
-      <div class="legend" id="pointLegend"></div>
-      <h3><label><input type="checkbox" id="linesOn" checked>lines</label><span class="rule"></span></h3>
-      <div class="field"><span class="label">colour by</span><select id="lineColour"><option value="run">run</option><option value="strategy">strategy</option><option value="track">track id</option></select></div>
-      <div class="legend" id="lineLegend"></div>
+    <div class="block">
+      <div class="group">points<span class="spacer"></span><label class="label"><input type="checkbox" id="pointsOn" checked>show</label></div>
+      <div class="colour-control">
+        <div class="field"><span class="label">colour by</span><select id="pointColour"><option value="run">run</option><option value="strategy">strategy</option><option value="track">track id</option></select></div>
+        <div class="legend" id="pointLegend"></div>
+      </div>
+      <div class="override-note">The compare list sets the colours now. Clear it to use this again.</div>
+      <div class="field"><span class="label">size by</span><select id="pointSize"><option value="fixed">fixed</option><option value="s1">uncertainty, 1 sigma</option><option value="s2">uncertainty, 2 sigma</option><option value="s95">uncertainty, 95 %, 2.45 sigma</option></select></div>
+      <div class="field" id="pointPxRow"><span class="label">size</span><input type="range" class="slider" id="pointPx" min="1" max="10" step="0.5" value="3.5"><span class="value" id="pointPxValue"></span></div>
+      <div class="field" id="pointMetresRow"><span class="label">size without sigma</span><input type="range" class="slider" id="pointMetres" min="0" max="100" step="1" value="20"><span class="value" id="pointMetresValue"></span></div>
+      <div class="note" id="pointSizeNote"></div>
     </div>
-    <div class="override-note">Compared tracks set the colours now. Clear the compare list to use this again.</div>
-    <h3>point size and line width<span class="rule"></span></h3>
-    <div class="field"><span class="label">point size</span><select id="pointSize"><option value="fixed">fixed</option><option value="s1">uncertainty, 1 sigma</option><option value="s2">uncertainty, 2 sigma</option><option value="s95">uncertainty, 95 %, 2.45 sigma</option></select></div>
-    <div class="field"><span class="label" id="pointPxLabel">size</span><input type="range" class="slider" id="pointPx" min="1" max="10" step="0.5" value="3.5"><span class="value" id="pointPxValue"></span></div>
-    <div class="note" id="pointSizeNote"></div>
-    <div class="field"><span class="label">line width</span><input type="range" class="slider" id="lineWidth" min="0.5" max="6" step="0.5" value="1.5"><span class="value" id="lineWidthValue"></span></div>
-  </section>
-  <div class="hatch"></div>
-
-  <section>
-    <h2>Time and comparing</h2>
-    <div class="field"><span class="label">fade over</span><select id="fadeWin"><option value="10">10 s</option><option value="30">30 s</option><option value="60">1 min</option><option value="120">2 min</option><option value="300">5 min</option><option value="900" selected>15 min</option><option value="1800">30 min</option><option value="3600">1 h</option><option value="0">never, whole case</option><option value="custom">custom…</option></select><input type="number" id="fadeCustom" placeholder="seconds" min="1" style="display:none"></div>
-    <div class="field"><span class="label">while comparing</span><select id="mapShows"><option value="all">show everything</option><option value="only">show only the compared tracks</option><option value="others">show everything but the compared tracks</option></select></div>
-    <div class="note">While the compare list has tracks, every compared track has its own colour and the rest turns grey.</div>
+    <div class="block">
+      <div class="group">lines<span class="spacer"></span><label class="label"><input type="checkbox" id="linesOn" checked>show</label></div>
+      <div class="colour-control">
+        <div class="field"><span class="label">colour by</span><select id="lineColour"><option value="run">run</option><option value="strategy">strategy</option><option value="track">track id</option></select></div>
+        <div class="legend" id="lineLegend"></div>
+      </div>
+      <div class="override-note">The compare list sets the colours now. Clear it to use this again.</div>
+      <div class="field"><span class="label">width</span><input type="range" class="slider" id="lineWidth" min="0.5" max="6" step="0.5" value="1.5"><span class="value" id="lineWidthValue"></span></div>
+    </div>
   </section>
   <div class="hatch"></div>
 
   <section>
     <details id="refTables">
-      <summary><h2 style="display:inline">Reference: NACp and NIC</h2><span class="dim mono" style="margin-left:0.5rem; font-size:0.625rem">DO-260B</span></summary>
+      <summary><h2>Reference: NACp and NIC</h2><span class="aside">DO-260B</span></summary>
       <div class="help" style="margin-top:0.5rem">NACp says how accurate the reported position is: the 95 percent radius of the position error, called EPU. NIC says how far the true position can be from the reported one with high confidence, the containment radius Rc, guaranteed to a probability given by SIL. Both come from the aircraft's own GPS receiver. Raw plot size uses these radii in metres.</div>
       <table class="ref"><tr><th class="k">NACp</th><th>EPU 95 %</th><th class="k" style="padding-left:1rem">NIC</th><th>Rc</th></tr>
         <tr><td class="k">11</td><td>&lt; 3 m</td><td class="k" style="padding-left:1rem">11</td><td>&lt; 7.5 m</td></tr>
@@ -108,7 +124,7 @@
 
   <section>
     <details id="controlsRef" open>
-      <summary><h2 style="display:inline">Controls</h2></summary>
+      <summary><h2>Controls</h2></summary>
       <div class="keys">
         <div class="g">map</div>
         <span class="k">click plot</span><span class="v">add or remove its track in the compare list</span>
@@ -121,14 +137,16 @@
         <span class="k">drag bar</span><span class="v">set now</span>
         <div class="g">charts</div>
         <span class="k">+ chart</span><span class="v">pick the fields for a new chart</span>
-        <span class="k">drag</span><span class="v">zoom all charts and the map</span>
-        <span class="k">double click</span><span class="v">reset zoom</span>
+        <span class="k">drag</span><span class="v">zoom: a time window for all charts and the map, or a box for one chart, as chosen above the charts</span>
+        <span class="k">double click</span><span class="v">reset that zoom</span>
         <span class="k">click legend</span><span class="v">hide or show a series</span>
         <span class="k"><kbd>shift</kbd> legend</span><span class="v">only that series, again for all</span>
         <span class="k">drag bar below</span><span class="v">chart height</span>
         <span class="k">×</span><span class="v">remove the chart</span>
         <div class="g">panels</div>
-        <span class="k">click chip</span><span class="v">remove the track</span>
+        <span class="k">eye on a chip</span><span class="v">hide or show that track</span>
+        <span class="k">× on a chip</span><span class="v">remove the track</span>
+        <span class="k">comparing</span><span class="v">switch off to use the map as if the list were empty, without losing it</span>
         <span class="k">drag panel edge</span><span class="v">panel width</span>
         <span class="k"><kbd>esc</kbd></span><span class="v">close a menu or the field list</span>
       </div>
@@ -165,10 +183,14 @@
 <aside id="right">
   <div class="grip" id="gripRight" title="drag to resize"></div>
   <div class="scroll">
-  <div class="panel-head"><h2>Compare tracks</h2><span class="spacer"></span><button class="small" id="clear">clear all</button></div>
+  <div class="panel-title"><div class="row"><h2>Compare tracks</h2><span class="spacer"></span><label class="label" title="off: the map ignores the list, which stays as it is"><input type="checkbox" id="compareOn" checked>comparing</label><button class="small" id="clear">clear all</button></div></div>
   <section>
-    <input type="text" id="find" placeholder="ADD BY HEX, CALLSIGN OR TAIL, THEN ENTER" style="width:100%; text-transform:uppercase">
+    <label class="search"><svg viewBox="0 0 16 16" fill="none" stroke="#ffffff" stroke-width="1.4"><circle cx="7" cy="7" r="4.6"/><path d="M10.4 10.4 14 14"/></svg><input type="text" id="find" placeholder="add by hex, callsign or tail"></label>
     <div id="sel"></div>
+  </section>
+  <section id="chartZoom">
+    <div class="choice" style="margin-top:0"><span class="label">zoom in a chart by dragging</span><span class="seg"><label title="drag across a chart to zoom every chart, the map and the timeline to that time window"><input type="radio" name="chartZoom" value="timeline" checked>a time window, all charts</label><label title="drag a rectangle to zoom this one chart in time and value"><input type="radio" name="chartZoom" value="box">a box, this chart only</label></span></div>
+    <div class="note">Double click a chart to reset: the time window for all charts, or a box for that chart alone.</div>
   </section>
   <div class="chart-group" id="rawChartGroup">
     <div class="section-head"><h2>Raw plot charts</h2><span class="spacer"></span><button class="small" id="addRawChart" title="pick fields of the raw sources for a new chart">+ chart</button></div>
@@ -181,6 +203,7 @@
   </div>
 </aside>
 
+<div id="fbInfo"></div>
 <div id="fieldBrowser">
   <div class="fb-head"><span class="label" id="fbTitle">fields</span><input type="text" id="fbSearch" placeholder="search"></div>
   <div class="fb-list" id="fbList"></div>
