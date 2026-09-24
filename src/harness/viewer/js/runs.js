@@ -38,14 +38,14 @@ export function defaultActive() {
 
 export function setActive(id, on) {
   if (on) S.runActive.add(id);
-  else { S.runActive.delete(id); S.runShown.delete(id); S.compare = S.compare.filter(c => c.kind !== id); }
+  else { S.runActive.delete(id); S.runShown.delete(id); }   // its compared tracks stay in the list; only × removes one
   bus.renderStrategies(); bus.renderCompare(); renderRunsPanel(); bus.rebuildCharts(); bus.draw();
 }
 export async function setShown(id, on) {
   if (on) {
     S.runShown.add(id);
     try { await loadRun(id); } catch (error) { S.runShown.delete(id); $("status").textContent = `${runName(id)} did not load: ${error.message}`; }
-  } else { S.runShown.delete(id); S.compare = S.compare.filter(c => c.kind !== id); }
+  } else S.runShown.delete(id);   // its compared tracks stay in the list; only × removes one
   bus.renderStrategies(); bus.renderCompare(); renderRunsPanel(); bus.rebuildCharts(); bus.draw();
 }
 
