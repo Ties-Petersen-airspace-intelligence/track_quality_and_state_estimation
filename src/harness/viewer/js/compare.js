@@ -1,6 +1,6 @@
 // The compare list: tracks picked on the map or by hex, callsign or tail. Each gets its own colour, and while the
 // list has tracks those colours replace every colouring option.
-import { S, $, table, compareEntry, trackLabel, fmt, escapeHtml } from "./state.js";
+import { S, $, table, compareEntry, comparing, trackLabel, fmt, escapeHtml } from "./state.js";
 import { COMPARE_COLORS, rgb } from "./palette.js";
 import { bus } from "./bus.js";
 
@@ -41,9 +41,9 @@ export function findTracks(query) {
 export function clearCompare() { S.compare = []; changed(); }
 
 export function renderCompare() {
-  document.body.classList.toggle("comparing", S.compare.length > 0);
-  $("rawColourGroup").classList.toggle("overridden", S.compare.length > 0);
-  $("stratColourGroup").classList.toggle("overridden", S.compare.length > 0);
+  document.body.classList.toggle("comparing", comparing());
+  // only the colour menus are replaced by the compare colours; everything else keeps working
+  document.querySelectorAll(".colour-control").forEach(el => el.classList.toggle("overridden", comparing()));
   if (!S.compare.length) { $("sel").innerHTML = `<p class="help" style="margin:0.6rem 0 0">Nothing to compare yet. Click plots on the map, or type a hex, callsign or tail above.</p>`; return; }
   const chips = S.compare.map((c, k) => {
     const d = table(c.kind); if (!d) return "";
@@ -52,10 +52,17 @@ export function renderCompare() {
       if (c.kind === "raw" ? d.src[i] !== c.src || d.tid[i] !== c.tid : d.track[i] !== c.track) continue;
       n++; if (d.cs[i]) callsigns.add(d.cs[i]); t0 = Math.min(t0, d.t[i]); t1 = Math.max(t1, d.t[i]);
     }
-    return `<span class="chip" data-k="${k}" style="border-left-color:${rgb(c.color)}" title="click to remove">${escapeHtml(trackLabel(c))} <span class="muted">${n} · ${fmt(t0).slice(0, 5)}–${fmt(t1).slice(0, 5)}${callsigns.size ? " · " + escapeHtml([...callsigns].join(", ")) : ""}</span><span class="x">×</span></span>`;
+    return `<span class="chip${c.hidden ? " hidden" : ""}" data-k="${k}" style="border-left-color:${rgb(c.color)}"><button class="eye" title="${c.hidden ? "show" : "hide"} this track">${c.hidden ? EYE_OFF : EYE}</button>${escapeHtml(trackLabel(c))} <span class="muted">${n} · ${fmt(t0).slice(0, 5)}–${fmt(t1).slice(0, 5)}${callsigns.size ? " · " + escapeHtml([...callsigns].join(", ")) : ""}</span><button class="x" title="remove from the list">×</button></span>`;
   }).join("");
-  $("sel").innerHTML = `<div class="label" style="margin-top:0.7rem">${S.compare.length} track${S.compare.length > 1 ? "s" : ""} · click one to remove</div><div class="chips">${chips}</div>`;
-  $("sel").querySelectorAll(".chip").forEach(chip => chip.onclick = () => { S.compare.splice(+chip.dataset.k, 1); changed(); });
+  $("sel").innerHTML = `<div class="label" style="margin-top:0.8rem">${S.compare.length} track${S.compare.length > 1 ? "s" : ""} · the eye hides one, × removes it</div><div class="chips">${chips}</div>`;
+  $("sel").querySelectorAll(".chip").forEach(chip => {
+    const c = S.compare[+chip.dataset.k];
+    chip.querySelector(".eye").onclick = () => { c.hidden = !c.hidden; changed(); };
+    chip.querySelector(".x").onclick = () => { S.compare.splice(+chip.dataset.k, 1); changed(); };
+  });
 }
 
 function changed() { renderCompare(); bus.rebuildCharts(); bus.draw(); }
+
+const EYE = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1.5 8s2.4-4.5 6.5-4.5S14.5 8 14.5 8 12.1 12.5 8 12.5 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/></svg>';
+const EYE_OFF = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1.5 8s2.4-4.5 6.5-4.5S14.5 8 14.5 8 12.1 12.5 8 12.5 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/><path d="M2.5 13.5 13.5 2.5"/></svg>';
