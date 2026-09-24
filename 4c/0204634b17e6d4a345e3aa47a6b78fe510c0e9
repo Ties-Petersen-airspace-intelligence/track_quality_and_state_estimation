@@ -1,0 +1,318 @@
+src/harness/strategies/kalman.py
+  801653f3250d1a49 10,36
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.5",
+  "base_commit_sha": "4c0204634b17e6d4a345e3aa47a6b78fe510c0e9",
+  "prompts": {
+    "801653f3250d1a49": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "37b41715-3531-42af-8c01-d8be46680ab3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Ties Petersen",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 761,
+      "overriden_lines": 0,
+      "context_window_samples": [
+        {
+          "used_tokens": 112696,
+          "timestamp": "2026-09-23T16:56:35.616Z"
+        },
+        {
+          "used_tokens": 195173,
+          "timestamp": "2026-09-23T18:17:23.767Z"
+        },
+        {
+          "used_tokens": 196626,
+          "timestamp": "2026-09-23T18:17:38.276Z"
+        },
+        {
+          "used_tokens": 198514,
+          "timestamp": "2026-09-23T18:18:29.016Z"
+        },
+        {
+          "used_tokens": 203907,
+          "timestamp": "2026-09-23T18:18:52.139Z"
+        },
+        {
+          "used_tokens": 206474,
+          "timestamp": "2026-09-23T18:19:03.051Z"
+        },
+        {
+          "used_tokens": 207931,
+          "timestamp": "2026-09-23T18:19:25.192Z"
+        },
+        {
+          "used_tokens": 211092,
+          "timestamp": "2026-09-23T18:19:34.548Z"
+        },
+        {
+          "used_tokens": 211857,
+          "timestamp": "2026-09-23T18:19:59.416Z"
+        },
+        {
+          "used_tokens": 214705,
+          "timestamp": "2026-09-23T18:20:05.257Z"
+        },
+        {
+          "used_tokens": 216549,
+          "timestamp": "2026-09-23T18:20:23.446Z"
+        },
+        {
+          "used_tokens": 289777,
+          "timestamp": "2026-09-23T18:34:46.084Z"
+        },
+        {
+          "used_tokens": 304495,
+          "timestamp": "2026-09-23T18:44:43.503Z"
+        },
+        {
+          "used_tokens": 305715,
+          "timestamp": "2026-09-23T18:44:57.901Z"
+        },
+        {
+          "used_tokens": 309871,
+          "timestamp": "2026-09-23T18:45:08.037Z"
+        },
+        {
+          "used_tokens": 311853,
+          "timestamp": "2026-09-23T18:47:02.873Z"
+        },
+        {
+          "used_tokens": 313031,
+          "timestamp": "2026-09-23T18:48:47.234Z"
+        },
+        {
+          "used_tokens": 324900,
+          "timestamp": "2026-09-23T18:49:13.024Z"
+        },
+        {
+          "used_tokens": 330376,
+          "timestamp": "2026-09-23T18:49:26.222Z"
+        },
+        {
+          "used_tokens": 331466,
+          "timestamp": "2026-09-23T18:50:15.026Z"
+        },
+        {
+          "used_tokens": 332499,
+          "timestamp": "2026-09-23T18:51:46.207Z"
+        },
+        {
+          "used_tokens": 345856,
+          "timestamp": "2026-09-23T18:53:19.936Z"
+        },
+        {
+          "used_tokens": 357422,
+          "timestamp": "2026-09-23T18:53:36.719Z"
+        },
+        {
+          "used_tokens": 359159,
+          "timestamp": "2026-09-23T18:54:09.970Z"
+        },
+        {
+          "used_tokens": 363170,
+          "timestamp": "2026-09-23T18:54:21.930Z"
+        },
+        {
+          "used_tokens": 368013,
+          "timestamp": "2026-09-23T18:54:46.800Z"
+        },
+        {
+          "used_tokens": 370607,
+          "timestamp": "2026-09-23T18:55:34.006Z"
+        },
+        {
+          "used_tokens": 376636,
+          "timestamp": "2026-09-23T18:56:10.645Z"
+        },
+        {
+          "used_tokens": 381574,
+          "timestamp": "2026-09-23T18:56:28.117Z"
+        },
+        {
+          "used_tokens": 383434,
+          "timestamp": "2026-09-23T18:56:39.197Z"
+        },
+        {
+          "used_tokens": 388209,
+          "timestamp": "2026-09-23T18:57:48.062Z"
+        },
+        {
+          "used_tokens": 397127,
+          "timestamp": "2026-09-23T18:58:58.280Z"
+        },
+        {
+          "used_tokens": 405899,
+          "timestamp": "2026-09-23T18:59:19.721Z"
+        },
+        {
+          "used_tokens": 410835,
+          "timestamp": "2026-09-23T19:00:01.066Z"
+        },
+        {
+          "used_tokens": 415778,
+          "timestamp": "2026-09-23T19:00:22.810Z"
+        },
+        {
+          "used_tokens": 425152,
+          "timestamp": "2026-09-23T19:06:08.942Z"
+        },
+        {
+          "used_tokens": 436743,
+          "timestamp": "2026-09-23T19:17:23.956Z"
+        },
+        {
+          "used_tokens": 444808,
+          "timestamp": "2026-09-23T19:20:32.728Z"
+        },
+        {
+          "used_tokens": 447181,
+          "timestamp": "2026-09-23T19:22:33.715Z"
+        },
+        {
+          "used_tokens": 448088,
+          "timestamp": "2026-09-23T19:23:30.735Z"
+        },
+        {
+          "used_tokens": 462223,
+          "timestamp": "2026-09-23T19:38:57.717Z"
+        },
+        {
+          "used_tokens": 484927,
+          "timestamp": "2026-09-23T20:02:17.520Z"
+        },
+        {
+          "used_tokens": 492215,
+          "timestamp": "2026-09-23T20:03:53.409Z"
+        },
+        {
+          "used_tokens": 496978,
+          "timestamp": "2026-09-23T20:04:14.349Z"
+        },
+        {
+          "used_tokens": 497800,
+          "timestamp": "2026-09-23T20:04:35.295Z"
+        },
+        {
+          "used_tokens": 510646,
+          "timestamp": "2026-09-23T20:11:46.938Z"
+        },
+        {
+          "used_tokens": 514423,
+          "timestamp": "2026-09-23T20:43:56.223Z"
+        },
+        {
+          "used_tokens": 543123,
+          "timestamp": "2026-09-24T05:22:01.420Z"
+        },
+        {
+          "used_tokens": 547807,
+          "timestamp": "2026-09-24T05:23:03.882Z"
+        },
+        {
+          "used_tokens": 549488,
+          "timestamp": "2026-09-24T05:23:22.360Z"
+        },
+        {
+          "used_tokens": 551199,
+          "timestamp": "2026-09-24T05:24:35.141Z"
+        },
+        {
+          "used_tokens": 555488,
+          "timestamp": "2026-09-24T05:25:21.709Z"
+        },
+        {
+          "used_tokens": 561689,
+          "timestamp": "2026-09-24T05:25:42.443Z"
+        },
+        {
+          "used_tokens": 562608,
+          "timestamp": "2026-09-24T05:26:03.641Z"
+        },
+        {
+          "used_tokens": 563547,
+          "timestamp": "2026-09-24T05:26:25.069Z"
+        },
+        {
+          "used_tokens": 564449,
+          "timestamp": "2026-09-24T05:26:45.779Z"
+        },
+        {
+          "used_tokens": 564858,
+          "timestamp": "2026-09-24T05:27:06.647Z"
+        },
+        {
+          "used_tokens": 565230,
+          "timestamp": "2026-09-24T05:28:56.221Z"
+        },
+        {
+          "used_tokens": 567710,
+          "timestamp": "2026-09-24T05:33:05.885Z"
+        },
+        {
+          "used_tokens": 568356,
+          "timestamp": "2026-09-24T05:34:50.139Z"
+        },
+        {
+          "used_tokens": 569211,
+          "timestamp": "2026-09-24T05:36:52.079Z"
+        },
+        {
+          "used_tokens": 571367,
+          "timestamp": "2026-09-24T05:37:12.931Z"
+        },
+        {
+          "used_tokens": 574491,
+          "timestamp": "2026-09-24T05:38:58.491Z"
+        },
+        {
+          "used_tokens": 574910,
+          "timestamp": "2026-09-24T05:39:16.490Z"
+        },
+        {
+          "used_tokens": 577232,
+          "timestamp": "2026-09-24T05:45:15.747Z"
+        },
+        {
+          "used_tokens": 578438,
+          "timestamp": "2026-09-24T05:47:42.784Z"
+        },
+        {
+          "used_tokens": 578935,
+          "timestamp": "2026-09-24T05:47:59.863Z"
+        },
+        {
+          "used_tokens": 580151,
+          "timestamp": "2026-09-24T05:48:13.437Z"
+        },
+        {
+          "used_tokens": 580843,
+          "timestamp": "2026-09-24T05:49:14.193Z"
+        }
+      ],
+      "skill_usages": [
+        {
+          "name": "office-task",
+          "timestamp": "2026-09-23T16:53:30.903Z",
+          "source": "slash_command"
+        },
+        {
+          "name": "office-pause",
+          "timestamp": "2026-09-23T16:57:23.475Z",
+          "source": "slash_command"
+        },
+        {
+          "name": "dataviz",
+          "timestamp": "2026-09-23T18:33:36.503Z",
+          "source": "skill_tool"
+        }
+      ]
+    }
+  }
+}
