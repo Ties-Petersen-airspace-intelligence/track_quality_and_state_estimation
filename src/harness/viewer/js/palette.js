@@ -1,7 +1,7 @@
 // Colours, and the legends that say what they mean.
 // Checked with the dataviz palette validator on the map background #0a0a0a: the three ADS-B sources pass every pair
 // for colour-blind readers; the strategy colours sit brighter on purpose, so strategy output reads as a layer above the raw plots.
-import { S, SOURCE_NAME, runName, strategyOf, escapeHtml, fmtN } from "./state.js";
+import { S, $, SOURCE_NAME, runName, strategyOf, escapeHtml, fmtN } from "./state.js";
 
 const hex = h => [1, 3, 5].map(k => parseInt(h.slice(k, k + 2), 16));
 export const rgb = c => `rgb(${c})`;
@@ -84,7 +84,7 @@ export function strategyColourFunction(mode, id) {
 }
 
 export function strategyLegend(mode, shape) {
-  const shown = [...S.runShown].filter(id => S.RUNS[id]);
+  const shown = $("runsOn").checked ? [...S.runShown].filter(id => S.RUNS[id]) : [];
   if (!shown.length) return "";
   if (mode === "track") return `<span class="item dim">one colour per track, too many for a legend</span>`;
   if (mode === "strategy") { const names = [...new Set(shown.map(strategyOf))]; return legend(names.map(s => ({ color:strategyColour(s), label:s.replace(/_/g, " "), shape }))); }

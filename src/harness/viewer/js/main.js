@@ -107,7 +107,7 @@ function legends() {
 
 function wire() {
   const redraw = () => { legends(); bus.draw(); };
-  for (const id of ["rawOn", "rawColour", "rawSize", "rawPx", "rawMetres", "pointsOn", "linesOn", "pointColour", "lineColour", "pointSize", "pointPx", "pointMetres", "lineWidth", "mapShows"]) {
+  for (const id of ["rawOn", "runsOn", "rawColour", "rawSize", "rawPx", "rawMetres", "pointsOn", "linesOn", "pointColour", "lineColour", "pointSize", "pointPx", "pointMetres", "lineWidth", "mapShows"]) {
     $(id).addEventListener($(id).type === "range" ? "input" : "change", redraw);
   }
   $("fadeWin").onchange = () => { $("fadeCustom").style.display = $("fadeWin").value === "custom" ? "" : "none"; bus.draw(); };

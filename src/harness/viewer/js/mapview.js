@@ -86,7 +86,8 @@ export function draw() {
   S.visible = { raw:[], runs:{} };
   if ($("rawOn").checked) layers.push(...rawLayers(alpha, shown, isComparing));
   const pointLayers = [];
-  for (const id of S.runShown) if (S.RUNS[id]) { const [lines, points] = strategyLayers(id, alpha, shown, isComparing); if (lines) layers.push(lines); pointLayers.push(...points); }
+  // the show box on the Strategies heading hides every run at once and keeps which ones are ticked
+  if ($("runsOn").checked) for (const id of S.runShown) if (S.RUNS[id]) { const [lines, points] = strategyLayers(id, alpha, shown, isComparing); if (lines) layers.push(lines); pointLayers.push(...points); }
   baseLayers = [...layers, ...pointLayers];
   drawHighlight();
 }
