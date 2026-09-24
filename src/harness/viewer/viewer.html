@@ -6,236 +6,11 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%22-113%20-317%20806%20806%22%3E%3Crect%20x%3D%22-113%22%20y%3D%22-317%22%20width%3D%22806%22%20height%3D%22806%22%20fill%3D%22%23ffffff%22/%3E%3Cpath%20d%3D%22M196.103%2045.6127V81.6938H160.825L120.276%20126.333H196.103V170.973H240.743V0.973145H155.194L0.772461%20170.973L60.819%20170.973L174.692%2045.6127H196.103Z%22%20fill%3D%22%23e31b23%22/%3E%3Cpath%20d%3D%22M517.517%200.973145V45.6127L303.247%2045.6127V63.3572L517.517%2063.3572V170.973H258.607V126.333L472.877%20126.333V107.997L258.607%20107.997V0.973145H517.517Z%22%20fill%3D%22%23e31b23%22/%3E%3Cpath%20d%3D%22M535.371%200.973145H580.01V170.973H535.371V0.973145Z%22%20fill%3D%22%23e31b23%22/%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uplot@1.6.31/dist/uPlot.min.css">
+<link rel="stylesheet" href="viewer.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/deck.gl@9.1.0/dist.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/uplot@1.6.31/dist/uPlot.iife.min.js"></script>
-<style>
-  /* ASI Brand Identity 4.0, product dark theme (11.04): pure neutral greys, Simplon ASI, ASI red as punctuation, lime only for now */
-  @font-face { font-family:"Simplon ASI Norm"; src:url("fonts/SimplonASINorm-Regular-Web.woff2") format("woff2"); font-weight:400; font-display:swap; }
-  @font-face { font-family:"Simplon ASI Norm"; src:url("fonts/SimplonASINorm-Medium-Web.woff2") format("woff2"); font-weight:500; font-display:swap; }
-  @font-face { font-family:"Simplon ASI Mono"; src:url("fonts/SimplonASIMono-Regular-Web.woff2") format("woff2"); font-weight:400; font-display:swap; }
-  @font-face { font-family:"Simplon ASI Mono"; src:url("fonts/SimplonASIMono-Medium-Web.woff2") format("woff2"); font-weight:500; font-display:swap; }
-  @font-face { font-family:"Simplon ASI Caps Norm"; src:url("fonts/SimplonASICapsNorm-Regular-Web.woff2") format("woff2"); font-weight:400; font-display:swap; }
-  @font-face { font-family:"Simplon ASI Caps Norm"; src:url("fonts/SimplonASICapsNorm-Medium-Web.woff2") format("woff2"); font-weight:500; font-display:swap; }
-  @font-face { font-family:"Simplon ASI Caps Mono"; src:url("fonts/SimplonASICapsMono-Regular-Web.woff2") format("woff2"); font-weight:400; font-display:swap; }
-  @font-face { font-family:"Simplon ASI Caps Mono"; src:url("fonts/SimplonASICapsMono-Medium-Web.woff2") format("woff2"); font-weight:500; font-display:swap; }
-  :root { color-scheme: dark;
-    /* backgrounds, brand 11.04 */
-    --bg:#0a0a0a; --chrome:#111111; --panel:#141414; --raised:#1a1a1a; --hover:#222222; --line:#222222; --line-strong:#333333;
-    /* text hierarchy: titles, body, secondary, footer */
-    --fg:#ffffff; --body:#aaaaaa; --muted:#888888; --dim:#555555;
-    /* ASI red is the brand accent, lime stays the now colour, the rest are the status colours */
-    --red:#e31b23; --red-deep:#b81620; --accent:#ccff00; --accent-heavy:#8bad00; --danger:#e31b23; --interactive:#1565c0; --green:#4caf50; --amber:#ffb300;
-    /* Simplon ASI first, then the stack a fresh clone falls back to; see "The brand font" in the README */
-    --sans: "Simplon ASI Norm", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    --mono: "Simplon ASI Mono", "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
-    --caps: "Simplon ASI Caps Mono", "Simplon ASI Mono", "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
-    --capsnorm: "Simplon ASI Caps Norm", "Simplon ASI Norm", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    --left: 23rem; --right: 34rem; }
-  html { font-size: 14px; } @media (min-width: 1400px) { html { font-size: 15px; } }
-  * { box-sizing: border-box; }
-  body { margin:0; font: 0.8125rem/1.4 var(--sans); color:var(--fg); background:var(--bg);
-    display:grid; grid-template-columns: var(--left) 1fr var(--right); grid-template-rows: 2.5rem 1fr; grid-template-areas: "top top top" "left map right"; height:100vh; }
-  ::-webkit-scrollbar { width:0.25rem; height:0.25rem; } ::-webkit-scrollbar-thumb { background:var(--line-strong); }
-
-  /* type */
-  .label { font: 0.6875rem/1 var(--caps); text-transform:uppercase; letter-spacing:0.1em; color:var(--muted); }
-  .mono { font-family: var(--mono); font-size:0.75rem; } .muted { color:var(--muted); } .dim { color:var(--dim); } .body { color:var(--body); }
-  h1 { font: 500 0.8125rem/1.2 var(--capsnorm); text-transform:uppercase; letter-spacing:0.12em; margin:0; color:var(--fg); }
-  /* section headings are the brand's [ SECTION ] tag, in the secondary grey; the brackets sit a step back again */
-  h2 { font: 500 0.6875rem/1 var(--caps); text-transform:uppercase; letter-spacing:0.18em; color:var(--muted); margin:0; }
-  h2::before { content:"[\00a0"; color:var(--dim); } h2::after { content:"\00a0]"; color:var(--dim); }
-  kbd { font: 0.625rem var(--mono); border:1px solid var(--line-strong); padding:0 0.3rem; color:var(--muted); background:var(--panel); }
-
-  /* loading screen */
-  #splash { position:fixed; inset:0; z-index:100; background:#0a0a0a; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0.9rem; transition:opacity 0.35s ease; }
-  #splash.gone { opacity:0; pointer-events:none; }
-  #splash .logo { width:9rem; height:2.65rem; color:var(--red); margin-bottom:1.4rem; } #splash .logo svg { width:100%; height:100%; display:block; }
-  #splash .wordmark { font: 500 1.5rem/1 var(--capsnorm); letter-spacing:0.16em; text-transform:uppercase; color:var(--fg); }
-  #splash .wordmark span { color:var(--body); margin-left:0.45rem; font-weight:400; }
-  #splash .bar { position:relative; width:11.5rem; height:3px; overflow:hidden; }
-  #splash .dots { position:absolute; inset:0; background: repeating-linear-gradient(to right, #333333 0 3px, transparent 3px 6px); }
-  /* a bright head with a long soft tail, gliding back and forth over the dashes */
-  #splash .block { position:absolute; top:0; width:4.5rem; height:3px; background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.25) 55%, rgba(255,255,255,0.7) 85%, #ffffff 100%); animation: slide 1.6s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate; }
-  #splash .block::after { content:""; position:absolute; right:0; top:-3px; width:1.2rem; height:9px; background: radial-gradient(ellipse at center, rgba(255,255,255,0.3), transparent 70%); }
-  @keyframes slide { from { left:-3rem; transform:scaleX(1); } to { left:calc(100% - 1.5rem); transform:scaleX(1); } }
-  #splash .block.back { transform:scaleX(-1); }
-  #splash .what { color:var(--dim); font-family:var(--caps); font-size:0.625rem; text-transform:uppercase; letter-spacing:0.14em; margin-top:0.1rem; }
-
-  /* top bar */
-  #top { grid-area:top; display:flex; align-items:center; gap:1rem; padding:0 0.9rem; background:var(--chrome); border-bottom:1px solid var(--line); }
-  #top select { background:transparent; border-color:transparent; color:var(--muted); font-size:0.75rem; text-transform:none; letter-spacing:0; max-width:24rem; } #top select:hover { border-color:var(--line-strong); }
-  /* the lettermark sits top left with the brand's half height clear space around it */
-  #top .mark { width:2.7rem; height:0.8rem; color:var(--fg); display:grid; place-items:center; margin-right:0.4rem; } #top .mark svg { width:100%; height:100%; display:block; }
-  #top h1 .pfx { color:var(--red); letter-spacing:0; margin-right:0.15rem; }
-  #top .asimark { font: 500 0.625rem var(--caps); letter-spacing:0.18em; color:var(--dim); }
-  #top .right { margin-left:auto; display:flex; gap:1.25rem; font-family:var(--mono); font-size:0.75rem; color:var(--muted); }
-  #top .right b { color:var(--fg); font-weight:500; }
-
-  /* side panels */
-  aside { background:var(--chrome); overflow:hidden; position:relative; } aside .scroll { position:absolute; inset:0; overflow:auto; }
-  #left { grid-area:left; border-right:1px solid var(--line); }
-  #gripLeft { position:absolute; right:0; top:0; bottom:0; width:10px; cursor:col-resize; z-index:5; } #gripLeft:hover, #gripLeft.on { background:var(--line-strong); }
-  body.dragging { user-select:none; cursor:col-resize; } body.dragging #map { pointer-events:none; } #right { grid-area:right; border-left:1px solid var(--line); } #right .scroll { padding-bottom:1rem; }
-  .panel-head { display:flex; align-items:center; gap:0.6rem; padding:0.7rem 0.9rem; border-bottom:1px solid var(--line); position:sticky; top:0; background:var(--chrome); z-index:2; }
-  .panel-head .spacer { flex:1; }
-  section { padding:0.7rem 0.9rem 0.8rem; }
-  section + section { border-top:1px solid var(--line); }
-  .hatch { height:6px; background: repeating-linear-gradient(-45deg, var(--line) 0 1px, transparent 1px 5px); opacity:0.7; }
-  .kv { display:grid; grid-template-columns: 1fr auto; gap:0.25rem 1rem; margin-top:0.55rem; }
-  .kv .k { font: 0.625rem/1.6 var(--mono); text-transform:uppercase; letter-spacing:0.06em; color:var(--dim); }
-  .kv .v { font: 0.75rem/1.4 var(--mono); color:var(--fg); text-align:right; }
-  .row { display:flex; align-items:center; gap:0.5rem; padding:0.22rem 0; } .row label { flex:1; cursor:pointer; }
-  .row .label { flex:none; min-width:6rem; }
-  .field { margin-top:0.55rem; display:flex; align-items:center; gap:0.6rem; }
-  .field .label { min-width:7.5rem; }
-  .sw { display:inline-block; width:0.55rem; height:0.55rem; border-radius:50%; flex:none; } .sw.line { width:0.9rem; height:2px; }
-  /* checkboxes and radios in the brand's product style: square, thin border, lime when on; a radio shows a smaller lime square inside */
-  input[type=checkbox], input[type=radio] { appearance:none; -webkit-appearance:none; width:0.95rem; height:0.95rem; margin:0 0.35rem 0 0; flex:none; background:var(--panel); border:1px solid var(--dim); border-radius:0; cursor:pointer; position:relative; vertical-align:-0.15rem; }
-  input[type=checkbox]:hover, input[type=radio]:hover, input[type=checkbox]:focus-visible, input[type=radio]:focus-visible { border-color:var(--body); outline:none; }
-  input[type=checkbox]:checked { background:var(--accent); border-color:var(--accent); }
-  input[type=radio]:checked { border-color:var(--accent); }
-  input[type=radio]:checked::after { content:""; position:absolute; inset:0.2rem; background:var(--accent); }
-  select, input[type=text], button { font: 0.75rem var(--mono); color:var(--fg); background:var(--panel); border:1px solid var(--line-strong); padding:0.3rem 0.5rem; }
-  /* dropdowns: the native select is hidden and kept in sync; .asel is what is seen, a flat button and a list panel like the brand's "select option" sheet */
-  select.asel-native { display:none; }
-  .asel { position:relative; flex:1; min-width:0; }
-  .asel-btn { display:flex; align-items:center; gap:0.5rem; width:100%; text-align:left; font: 0.75rem var(--mono); color:var(--fg); background:var(--panel); border:1px solid var(--line-strong); padding:0.3rem 0.5rem; cursor:pointer; }
-  .asel-btn span { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .asel-btn i { color:var(--dim); font-style:normal; font-size:0.6rem; }
-  .asel-btn:hover { border-color:var(--dim); } .asel.open .asel-btn { border-color:var(--body); } .asel.open .asel-btn i { color:var(--body); }
-  .asel-list { position:fixed; width:max-content; max-width:24rem; z-index:60; background:var(--chrome); border:1px solid var(--line-strong); box-shadow:0 8px 32px rgb(0 0 0 / 60%); display:none; }
-  .asel.open .asel-list { display:block; }
-  .asel-head { padding:0.5rem 0.7rem 0.35rem; font: 0.625rem var(--caps); text-transform:uppercase; letter-spacing:0.1em; color:var(--muted); border-bottom:1px solid var(--line); }
-  .asel-item { display:flex; align-items:center; gap:0.7rem; padding:0.5rem 0.7rem; font: 0.75rem var(--mono); color:var(--body); cursor:pointer; border-left:2px solid transparent; white-space:nowrap; }
-  .asel-item:hover { background:var(--hover); color:var(--fg); } .asel-item.on { background:var(--raised); color:var(--fg); border-left-color:var(--accent); }
-  .asel-item i { margin-left:auto; color:var(--dim); font-style:normal; }
-  .asel-item.off { color:var(--dim); cursor:default; } .asel-item.off:hover { background:transparent; color:var(--dim); }
-  #top .asel { flex:none; width:auto; } #top .asel-btn { background:transparent; border-color:transparent; color:var(--muted); max-width:24rem; } #top .asel-btn:hover { border-color:var(--line-strong); }
-  #ctl .head .asel { flex:none; } #ctl .head .asel-btn { padding:0.2rem 0.4rem; }
-  #left select { flex:1; min-width:0; max-width:100%; text-overflow:ellipsis; }
-  .field { min-width:0; }
-  button { text-transform:uppercase; letter-spacing:0.06em; font-size:0.6875rem; cursor:pointer; } button:hover { border-color:var(--muted); color:#fff; }
-  button.accent { background:var(--accent); color:#0a0a0a; border-color:var(--accent); font-weight:600; }
-  input[type=range] { accent-color: var(--accent); }
-  .help { font-size:0.75rem; color:var(--body); line-height:1.5; }
-  details summary { cursor:pointer; list-style:none; } details summary::-webkit-details-marker { display:none; } details summary::before { content:"▸ "; color:var(--dim); font-size:0.7rem; } details[open] summary::before { content:"▾ "; }
-  #left table.nums td, #left table.nums th { text-align:left; }
-  /* one grid for every control row, so the two columns line up through the whole section */
-  .keys { display:grid; grid-template-columns: 9.5rem 1fr; gap:0.2rem 0.6rem; align-items:baseline; margin-top:0.5rem; }
-  .keys .g { grid-column: 1 / -1; font: 0.625rem/1 var(--mono); text-transform:uppercase; letter-spacing:0.1em; color:var(--dim); margin-top:0.6rem; padding-bottom:0.25rem; border-bottom:1px solid var(--line); }
-  .keys .g:first-child { margin-top:0; }
-  .keys .k { font: 0.6875rem/1.5 var(--mono); color:var(--muted); white-space:nowrap; }
-  .keys .v { font: 0.75rem/1.5 var(--sans); color:var(--body); }
-  .keys kbd { font-size:0.625rem; }
-
-  /* map */
-  #mapwrap { grid-area:map; position:relative; background:var(--bg); } #map { position:absolute; inset:0; }
-  #toolbar { position:absolute; top:0.75rem; left:0.75rem; right:0.75rem; z-index:10; display:flex; justify-content:center; flex-wrap:wrap; gap:1.5rem; pointer-events:none; } #toolbar .tbgroup { pointer-events:auto; }
-  .tbinner { display:flex; } .tbdivider { width:1px; background:var(--line-strong); margin:0 0.15rem; }
-  .tb.master { background:var(--raised); color:var(--fg); border-right:1px solid var(--line-strong); padding-right:0.9rem; }
-  .tb.master.static { cursor:default; color:var(--muted); } .tb.master.static:hover { background:var(--raised); color:var(--muted); }
-  .tb.master:has(input:checked) { box-shadow: inset 0 -2px 0 var(--accent); } .tb.master:has(input:not(:checked)) { color:var(--muted); box-shadow:none; }
-  /* a group whose master switch is off: items half dimmed, the master label struck through so the cause is visible */
-  #rawGroup:has(#rawOn:not(:checked)) .tbinner, #runGroup:has(#runsOn:not(:checked)) .tbinner, #runGroup:has(#runsOn:not(:checked)) .tb:not(.master) { opacity:0.55; }
-  .tb.master:has(input:not(:checked)) { text-decoration:line-through; text-decoration-color:var(--dim); }
-  .tbinner .tb:last-child { border-right:1px solid var(--line); }
-  .tbgroup { display:flex; background:rgba(17,17,17,0.96); border:1px solid var(--line-strong); overflow:hidden; box-shadow:0 4px 24px rgb(0 0 0 / 50%); }
-  .tb { display:flex; align-items:center; gap:0.4rem; padding:0.5rem 0.65rem; font: 0.625rem var(--mono); text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); cursor:pointer; border-right:1px solid var(--line); white-space:nowrap; user-select:none; }
-  .tb:last-child { border-right:none; } .tb:hover { color:var(--fg); background:var(--raised); }
-  .tb input { display:none; } .tb .sw { opacity:0.35; } .tb .n { color:var(--dim); margin-left:0.1rem; }
-  .tb:has(input:checked) { color:var(--fg); background:var(--raised); box-shadow: inset 0 -2px 0 var(--accent); } .tb:has(input:checked) .sw { opacity:1; }
-  #dbg { position:absolute; right:0.75rem; bottom:8rem; z-index:10; background:rgba(17,17,17,0.92); border:1px solid var(--line); padding:0.45rem 0.6rem; font: 0.625rem/1.55 var(--mono); color:var(--muted); min-width:13rem; }
-  #dbg .kv { margin:0; gap:0 1rem; } #dbg .kv .k { color:var(--dim); font-size:0.625rem; } #dbg .kv .v { color:var(--fg); font-size:0.625rem; }
-  #tip { position:absolute; z-index:11; pointer-events:none; background:rgba(17,17,17,0.97); border:1px solid var(--line-strong); padding:0.45rem 0.6rem; font: 0.6875rem/1.5 var(--mono); display:none; max-width:24rem; box-shadow:0 4px 24px rgb(0 0 0 / 50%); }
-  #tip b { color:var(--accent); font-weight:600; }
-  #pick { position:absolute; display:none; z-index:12; background:var(--chrome); border:1px solid var(--line-strong); box-shadow:0 4px 24px rgb(0 0 0 / 60%); min-width:17rem; max-width:26rem; }
-  #pick .head { padding:0.5rem 0.7rem; font: 0.6875rem var(--mono); text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); border-bottom:1px solid var(--line); }
-  #pick .item { display:flex; align-items:center; gap:0.55rem; padding:0.5rem 0.7rem; cursor:pointer; border-bottom:1px solid var(--line); font: 0.75rem var(--mono); }
-  #pick .item:last-child { border-bottom:none; } #pick .item:hover { background:var(--raised); } #pick .item .muted { margin-left:auto; white-space:nowrap; font-size:0.6875rem; text-transform:uppercase; letter-spacing:0.06em; }
-  #pick .item .muted::after { content:" ›"; color:var(--dim); }
-  #selbox { position:absolute; display:none; z-index:9; pointer-events:none; border:1px solid var(--accent); background:rgba(204,255,0,0.08); }
-  /* raw plot filters: groups of checkboxes built from the case, plus the outcome of one strategy run */
-  #rawFilters .grp { margin-top:0.6rem; } #rawFilters .grp .label { display:block; margin-bottom:0.25rem; }
-  #rawFilters .opts { display:flex; flex-wrap:wrap; gap:0.15rem 0.9rem; } #rawFilters .opts label { display:inline-flex; align-items:center; gap:0.35rem; font: 0.75rem var(--mono); color:var(--body); cursor:pointer; white-space:nowrap; }
-  #rawFilters .opts label .n { color:var(--dim); font-size:0.625rem; }
-  #rawFilters .field .asel, #rawFilters .field select { flex:1; }
-  #rawFilters .off { color:var(--dim); font: 0.6875rem var(--sans); margin-top:0.3rem; }
-  /* the runs panel: every run of the case as a table, over the left edge of the map */
-  #runsPanel { position:absolute; top:0; left:0; bottom:0; width:var(--runs, 52rem); max-width:90%; z-index:11; display:none; flex-direction:column; background:rgba(17,17,17,0.97); border-right:1px solid var(--line-strong); box-shadow:0 0 32px rgb(0 0 0 / 60%); }
-  #runsPanel.open { display:flex; }
-  #gripRuns { position:absolute; right:0; top:0; bottom:0; width:10px; cursor:col-resize; z-index:12; } #gripRuns:hover, #gripRuns.on { background:var(--line-strong); }
-  #runsPanel .body { overflow:auto; padding:0.6rem 0.9rem 1rem; flex:1; }
-  #runsPanel table { border-collapse:collapse; width:100%; font: 0.6875rem/1.4 var(--mono); }
-  #runsPanel th { text-align:left; font-size:0.6rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); padding:0.35rem 0.45rem; border-bottom:1px solid var(--line-strong); cursor:pointer; white-space:nowrap; user-select:none; position:sticky; top:0; background:var(--chrome); }
-  #runsPanel th.sorted { color:var(--accent); } #runsPanel th.sorted::after { content:" ▾"; } #runsPanel th.sorted.asc::after { content:" ▴"; }
-  #runsPanel td { padding:0.35rem 0.45rem; border-bottom:1px solid var(--line); vertical-align:top; white-space:nowrap; }
-  #runsPanel td.num { text-align:right; font-variant-numeric:tabular-nums; }
-  #runsPanel tr.run { cursor:pointer; } #runsPanel tr.run:hover td { background:var(--raised); }
-  #runsPanel tr.latest td.lab { color:var(--fg); } #runsPanel td.lab, #runsPanel td.dim { color:var(--muted); }
-  #runsPanel td.note { white-space:normal; min-width:12rem; max-width:20rem; color:var(--fg); }
-  #runsPanel td.note:empty::before, #runsPanel td.note.empty::before { content:"add a note…"; color:var(--dim); }
-  #runsPanel td.note[contenteditable]:focus { outline:1px solid var(--accent); outline-offset:1px; background:var(--raised); }
-  #runsPanel .dirty { color:var(--danger); } #runsPanel .sw { width:0.7rem; height:0.7rem; display:inline-block; vertical-align:middle; }
-  #runsPanel tr.detail td { white-space:normal; background:var(--bg); padding:0.6rem 0.9rem 0.8rem; color:var(--muted); }
-  #runsPanel .det { display:grid; grid-template-columns: 9rem 1fr; gap:0.2rem 1.2rem; font: 0.6875rem/1.5 var(--mono); }
-  #runsPanel .det .k { color:var(--dim); text-align:left; } #runsPanel .det .v { color:var(--fg); text-align:left; white-space:pre-wrap; word-break:break-word; }
-  #runsPanel .det .h { grid-column:1 / -1; margin-top:0.55rem; font-size:0.6rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); border-bottom:1px solid var(--line); padding-bottom:0.15rem; } #runsPanel .det .h:first-child { margin-top:0; }
-  #runsPanel .help { color:var(--dim); font: 0.6875rem/1.5 var(--sans); margin:0.4rem 0 0.6rem; }
-  #runsPanel .diff { margin-top:0.9rem; } #runsPanel .diff td.changed { color:var(--accent); } #runsPanel .diff th { position:static; }
-  #runsPanel .diff .same { color:var(--dim); }
-  #selbox.remove { border-color:var(--danger); background:rgba(227,27,35,0.10); }
-  #map canvas, .maplibregl-canvas:focus, .maplibregl-canvas:focus-visible { outline:none !important; }
-  .maplibregl-ctrl-group { background:var(--chrome) !important; border:1px solid var(--line-strong); border-radius:0 !important; box-shadow:none !important; }
-  .maplibregl-ctrl-group button { background:var(--chrome) !important; border-radius:0 !important; } .maplibregl-ctrl-group button + button { border-top:1px solid var(--line) !important; } .maplibregl-ctrl-group button span { filter: invert(0.8); }
-  .maplibregl-ctrl-scale { background:rgba(17,17,17,.85) !important; color:var(--muted) !important; border-color:var(--line-strong) !important; font: 0.625rem var(--mono) !important; }
-  .maplibregl-ctrl-attrib { background:rgba(17,17,17,.7) !important; font-size:0.625rem !important; } .maplibregl-ctrl-attrib, .maplibregl-ctrl-attrib a { color:var(--dim) !important; }
-
-  /* timeline, Flyways style: header line, played part in lime, NOW chip under the marker */
-  #ctl { position:absolute; z-index:10; left:0; right:0; bottom:0; background:var(--chrome); border-top:1px solid var(--line); padding:0.55rem 0.9rem 0.9rem; }
-  /* with the runs panel open the timeline moves out from under it and gives back the room when it closes */
-  #mapwrap:has(#runsPanel.open) #ctl { left:min(var(--runs, 52rem), 90%); }
-  #ctl .head { display:flex; align-items:center; gap:0.9rem; font: 0.75rem var(--mono); color:var(--muted); margin-bottom:0.45rem; }
-  #ctl .head .sep { color:var(--dim); } #ctl .head b { color:var(--fg); font-weight:500; } #ctl .head .zulu { color:var(--dim); font-size:0.625rem; text-transform:uppercase; letter-spacing:0.08em; margin-left:-0.5rem; }
-  #ctl .head .tools { margin-left:auto; display:flex; gap:0.5rem; align-items:center; }
-  #ctl .head select { padding:0.2rem 0.4rem; }
-  #play { width:1.9rem; height:1.9rem; padding:0; display:grid; place-items:center; font-size:0.7rem; }
-  #timeline { position:relative; flex:1; height:3.3rem; }
-  #timeline .bar { position:absolute; left:0; right:0; top:0.3rem; height:0.75rem; background:var(--panel); border:1px solid var(--line); }
-  #timeline .played { position:absolute; left:0; top:0.3rem; height:0.75rem; background:var(--accent); opacity:0.85; }
-  #timeline .hl { position:absolute; top:0; height:1.35rem; background:rgba(255,255,255,0.06); border-left:1px solid var(--fg); border-right:1px solid var(--fg); display:none; }
-  #timeline .nowmark { position:absolute; top:0; width:2px; height:1.35rem; background:var(--fg); margin-left:-1px; }
-  #timeline .tick { position:absolute; top:1.25rem; font: 0.625rem var(--mono); color:var(--dim); transform:translateX(-50%); }
-  #timeline .tick.first { transform:none; } #timeline .tick.last { transform:translateX(-100%); }
-  #timeline .tick::before { content:""; position:absolute; left:50%; top:-0.2rem; width:1px; height:0.2rem; background:var(--line-strong); }
-  #timeline .tick.first::before { left:0; } #timeline .tick.last::before { left:100%; }
-  #timeline .nowchip { position:absolute; top:2.25rem; transform:translateX(-50%); background:var(--accent); color:#0a0a0a; font: 600 0.625rem/1 var(--mono); padding:0.2rem 0.4rem; letter-spacing:0.06em; }
-  #timeline input[type=range] { position:absolute; left:0; right:0; top:0; width:100%; height:1.35rem; margin:0; opacity:0; cursor:pointer; }
-  #resetZoom { display:none; }
-  .tlrow { display:flex; align-items:flex-start; gap:0.75rem; }
-
-  /* right panel: compare list and charts */
-  #grip { position:absolute; left:0; top:0; bottom:0; width:10px; cursor:col-resize; z-index:5; } #grip:hover, #grip.on { background:var(--line-strong); }
-  .chips { display:flex; flex-wrap:wrap; gap:0.35rem; margin-top:0.5rem; }
-  .chip { display:inline-flex; align-items:center; gap:0.45rem; background:var(--panel); border:1px solid var(--line-strong); border-left-width:3px; padding:0.3rem 0.55rem; font: 0.6875rem var(--mono); cursor:pointer; }
-  .chip:hover { border-color:var(--danger); } .chip .muted { font-size:0.625rem; } .chip .x { color:var(--dim); margin-left:0.2rem; }
-  table.nums { width:100%; border-collapse:collapse; margin-top:0.6rem; font: 0.6875rem var(--mono); }
-  table.nums th, table.nums td { padding:0.2rem 0.4rem; text-align:right; border-bottom:1px solid var(--line); white-space:nowrap; }
-  table.nums td.k, table.nums th.k { text-align:left; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; font-size:0.625rem; }
-  table.nums th { padding-bottom:0.3rem; }
-  #pins .pin { border-left:3px solid var(--danger); padding:0.45rem 0.6rem; margin:0.4rem 0 0; background:var(--panel); font: 0.6875rem/1.5 var(--mono); cursor:pointer; }
-  #pins .pin:hover { outline:1px solid var(--danger); } #pins .pin.two { border-left-color:#fff; } #pins .pin b { color:var(--fg); }
-  #pins .diff { padding:0.45rem 0.6rem; font: 0.6875rem/1.5 var(--mono); color:var(--muted); border:1px dashed var(--line-strong); margin-top:0.4rem; }
-  .chart { margin:0 0 0.2rem; padding:0.6rem 0.9rem 0; border-top:1px solid var(--line); }
-  .chart-head { display:flex; align-items:baseline; gap:0.5rem; margin-bottom:0.3rem; }
-  .chart-head b { font: 0.6875rem var(--mono); text-transform:uppercase; letter-spacing:0.08em; color:var(--fg); font-weight:500; }
-  .chart-head .unit { font: 0.625rem var(--mono); color:var(--dim); }
-  .chart-note { font: 0.6875rem/1.4 var(--sans); color:var(--dim); margin:-0.15rem 0 0.35rem; }
-  .chart-head .legend { display:flex; gap:0.7rem; flex-wrap:wrap; margin-left:auto; font: 0.625rem var(--mono); color:var(--muted); }
-  .chart-head .legend span.item { cursor:pointer; user-select:none; display:inline-flex; align-items:center; gap:0.3rem; } .chart-head .legend span.item.off { opacity:0.35; text-decoration:line-through; }
-  .chart .hgrip { height:7px; cursor:row-resize; margin-top:0.2rem; background: repeating-linear-gradient(-45deg, var(--line) 0 1px, transparent 1px 5px); opacity:0.6; } .chart .hgrip:hover { opacity:1; background: repeating-linear-gradient(-45deg, var(--line-strong) 0 1px, transparent 1px 5px); }
-  .uplot { font-family: var(--mono) !important; } .u-legend { display:none; }
-  .u-select { background: rgba(204,255,0,0.14) !important; border-left:1px solid var(--accent); border-right:1px solid var(--accent); }
-</style>
+<script type="module" src="js/main.js"></script>
 </head>
 <body>
 <div id="splash">
@@ -248,59 +23,71 @@
   <div class="mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 581 171" fill="currentColor"><path d="M196.103 45.6127V81.6938H160.825L120.276 126.333H196.103V170.973H240.743V0.973145H155.194L0.772461 170.973L60.819 170.973L174.692 45.6127H196.103Z"/><path d="M517.517 0.973145V45.6127L303.247 45.6127V63.3572L517.517 63.3572V170.973H258.607V126.333L472.877 126.333V107.997L258.607 107.997V0.973145H517.517Z"/><path d="M535.371 0.973145H580.01V170.973H535.371V0.973145Z"/></svg></div>
   <h1><span class="pfx">&#9656;&#9656;&#9656;</span> Track harness</h1>
   <select id="caseSel" title="switch case"><option>loading…</option></select>
-  <button id="resetView" title="back to the default view of this case: nothing compared, timeline at the start, all toggles as they open">reset view</button>
-  <div class="right"><span id="sub"></span><span class="dim">viewer build 2026-09-23 22:00</span><span class="asimark">[ ASI ]</span></div>
+  <button id="resetView" title="load this case again with every control back at its default">reset view</button>
+  <div class="right"><span id="sub"></span><span class="dim">viewer build 2026-09-24 01:30</span><span class="asimark">[ ASI ]</span></div>
 </header>
 
 <aside id="left">
-  <div id="gripLeft" title="drag to resize"></div>
+  <div class="grip" id="gripLeft" title="drag to resize"></div>
   <div class="scroll">
-  <div class="panel-head"><h2>Case</h2><span class="spacer"></span></div>
-  <section>
-    <div class="kv" id="caseKv"></div>
-  </section>
+  <div class="panel-head"><h2>Case</h2></div>
+  <section><div class="kv" id="caseKv"></div></section>
   <div class="hatch"></div>
-  <section>
-    <h2>Display</h2>
-    <div class="field"><span class="label">raw plot colour</span><select id="rawColour"><option value="source">by source</option><option value="key">by hex, else tail, else source track id</option><option value="lateness">by lateness</option></select></div>
-    <div class="field"><span class="label">strategy colour</span><select id="runColour"><option value="run">by strategy</option><option value="track">by track id (TOID)</option></select></div>
-    <div class="field"><span class="label">fade over</span><select id="fadeWin"><option value="10">10 s</option><option value="30">30 s</option><option value="60">1 min</option><option value="120">2 min</option><option value="300">5 min</option><option value="900" selected>15 min</option><option value="0">never</option><option value="custom">custom…</option></select><input type="text" id="fadeCustom" placeholder="seconds" style="width:5rem; display:none"></div>
-    <div class="field"><span class="label">raw plot size</span><select id="rawSize"><option value="fixed">fixed</option><option value="nacp">NACp accuracy radius</option><option value="nic">NIC containment radius</option></select></div>
-    <div class="field"><span class="label">strategy ring size</span><select id="runSize"><option value="fixed">fixed</option><option value="s95">95% radius, 2.45 sigma</option><option value="s2">2 sigma</option><option value="s1">1 sigma</option></select></div>
-    <div class="row"><label><input type="checkbox" id="greyOthers" checked> grey out tracks not being compared</label></div>
-  </section>
-  <div class="hatch"></div>
-  <section>
-    <h2>Map shows</h2>
-    <div id="filterMode" style="margin-top:0.4rem">
-      <label class="row"><input type="radio" name="filterMode" value="all" checked> everything</label>
-      <label class="row"><input type="radio" name="filterMode" value="only"> only the compared tracks</label>
-      <label class="row"><input type="radio" name="filterMode" value="others"> everything except the compared tracks</label>
+
+  <section id="rawSection">
+    <div class="section-head"><h2>Raw plots</h2><span class="spacer"></span><label class="label"><input type="checkbox" id="rawOn" checked>show</label></div>
+    <h3>colour<span class="rule"></span></h3>
+    <div id="rawColourGroup">
+      <div class="field"><span class="label">colour by</span><select id="rawColour"></select></div>
+      <div class="legend" id="rawColourLegend"></div>
     </div>
+    <div class="override-note">Compared tracks set the colours now. Clear the compare list to use this again.</div>
+    <h3>size<span class="rule"></span></h3>
+    <div class="field"><span class="label">size by</span><select id="rawSize"><option value="fixed">fixed</option><option value="nacp">NACp, 95 % radius in metres</option><option value="nic">NIC, containment radius in metres</option></select></div>
+    <div class="field"><span class="label" id="rawPxLabel">size</span><input type="range" class="slider" id="rawPx" min="1" max="10" step="0.5" value="2.5"><span class="value" id="rawPxValue"></span></div>
+    <div class="legend" id="rawSizeLegend"></div>
+    <h3>filters<span class="rule"></span><span class="dim mono" id="filterCount" style="font-size:0.625rem; letter-spacing:0"></span></h3>
+    <div class="filters-top">
+      <span class="seg" title="what happens to a plot that fails the filters"><label><input type="radio" name="fail" value="grey" checked>grey out</label><label><input type="radio" name="fail" value="hide">hide</label></span>
+      <span class="seg" title="how the switched on filters combine"><label><input type="radio" name="combine" value="and" checked>all must pass</label><label><input type="radio" name="combine" value="or">any passes</label></span>
+    </div>
+    <div id="filters"></div>
   </section>
   <div class="hatch"></div>
+
+  <section id="stratSection">
+    <div class="section-head"><h2>Strategies</h2><span class="spacer"></span><button class="small" id="runsMore" title="every run of this case: versions, notes, numbers; tick a run active to list it here">all runs…</button></div>
+    <div class="runlist" id="runList"></div>
+    <div id="stratColourGroup">
+      <h3><label><input type="checkbox" id="pointsOn" checked>points</label><span class="rule"></span></h3>
+      <div class="field"><span class="label">colour by</span><select id="pointColour"><option value="run">run</option><option value="strategy">strategy</option><option value="track">track id</option></select></div>
+      <div class="legend" id="pointLegend"></div>
+      <h3><label><input type="checkbox" id="linesOn" checked>lines</label><span class="rule"></span></h3>
+      <div class="field"><span class="label">colour by</span><select id="lineColour"><option value="run">run</option><option value="strategy">strategy</option><option value="track">track id</option></select></div>
+      <div class="legend" id="lineLegend"></div>
+    </div>
+    <div class="override-note">Compared tracks set the colours now. Clear the compare list to use this again.</div>
+    <h3>point size and line width<span class="rule"></span></h3>
+    <div class="field"><span class="label">point size</span><select id="pointSize"><option value="fixed">fixed</option><option value="s1">uncertainty, 1 sigma</option><option value="s2">uncertainty, 2 sigma</option><option value="s95">uncertainty, 95 %, 2.45 sigma</option></select></div>
+    <div class="field"><span class="label" id="pointPxLabel">size</span><input type="range" class="slider" id="pointPx" min="1" max="10" step="0.5" value="3.5"><span class="value" id="pointPxValue"></span></div>
+    <div class="note" id="pointSizeNote"></div>
+    <div class="field"><span class="label">line width</span><input type="range" class="slider" id="lineWidth" min="0.5" max="6" step="0.5" value="1.5"><span class="value" id="lineWidthValue"></span></div>
+  </section>
+  <div class="hatch"></div>
+
   <section>
-    <details id="rawFilters">
-      <summary><h2 style="display:inline">Raw plot filters</h2><span class="dim mono" id="rawFilterCount" style="margin-left:0.5rem; font-size:0.625rem"></span></summary>
-      <div class="help" style="margin-top:0.4rem">Narrow the raw plots to the ones a strategy can use, or any other slice. Plots that fail a filter turn dark grey, or disappear.</div>
-      <div class="grp"><span class="label">plots that fail a filter</span><div class="opts"><label><input type="radio" name="filterFail" value="grey" checked> grey out</label><label><input type="radio" name="filterFail" value="hide"> hide</label></div></div>
-      <div class="grp" id="kindGroups"></div>
-      <div class="field"><span class="label">NACp</span><select id="fNacp"><option value="any">any</option><option value="present">present</option><option value="8">at least 8</option><option value="9">at least 9</option><option value="10">at least 10</option></select></div>
-      <div class="field"><span class="label">lateness</span><select id="fLate"><option value="any">any</option><option value="5">under 5 s</option><option value="10">under 10 s</option><option value="60">under 1 min</option></select></div>
-      <div class="grp"><span class="label">must have</span><div class="opts"><label><input type="checkbox" id="fAlt"> an altitude</label><label><input type="checkbox" id="fHex"> a hex</label><label><input type="checkbox" id="fAir"> not on the ground</label><label><input type="checkbox" id="qualityOnly"> NIC or NACp</label></div></div>
-      <div class="grp"><span class="label">outcome in a strategy run</span>
-        <div class="field" style="margin-top:0.2rem"><select id="fOutcomeRun"><option value="">none</option></select></div>
-        <div class="opts" id="fStates" style="margin-top:0.3rem"></div>
-        <div class="opts" id="fReasons" style="margin-top:0.3rem"></div>
-      </div>
-    </details>
+    <h2>Time and comparing</h2>
+    <div class="field"><span class="label">fade over</span><select id="fadeWin"><option value="10">10 s</option><option value="30">30 s</option><option value="60">1 min</option><option value="120">2 min</option><option value="300">5 min</option><option value="900" selected>15 min</option><option value="1800">30 min</option><option value="3600">1 h</option><option value="0">never, whole case</option><option value="custom">custom…</option></select><input type="number" id="fadeCustom" placeholder="seconds" min="1" style="display:none"></div>
+    <div class="field"><span class="label">while comparing</span><select id="mapShows"><option value="all">show everything</option><option value="only">show only the compared tracks</option><option value="others">show everything but the compared tracks</option></select></div>
+    <div class="note">While the compare list has tracks, every compared track has its own colour and the rest turns grey.</div>
   </section>
   <div class="hatch"></div>
+
   <section>
     <details id="refTables">
       <summary><h2 style="display:inline">Reference: NACp and NIC</h2><span class="dim mono" style="margin-left:0.5rem; font-size:0.625rem">DO-260B</span></summary>
       <div class="help" style="margin-top:0.5rem">NACp says how accurate the reported position is: the 95 percent radius of the position error, called EPU. NIC says how far the true position can be from the reported one with high confidence, the containment radius Rc, guaranteed to a probability given by SIL. Both come from the aircraft's own GPS receiver. Raw plot size uses these radii in metres.</div>
-      <table class="nums" style="margin-top:0.5rem"><tr><th class="k">NACp</th><th>EPU 95 %</th><th class="k" style="padding-left:1rem">NIC</th><th>Rc</th></tr>
+      <table class="ref"><tr><th class="k">NACp</th><th>EPU 95 %</th><th class="k" style="padding-left:1rem">NIC</th><th>Rc</th></tr>
         <tr><td class="k">11</td><td>&lt; 3 m</td><td class="k" style="padding-left:1rem">11</td><td>&lt; 7.5 m</td></tr>
         <tr><td class="k">10</td><td>&lt; 10 m</td><td class="k" style="padding-left:1rem">10</td><td>&lt; 25 m</td></tr>
         <tr><td class="k">9</td><td>&lt; 30 m</td><td class="k" style="padding-left:1rem">9</td><td>&lt; 75 m</td></tr>
@@ -318,13 +105,13 @@
     </details>
   </section>
   <div class="hatch"></div>
+
   <section>
     <details id="controlsRef" open>
       <summary><h2 style="display:inline">Controls</h2></summary>
-      <div class="keys" style="margin-top:0.5rem">
+      <div class="keys">
         <div class="g">map</div>
-        <span class="k">click plot</span><span class="v">add or remove its track</span>
-        <span class="k"><kbd>shift</kbd> click</span><span class="v">pin the plot</span>
+        <span class="k">click plot</span><span class="v">add or remove its track in the compare list</span>
         <span class="k"><kbd>shift</kbd> left drag</span><span class="v">add every track in the box</span>
         <span class="k"><kbd>shift</kbd> right drag</span><span class="v">remove every track in the box</span>
         <span class="k">hover</span><span class="v">details, marked in the charts</span>
@@ -333,18 +120,17 @@
         <span class="k"><kbd>←</kbd> <kbd>→</kbd></span><span class="v">step 1 s, with <kbd>shift</kbd> 10 s</span>
         <span class="k">drag bar</span><span class="v">set now</span>
         <div class="g">charts</div>
+        <span class="k">+ chart</span><span class="v">pick the fields for a new chart</span>
         <span class="k">drag</span><span class="v">zoom all charts and the map</span>
         <span class="k">double click</span><span class="v">reset zoom</span>
-        <span class="k">click point</span><span class="v">pin the plot</span>
         <span class="k">click legend</span><span class="v">hide or show a series</span>
         <span class="k"><kbd>shift</kbd> legend</span><span class="v">only that series, again for all</span>
         <span class="k">drag bar below</span><span class="v">chart height</span>
+        <span class="k">×</span><span class="v">remove the chart</span>
         <div class="g">panels</div>
         <span class="k">click chip</span><span class="v">remove the track</span>
-        <span class="k">click pin card</span><span class="v">remove the pin</span>
-        <span class="k"><kbd>esc</kbd></span><span class="v">clear pins</span>
         <span class="k">drag panel edge</span><span class="v">panel width</span>
-        <span class="k">address bar</span><span class="v">holds the whole view, copy to share</span>
+        <span class="k"><kbd>esc</kbd></span><span class="v">close a menu or the field list</span>
       </div>
     </details>
   </section>
@@ -353,26 +139,11 @@
 
 <main id="mapwrap">
   <div id="map"></div>
-  <div id="toolbar">
-    <div class="tbgroup" id="rawGroup">
-      <label class="tb master" title="show raw plots at all"><input type="checkbox" id="rawOn" checked>raw plots</label>
-      <span class="tbinner" id="sources"></span>
-    </div>
-    <div class="tbgroup" id="runGroup">
-      <label class="tb master" title="show strategy output at all"><input type="checkbox" id="runsOn" checked>strategies</label>
-      <span class="tbinner" id="runs"></span>
-      <span class="tbdivider"></span>
-      <label class="tb" title="lines between the plots of a strategy"><input type="checkbox" id="runLines" checked>lines</label>
-      <label class="tb" title="rings on the plots of a strategy"><input type="checkbox" id="runRings">rings</label>
-      <span class="tbdivider"></span>
-      <label class="tb" title="every run of this case: versions, notes, numbers"><input type="checkbox" id="runsMore">more…</label>
-    </div>
-  </div>
   <div id="runsPanel">
-    <div id="gripRuns"></div>
-    <div class="panel-head"><span class="label">strategy runs</span><span class="n" id="runsCount"></span><span class="spacer"></span><button class="small" id="runsClose">close</button></div>
+    <div class="grip" id="gripRuns"></div>
+    <div class="panel-head"><span class="label">strategy runs</span><span class="dim mono" id="runsCount"></span><span class="spacer"></span><button class="small" id="runsClose">close</button></div>
     <div class="body">
-      <div class="help">Every run of a strategy on this case, one row each. Labels count up per strategy and nothing is overwritten. Tick "active" to put a run in the toolbar and the menus, then switch it on there to draw it. Click a row for its parameters, commit and command, tick two rows under "diff" to see what differs. Notes are editable in place and saved to the run's run.json.</div>
+      <div class="help">Every run of a strategy on this case, one row each, and production. Labels count up per strategy and nothing is overwritten. Tick "active" to list a run under Strategies on the left, then tick it there to draw it. Click a row for its parameters, commit and command, tick two rows under "diff" to see what differs. Notes are editable in place and saved to the run's run.json.</div>
       <table id="runsTable"></table>
       <div class="diff" id="runsDiff"></div>
     </div>
@@ -392,884 +163,28 @@
 </main>
 
 <aside id="right">
-  <div id="grip" title="drag to resize"></div>
+  <div class="grip" id="gripRight" title="drag to resize"></div>
   <div class="scroll">
-  <div class="panel-head"><h2>Compare tracks</h2><span class="spacer"></span><button id="clear">clear all</button></div>
+  <div class="panel-head"><h2>Compare tracks</h2><span class="spacer"></span><button class="small" id="clear">clear all</button></div>
   <section>
-    <div class="row" style="padding:0"><input type="text" id="find" placeholder="ADD BY HEX, CALLSIGN OR TAIL" style="flex:1; text-transform:uppercase"></div>
-    <div id="sel"><p class="help" style="margin:0.6rem 0 0">Nothing to compare yet. Click plots on the map, or type a hex, callsign or tail above.</p></div>
-    <div id="pins"></div>
+    <input type="text" id="find" placeholder="ADD BY HEX, CALLSIGN OR TAIL, THEN ENTER" style="width:100%; text-transform:uppercase">
+    <div id="sel"></div>
   </section>
-  <div id="charts"></div>
+  <div class="chart-group" id="rawChartGroup">
+    <div class="section-head"><h2>Raw plot charts</h2><span class="spacer"></span><button class="small" id="addRawChart" title="pick fields of the raw sources for a new chart">+ chart</button></div>
+    <div id="rawCharts"></div>
+  </div>
+  <div class="chart-group" id="strategyChartGroup">
+    <div class="section-head"><h2>Strategy charts</h2><span class="spacer"></span><button class="small" id="addStrategyChart" title="pick fields of the strategies' fused plots or recorded numbers for a new chart">+ chart</button></div>
+    <div id="strategyCharts"></div>
+  </div>
   </div>
 </aside>
-<script>
-const SOURCE_NAME = {1:"TFMS TI",2:"TFMS OR",3:"PlaneFinder",4:"ADS-B Exchange",5:"Alaska ACARS",6:"United",7:"Spire",8:"UDL",9:"MEIS",10:"STDDS",11:"uAvionix",12:"FAA ADS-B EDP",13:"Aireon"};
-const SRC_ID = {adsbx:4, planefinder:3, uavionix:11, stdds:10, tfms_ti:1, tfms_or:2, ual:6, asa:5};
-const SOURCE_COLOR = {adsbx:[79,179,255], planefinder:[123,216,143], uavionix:[53,224,216], stdds:[255,90,90], tfms_ti:[242,178,51], tfms_or:[253,29,136], ual:[170,130,255], asa:[220,180,60]};
-const RUN_COLORS = [[204,255,0],[253,29,136],[235,141,7],[170,130,255],[255,255,255]];
-const SHORT_SOURCE = {adsbx:"ADS-B X", planefinder:"PlaneFinder", uavionix:"uAvionix", stdds:"STDDS", tfms_ti:"TFMS TI", tfms_or:"TFMS OR", ual:"United", asa:"Alaska"};
-// a run id is "strategy/label"; the label is shown unless the strategy has only one run in this case
-const shortStrategy = s => s.replace(/^prod_fusion_/, "prod_").replace(/_/g, " ");
-const shortRun = id => { const [s, l] = id.split("/"); return shortStrategy(s) + (CASE && CASE.runs.filter(r => r.id.split("/")[0] === s).length > 1 ? " " + l : ""); };
-const runById = id => CASE.runs.find(r => r.id === id);
-let runChecked = new Set();                                   // runs shown on the map
-let runActive = new Set();                                    // runs in the toolbar and the menus; the runs panel adds and removes them
-const rgb = c => `rgb(${c})`;
-let CASE, RAW, RUNS = {}, OUTCOMES = {}, runColor = {}, map, overlay, now = 0, playing = false, lastTick = 0;
-const STATE_COLOR = { used:[80,200,120], skipped:[110,116,122], dropped:[235,141,7], rejected:[227,27,35], unknown:[70,74,80] };
-const FILTERED = [58, 62, 68];                                 // a raw plot that fails a filter, when not hidden
-const CASE_NAME = new URLSearchParams(location.search).get("case");
-const api = path => fetch(`/api/${path}`).then(r => r.json());
-let baseLayers = [], hover = null, pins = [], win = null;   // hover/pins: {kind:"raw"|runName, i}; win: zoomed time window [ms, ms] or null
-let compare = [];                                            // tracks to compare: {kind:"raw", src, tid} or {kind:runName, track}, each with a colour
-let charts = [], chartData = null, derived = {};
-let visible = { raw: [], runs: {} };                          // plot indices the map is drawing right now
-let shiftDown = false;                                        // shift held at the last mouse down on the map
-let showLate = false;                                         // show plots that only arrived after the case window, as if they were known at their position time
-const TRACK_COLORS = [[204,255,0],[92,146,255],[253,29,136],[40,210,220],[235,141,7],[170,130,255],[80,200,120],[255,255,255],[255,90,90],[220,180,60]];
-const $ = id => document.getElementById(id);
-const fmt = ms => new Date(CASE.t0_us / 1000 + ms).toISOString().slice(11, 19);
-const fmtMs = ms => fmt(ms) + "." + String(Math.round(ms) % 1000).padStart(3, "0");
-const table = kind => kind === "raw" ? RAW : RUNS[kind];
-const srcName = (kind, i) => kind === "raw" ? SOURCE_NAME[SRC_ID[RAW.src[i]]] : SOURCE_NAME[RUNS[kind].src[i]];
-const displayKey = (d, i) => d.hex[i] || d.tail[i] || (d.tid ? d.src[i] + ":" + d.tid[i] : d.track[i]);
-// which compare entry a plot belongs to, if any
-function trackOf(kind, i) { const d = table(kind); return kind === "raw" ? compare.find(c => c.kind === "raw" && c.src === d.src[i] && c.tid === d.tid[i]) : compare.find(c => c.kind === kind && c.track === d.track[i]); }
-const trackLabel = c => c.kind === "raw" ? `${SOURCE_NAME[SRC_ID[c.src]]} ${c.tid}` : `${c.kind} ${c.track}`;
 
-// the Controls cheat sheet is open for a new visitor; once closed it stays closed
-function rememberControls() {
-  const box = $("controlsRef");
-  try { box.open = localStorage.getItem("controlsOpen") !== "0"; } catch (err) { }
-  box.ontoggle = () => { try { localStorage.setItem("controlsOpen", box.open ? "1" : "0"); } catch (err) { } };
-}
-
-async function init() {
-  const all = (await api("cases")).cases, complete = all.filter(c => c.complete);
-  const name = CASE_NAME && all.some(c => c.name === CASE_NAME) ? CASE_NAME : (complete[0] || {}).name;
-  $("caseSel").innerHTML = all.map(c => `<option value="${c.name}" ${c.name === name ? "selected" : ""} ${c.complete ? "" : "disabled"}>${c.name}${c.complete ? "" : " (no strategy output yet)"}</option>`).join("");
-  $("caseSel").onchange = () => { location.search = "?case=" + encodeURIComponent($("caseSel").value); };
-  asiSelects();
-  $("resetView").onclick = () => { location.search = "?case=" + encodeURIComponent(CASE.name); };   // a clean load: only the case in the address
-  if (!name) { $("splashWhat").textContent = "no complete case in the cases folder"; return; }
-  CASE = await api("case/" + name); CASE.name = name;
-  $("sub").innerHTML = `<b>${CASE.case.t_start.slice(0, 10)}</b> ${CASE.case.t_start.slice(11, 16)} to ${CASE.case.t_end.slice(11, 16)} UTC`;
-  const b0 = CASE.case.box, sus = CASE.case.suspect || {};
-  $("caseKv").innerHTML = [["day", CASE.case.day], ["window", `${CASE.case.t_start.slice(11, 16)} – ${CASE.case.t_end.slice(11, 16)} Z`], ["box lat", `${b0.lat_min} … ${b0.lat_max}`], ["box lon", `${b0.lon_min} … ${b0.lon_max}`], ["suspect", sus.callsign || "–"], ["hex", sus.hex || "–"], ["found by", (CASE.case.found_by || "").split(",")[0].replace("case finder rule ", "") || "–"]].map(([k, v]) => `<span class="k">${k}</span><span class="v">${v}</span>`).join("");
-  $("ctlDay").textContent = new Date(CASE.t0_us / 1000).toUTCString().slice(5, 11).toUpperCase(); $("ctlSpan").textContent = `${CASE.case.t_start.slice(11, 16)} – ${CASE.case.t_end.slice(11, 16)} Z`;
-  map && null;
-  $("time").max = CASE.span_ms;
-  for (const f of [0, 0.25, 0.5, 0.75, 1]) { const t = document.createElement("div"); t.className = "tick" + (f === 0 ? " first" : f === 1 ? " last" : ""); t.style.left = (f * 100) + "%"; t.textContent = fmt(f * CASE.span_ms).slice(0, 5); $("timeline").appendChild(t); }
-  map = new maplibregl.Map({ container:"map", style:"https://tiles.openfreemap.org/styles/dark", center:[(CASE.case.box.lon_min + CASE.case.box.lon_max) / 2, (CASE.case.box.lat_min + CASE.case.box.lat_max) / 2], zoom: 8.3, boxZoom:false, dragRotate:false, pitchWithRotate:false, touchPitch:false });
-  $("mapwrap").addEventListener("contextmenu", e => e.preventDefault());
-  map.addControl(new maplibregl.NavigationControl(), "top-right"); map.addControl(new maplibregl.ScaleControl({ unit:"metric" }));
-  overlay = new deck.MapboxOverlay({ interleaved:false, layers:[], onClick:(info, ev) => mapClickAt(info, ev) }); map.addControl(overlay);
-  const placeDbg = () => { $("dbg").style.bottom = ($("ctl").offsetHeight + 12) + "px"; }; placeDbg(); new ResizeObserver(placeDbg).observe($("ctl"));
-  new ResizeObserver(() => map.resize()).observe($("mapwrap")); requestAnimationFrame(() => map.resize());
-  map.on("load", dimBasemap);
-  document.addEventListener("mousedown", e => { if (!$("pick").contains(e.target)) closePick(); });
-  boxSelect();
-  $("status").textContent = "loading…"; $("splashWhat").textContent = "loading raw plots";
-  RAW = await api("raw/" + CASE.name); RAW.n = RAW.t.length;
-  $("splashWhat").textContent = `${RAW.n.toLocaleString()} raw plots · drawing`;
-  const srcs = [...new Set(RAW.src)];
-  $("sources").innerHTML = srcs.map(s => `<label class="tb" title="${RAW.src.filter(x => x === s).length.toLocaleString()} plots"><input type="checkbox" class="srcOn" value="${s}" checked><span class="sw" style="background:${rgb(SOURCE_COLOR[s])}"></span>${SHORT_SOURCE[s] || s}</label>`).join("");
-  defaultActive();
-  buildRawFilters();
-  renderRunToolbar();
-  $("runsMore").onchange = () => { $("runsPanel").classList.toggle("open", $("runsMore").checked); if ($("runsMore").checked) renderRunsPanel(); };
-  $("runsClose").onclick = () => { $("runsMore").checked = false; $("runsPanel").classList.remove("open"); };
-  map.on("mousemove", e => { $("dbgLat").textContent = e.lngLat.lat.toFixed(4); $("dbgLon").textContent = e.lngLat.lng.toFixed(4); });
-  map.on("move", () => { $("dbgZoom").textContent = map.getZoom().toFixed(2); }); $("dbgZoom").textContent = map.getZoom().toFixed(2);
-  document.querySelectorAll(".srcOn").forEach(cb => cb.onchange = () => { rebuildCharts(); draw(); });
-  ["rawOn", "runsOn", "rawColour", "runColour", "rawSize", "runSize", "qualityOnly", "greyOthers", "runLines", "runRings", "fNacp", "fLate", "fAlt", "fHex", "fAir"].forEach(id => $(id).onchange = draw);
-  document.querySelectorAll('input[name="filterFail"]').forEach(r => r.onchange = draw);
-  $("fOutcomeRun").onchange = async () => { const id = $("fOutcomeRun").value; if (id) await loadOutcomes(id); renderOutcomeFilter(); draw(); };
-  document.querySelectorAll('input[name="filterMode"]').forEach(r => r.onchange = draw);
-  $("fadeWin").onchange = () => { $("fadeCustom").style.display = $("fadeWin").value === "custom" ? "inline-block" : "none"; draw(); };
-  $("fadeCustom").oninput = draw;
-  $("time").oninput = () => { now = clampNow(+$("time").value); draw(); };
-  $("play").onclick = togglePlay; $("resetZoom").onclick = resetZoom; $("clear").onclick = () => { compare = []; pins = []; renderCompare(); rebuildCharts(); draw(); };
-  $("find").onkeydown = e => { if (e.key === "Enter") { findTracks($("find").value.trim().toUpperCase()); } };
-  document.addEventListener("keydown", e => { if (e.target.tagName === "INPUT") return;
-    if (e.key === " ") { e.preventDefault(); togglePlay(); } else if (e.key === "ArrowRight") { now = clampNow(now + (e.shiftKey ? 10000 : 1000)); sync(); } else if (e.key === "ArrowLeft") { now = clampNow(now - (e.shiftKey ? 10000 : 1000)); sync(); } else if (e.key === "Escape") { closePick(); pins = []; renderCompare(); drawHighlight(); redrawCharts(); } });
-  grip();
-  $("status").textContent = RAW.n.toLocaleString();
-  now = Math.min(CASE.span_ms, 12 * 60000);
-  await restoreUrlState();   // after the toolbar exists and the defaults are set, so a shared link wins
-  refreshSelects();
-  renderCompare(); rebuildCharts(); applyWindow(); sync();
-  map.on("moveend", pushUrl);
-  const done = () => { const el = $("splash"); if (!el) return; el.classList.add("gone"); setTimeout(() => el.remove(), 400); };
-  map.loaded() ? done() : map.once("idle", done); setTimeout(done, 4000);
-}
-async function loadRun(name) {
-  $("status").textContent = `loading ${name}…`;
-  const r = await api(`run/${CASE.name}/${name}`); r.n = r.t.length; RUNS[name] = r;
-  const lab = $(`runlabel-${name}`); if (lab) lab.title = `${r.n.toLocaleString()} plots, ${new Set(r.track).size} tracks emitted by this strategy`;
-  $("status").textContent = RAW.n.toLocaleString();
-}
-// ---------- raw plot filters ----------
-async function loadOutcomes(id) { if (OUTCOMES[id]) return OUTCOMES[id]; OUTCOMES[id] = await api(`outcomes/${CASE.name}/${id}`); return OUTCOMES[id]; }
-function buildRawFilters() {
-  // one group of checkboxes per source that has more than one kind of plot, every kind ticked
-  const counts = {};
-  for (let i = 0; i < RAW.n; i++) if (RAW.kind[i]) { const k = RAW.src[i] + "|" + RAW.kind[i]; counts[k] = (counts[k] || 0) + 1; }
-  const bySrc = {}; for (const k of Object.keys(counts)) { const [src, kind] = k.split("|"); (bySrc[src] ||= []).push(kind); }
-  $("kindGroups").innerHTML = Object.entries(bySrc).map(([src, kinds]) => `<div class="grp"><span class="label">${SHORT_SOURCE[src] || src} plot kind</span><div class="opts">` +
-    kinds.sort().map(k => `<label><input type="checkbox" class="fKind" data-src="${src}" value="${k}" checked> ${k} <span class="n">${counts[src + "|" + k].toLocaleString()}</span></label>`).join("") + `</div></div>`).join("");
-  document.querySelectorAll(".fKind").forEach(cb => cb.onchange = draw);
-  syncRunMenus();
-}
-function renderOutcomeFilter() {
-  const id = $("fOutcomeRun").value, o = id && OUTCOMES[id];
-  if (!o || !o.state) { $("fStates").innerHTML = id ? `<span class="off">this run has no outcomes recorded</span>` : ""; $("fReasons").innerHTML = ""; return; }
-  const states = {}, reasons = {};
-  for (let i = 0; i < RAW.n; i++) { const st = o.state[i] || "not seen"; states[st] = (states[st] || 0) + 1; if (o.reason[i]) { const k = st + ": " + o.reason[i]; reasons[k] = (reasons[k] || 0) + 1; } }
-  const keepS = new Set([...document.querySelectorAll(".fState:checked")].map(c => c.value)), keepR = new Set([...document.querySelectorAll(".fReason:checked")].map(c => c.value));
-  const fresh = !document.querySelector(".fState");
-  $("fStates").innerHTML = Object.entries(states).map(([st, n]) => `<label><input type="checkbox" class="fState" value="${st}" ${fresh || keepS.has(st) ? "checked" : ""}><span class="sw" style="background:${rgb(STATE_COLOR[st] || FILTERED)}"></span> ${st} <span class="n">${n.toLocaleString()}</span></label>`).join("");
-  $("fReasons").innerHTML = Object.entries(reasons).sort((a, b) => b[1] - a[1]).map(([k, n]) => `<label><input type="checkbox" class="fReason" value="${k}" ${fresh || keepR.has(k) ? "checked" : ""}> ${k.split(": ")[1]} <span class="n">${n.toLocaleString()}</span></label>`).join("");
-  document.querySelectorAll(".fState, .fReason").forEach(cb => cb.onchange = draw);
-}
-function filterSignature() { return [...document.querySelectorAll("#rawFilters input, #rawFilters select")].map(e => e.type === "checkbox" || e.type === "radio" ? (e.checked ? "1" : "0") : e.value).join(""); }
-// one function that says whether a raw plot passes every filter; built once per draw so the loops stay cheap
-function rawFilter() {
-  const kinds = new Set([...document.querySelectorAll(".fKind:checked")].map(c => c.dataset.src + "|" + c.value));
-  const kindSources = new Set([...document.querySelectorAll(".fKind")].map(c => c.dataset.src));
-  const nacp = $("fNacp").value, late = $("fLate").value, needAlt = $("fAlt").checked, needHex = $("fHex").checked, needAir = $("fAir").checked, needQuality = $("qualityOnly").checked;
-  const id = $("fOutcomeRun").value, o = id && OUTCOMES[id] && OUTCOMES[id].state ? OUTCOMES[id] : null;
-  const states = o ? new Set([...document.querySelectorAll(".fState:checked")].map(c => c.value)) : null;
-  const reasons = o ? new Set([...document.querySelectorAll(".fReason:checked")].map(c => c.value)) : null;
-  return i => {
-    if (kindSources.has(RAW.src[i]) && !kinds.has(RAW.src[i] + "|" + RAW.kind[i])) return false;
-    if (nacp !== "any" && (RAW.nacp[i] == null || (nacp !== "present" && RAW.nacp[i] < +nacp))) return false;
-    if (late !== "any" && (RAW.r[i] - RAW.t[i]) / 1000 >= +late) return false;
-    if (needAlt && RAW.alt[i] == null) return false;
-    if (needHex && !RAW.hex[i]) return false;
-    if (needAir && RAW.ground[i]) return false;
-    if (needQuality && !hasQuality(i)) return false;
-    if (o) { const st = o.state[i] || "not seen"; if (!states.has(st)) return false; if (o.reason[i] && !reasons.has(st + ": " + o.reason[i])) return false; }
-    return true;
-  };
-}
-
-// the toolbar lists the newest run of every strategy plus any older run that is switched on
-function toolbarRuns() { return CASE.runs.map(r => r.id).filter(id => runActive.has(id)); }
-function defaultActive() { for (const r of CASE.runs) if (r.id.startsWith("prod_fusion")) runActive.add(r.id); }
-// an active run appears in the toolbar, in the outcome filter and in the raw colour menu; an inactive one nowhere
-function setRunActive(id, on) {
-  if (on) runActive.add(id); else { runActive.delete(id); runChecked.delete(id); if ($("rawColour").value === "outcome:" + id) $("rawColour").value = "source"; if ($("fOutcomeRun").value === id) { $("fOutcomeRun").value = ""; renderOutcomeFilter(); } }
-  syncRunMenus(); renderRunToolbar(); if ($("runsPanel").classList.contains("open")) renderRunsPanel(); rebuildCharts(); draw();
-}
-function syncRunMenus() {
-  const rc = $("rawColour"); [...rc.options].filter(o => o.value.startsWith("outcome:") && !runActive.has(o.value.slice(8))).forEach(o => o.remove());
-  for (const id of toolbarRuns()) if (![...rc.options].some(o => o.value === "outcome:" + id)) { const o = document.createElement("option"); o.value = "outcome:" + id; o.textContent = `outcome for ${shortRun(id)}`; rc.appendChild(o); }
-  const keep = $("fOutcomeRun").value; $("fOutcomeRun").innerHTML = `<option value="">none</option>` + toolbarRuns().map(id => `<option value="${id}">${shortRun(id)}</option>`).join(""); if (runActive.has(keep)) $("fOutcomeRun").value = keep;
-  refreshSelects();
-}
-function colorFor(id) { if (runColor[id]) return runColor[id]; const used = Object.values(runColor).map(String); runColor[id] = RUN_COLORS.find(c => !used.includes(String(c))) || RUN_COLORS[Object.keys(runColor).length % RUN_COLORS.length]; return runColor[id]; }
-function renderRunToolbar() {
-  $("runs").innerHTML = toolbarRuns().map(id => `<label class="tb" id="runlabel-${id}"><input type="checkbox" class="runOn" value="${id}" ${runChecked.has(id) ? "checked" : ""}><span class="sw line" style="background:${rgb(colorFor(id))}"></span>${shortRun(id)}</label>`).join("");
-  document.querySelectorAll(".runOn").forEach(cb => cb.onchange = () => setRunShown(cb.value, cb.checked));
-}
-async function setRunShown(id, on) {
-  if (on) { runActive.add(id); runChecked.add(id); if (!RUNS[id]) await loadRun(id); } else runChecked.delete(id);
-  renderRunToolbar(); if ($("runsPanel").classList.contains("open")) renderRunsPanel(); rebuildCharts(); draw();
-}
-// ---------- the runs panel ----------
-let runsSort = { key:"created", asc:true }, runsOpen = null, runsDiff = [];
-const RUN_COLS = [
-  { key:"on", title:"active", val:r => runActive.has(r.id) ? 1 : 0, cell:r => `<input type="checkbox" class="rp-on" data-id="${r.id}" ${runActive.has(r.id) ? "checked" : ""}> <span class="sw" style="background:${runChecked.has(r.id) ? rgb(colorFor(r.id)) : "transparent"}"></span>` },
-  { key:"diff", title:"diff", cell:r => `<input type="checkbox" class="rp-diff" data-id="${r.id}" ${runsDiff.includes(r.id) ? "checked" : ""}>` },
-  { key:"strategy", title:"strategy", val:r => r.id.split("/")[0], cell:r => shortStrategy(r.id.split("/")[0]) },
-  { key:"label", title:"label", cls:"lab", cell:r => r.label },
-  { key:"created", title:"when", cls:"dim", cell:r => r.created ? r.created.slice(5, 16).replace("T", " ") : "" },
-  { key:"batch", title:"batch", cls:"dim", cell:r => r.batch ? r.batch.slice(4, 8) + " " + r.batch.slice(9, 13) : "" },
-  { key:"commit", title:"commit", cls:"dim", val:r => (r.git || {}).commit || "", cell:r => r.git && r.git.commit ? r.git.commit.slice(0, 7) + (r.git.dirty ? `<span class="dirty" title="the working tree had uncommitted changes">*</span>` : "") : "" },
-  { key:"fused", title:"plots", cls:"num", val:r => (r.counts || {}).fused_plots, cell:r => fmtN((r.counts || {}).fused_plots) },
-  { key:"tracks", title:"tracks", cls:"num", val:r => (r.counts || {}).tracks, cell:r => fmtN((r.counts || {}).tracks) },
-  { key:"rewritten", title:"rewritten", cls:"num", val:r => (r.counts || {}).rewritten, cell:r => fmtN((r.counts || {}).rewritten) },
-  { key:"duration", title:"took", cls:"num dim", val:r => r.duration_s, cell:r => r.duration_s == null ? "" : r.duration_s + " s" },
-  { key:"note", title:"note", cls:"note", cell:r => escapeHtml(r.note || "") },
-];
-const fmtN = v => v == null ? "" : Number(v).toLocaleString();
-const escapeHtml = t => t.replace(/[&<>"]/g, ch => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[ch]));
-function renderRunsPanel() {
-  const rows = [...CASE.runs], col = RUN_COLS.find(c => c.key === runsSort.key), val = r => col.val ? col.val(r) : r[col.key];
-  rows.sort((a, b) => { const x = val(a), y = val(b); const c = x == null ? 1 : y == null ? -1 : (typeof x === "number" ? x - y : String(x).localeCompare(String(y))); return runsSort.asc ? c : -c; });
-  const latest = new Set(toolbarRuns());
-  $("runsCount").textContent = `${CASE.runs.length} run${CASE.runs.length === 1 ? "" : "s"}`;
-  let html = "<thead><tr>" + RUN_COLS.map(c => `<th data-key="${c.key}" class="${c.key === runsSort.key ? "sorted" + (runsSort.asc ? " asc" : "") : ""}">${c.title}</th>`).join("") + "</tr></thead><tbody>";
-  for (const r of rows) {
-    html += `<tr class="run ${latest.has(r.id) ? "latest" : ""}" data-id="${r.id}">` + RUN_COLS.map(c => `<td class="${c.cls || ""} ${c.key === "note" && !r.note ? "empty" : ""}" ${c.key === "note" ? `contenteditable="plaintext-only" data-id="${r.id}"` : ""}>${c.cell(r)}</td>`).join("") + "</tr>";
-    if (runsOpen === r.id) html += `<tr class="detail"><td colspan="${RUN_COLS.length}">${runDetail(r)}</td></tr>`;
-  }
-  $("runsTable").innerHTML = html + "</tbody>";
-  $("runsTable").querySelectorAll("th").forEach(th => th.onclick = () => { const k = th.dataset.key; if (runsSort.key === k) runsSort.asc = !runsSort.asc; else runsSort = { key:k, asc:true }; renderRunsPanel(); });
-  $("runsTable").querySelectorAll("tr.run").forEach(tr => tr.onclick = e => { if (e.target.closest("input, td.note")) return; runsOpen = runsOpen === tr.dataset.id ? null : tr.dataset.id; renderRunsPanel(); });
-  $("runsTable").querySelectorAll(".rp-on").forEach(cb => cb.onchange = () => setRunActive(cb.dataset.id, cb.checked));
-  $("runsTable").querySelectorAll(".rp-diff").forEach(cb => cb.onchange = () => { runsDiff = cb.checked ? [...runsDiff.filter(x => x !== cb.dataset.id), cb.dataset.id].slice(-2) : runsDiff.filter(x => x !== cb.dataset.id); renderRunsPanel(); });
-  $("runsTable").querySelectorAll("td.note").forEach(td => { td.onkeydown = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); td.blur(); } if (e.key === "Escape") { td.textContent = (runById(td.dataset.id).note || ""); td.blur(); } }; td.onblur = () => saveNote(td.dataset.id, td.textContent.trim()); td.onfocus = () => td.classList.remove("empty"); });
-  renderRunsDiff();
-}
-async function saveNote(id, note) {
-  const r = runById(id); if ((r.note || "") === note) { renderRunsPanel(); return; }
-  const [strategy, label] = id.split("/");
-  const res = await fetch(`/api/note/${CASE.name}/${strategy}/${label}`, { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ note }) });
-  if (res.ok) r.note = note; renderRunsPanel();
-}
-// every manifest field as key -> value, nested ones flattened with a dot, for the detail view and the diff
-function flatManifest(r) { const out = {}; const walk = (o, pre) => { for (const [k, v] of Object.entries(o)) { if (k === "id") continue; if (v && typeof v === "object" && !Array.isArray(v)) walk(v, pre + k + "."); else out[pre + k] = v; } }; walk(r, ""); return out; }
-// the manifest laid out for reading: run, code, what came out, then the strategy's parameters
-function runDetail(r) {
-  const g = r.git || {}, c = r.counts || {}, params = Object.entries(r.params || {});
-  const row = (k, v) => v == null || v === "" ? "" : `<span class="k">${k}</span><span class="v">${escapeHtml(String(v))}</span>`;
-  const head = t => `<span class="h">${t}</span>`;
-  return `<div class="det">` +
-    head("run") + row("run", `${r.strategy} ${r.label}`) + row("when", (r.created || "").replace("T", " ").replace("+00:00", " UTC")) + row("took", r.duration_s == null ? "" : r.duration_s + " s") + row("batch", r.batch) + row("command", r.command) + row("note", r.note) +
-    head("code") + row("commit", g.commit) + row("branch", g.branch) + row("uncommitted changes", g.dirty == null ? "" : g.dirty ? "yes, the working tree was dirty" : "no") +
-    head("what came out") + row("raw plots fed in", fmtN(c.raw_plots)) + row("events emitted", fmtN(c.events)) + row("fused plots", fmtN(c.fused_plots)) + row("tracks", fmtN(c.tracks)) + row("plots later rewritten", fmtN(c.rewritten)) +
-    (params.length ? head("parameters") + params.map(([k, v]) => row(k, typeof v === "object" ? JSON.stringify(v) : v)).join("") : head("parameters") + row("none", "this strategy declares no parameters")) +
-    `</div>`;
-}
-function renderRunsDiff() {
-  const el = $("runsDiff");
-  if (runsDiff.length < 2) { el.innerHTML = runsDiff.length === 1 ? `<div class="help">tick one more run to compare</div>` : ""; return; }
-  const [a, b] = runsDiff.map(runById), fa = flatManifest(a), fb = flatManifest(b), keys = [...new Set([...Object.keys(fa), ...Object.keys(fb)])];
-  el.innerHTML = `<table><thead><tr><th>field</th><th>${shortRun(a.id)}</th><th>${shortRun(b.id)}</th></tr></thead><tbody>` + keys.map(k => { const same = String(fa[k] ?? "") === String(fb[k] ?? ""); return `<tr class="${same ? "same" : ""}"><td class="dim">${k}</td><td class="${same ? "" : "changed"}">${escapeHtml(String(fa[k] ?? ""))}</td><td class="${same ? "" : "changed"}">${escapeHtml(String(fb[k] ?? ""))}</td></tr>`; }).join("") + "</tbody></table>";
-}
-const clampNow = v => win ? Math.max(win[0], Math.min(win[1], v)) : Math.max(0, Math.min(CASE.span_ms, v));
-function sync() { $("time").value = now; draw(); }
-function togglePlay() { playing = !playing; $("play").textContent = playing ? "❚❚" : "▶"; if (playing) { lastTick = performance.now(); requestAnimationFrame(tick); } }
-function tick(ts) { if (!playing) return; const end = win ? win[1] : CASE.span_ms; now = Math.min(end, now + (ts - lastTick) * +$("speed").value); lastTick = ts; if (now >= end) playing = false, $("play").textContent = "▶"; sync(); requestAnimationFrame(tick); }
-function activeRuns() { return $("runsOn").checked ? [...runChecked].filter(n => RUNS[n]) : []; }
-function activeSources() { return new Set([...document.querySelectorAll(".srcOn:checked")].map(c => c.value)); }
-function fadeWindowMs() { const v = $("fadeWin").value; if (v === "custom") return Math.max(1, +$("fadeCustom").value || 120) * 1000; return +v * 1000; }
-
-// add or remove a track from the compare list
-function toggleTrack(kind, i, silent) {
-  const d = table(kind), existing = trackOf(kind, i);
-  if (existing) compare = compare.filter(c => c !== existing);
-  else {
-    const used = new Set(compare.map(c => c.color)), color = TRACK_COLORS.find(c => !used.has(c)) || TRACK_COLORS[compare.length % TRACK_COLORS.length];
-    compare.push(kind === "raw" ? { kind, src:d.src[i], tid:d.tid[i], color } : { kind, track:d.track[i], color });
-  }
-  if (!silent) { renderCompare(); rebuildCharts(); draw(); }
-}
-// every source track and loaded strategy track whose plots carry this hex, callsign or tail
-function findTracks(q, silent) {
-  if (!q) return;
-  const seen = new Set();
-  for (let i = 0; i < RAW.n; i++) if ((RAW.hex[i] || "").toUpperCase() === q || (RAW.cs[i] || "").toUpperCase() === q || (RAW.tail[i] || "").toUpperCase() === q) { const k = RAW.src[i] + "|" + RAW.tid[i]; if (!seen.has(k)) { seen.add(k); if (!trackOf("raw", i)) toggleTrack("raw", i, true); } }
-  for (const name of activeRuns()) { const r = RUNS[name]; for (let i = 0; i < r.n; i++) if ((r.hex[i] || "").toUpperCase() === q || (r.cs[i] || "").toUpperCase() === q || (r.tail[i] || "").toUpperCase() === q) { const k = name + "|" + r.track[i]; if (!seen.has(k)) { seen.add(k); if (!trackOf(name, i)) toggleTrack(name, i, true); } } }
-  if (!silent) { renderCompare(); rebuildCharts(); draw(); }
-}
-
-// the panel can be dragged wider or narrower
-function grip() {
-  let drag = null;   // "left" or "right" while a handle is held
-  $("grip").onmousedown = e => { drag = "right"; e.preventDefault(); document.body.classList.add("dragging"); $("grip").classList.add("on"); };
-  $("gripLeft").onmousedown = e => { drag = "left"; e.preventDefault(); document.body.classList.add("dragging"); $("gripLeft").classList.add("on"); };
-  $("gripRuns").onmousedown = e => { drag = "runs"; e.preventDefault(); document.body.classList.add("dragging"); $("gripRuns").classList.add("on"); };
-  document.addEventListener("mousemove", e => {
-    if (!drag) return;
-    if (drag === "right") document.documentElement.style.setProperty("--right", Math.max(320, Math.min(window.innerWidth * 0.6, window.innerWidth - e.clientX)) + "px");
-    else if (drag === "left") document.documentElement.style.setProperty("--left", Math.max(240, Math.min(window.innerWidth * 0.4, e.clientX)) + "px");
-    else { const left = $("mapwrap").getBoundingClientRect().left; document.documentElement.style.setProperty("--runs", Math.max(360, e.clientX - left) + "px"); }
-  });
-  document.addEventListener("mouseup", () => { if (drag) { drag = null; document.body.classList.remove("dragging"); $("grip").classList.remove("on"); $("gripLeft").classList.remove("on"); $("gripRuns").classList.remove("on"); for (const c of charts) c.u.setSize({ width: chartWidth(), height: c.u.height }); } });
-}
-const chartWidth = () => $("charts").clientWidth - 30;
-
-// ---------- colours ----------
-const DROPPED = [62, 68, 76];
-const PLAIN = [205, 212, 220];   // plots that do not carry the number a size mode asks for: light grey, so they stand out from the dark map and the muted tracks
-const UNKNOWN = [255, 255, 255];  // plots that carry it with value 0, the aircraft saying "accuracy unknown": bright white
-const plainValue = (i, mode) => mode === "nacp" ? RAW.nacp[i] : mode === "nic" ? RAW.nic[i] : null;
-// DO-260B: NACp -> 95 % position error radius, NIC -> containment radius, metres
-const NACP_M = {11:3, 10:10, 9:30, 8:92.6, 7:185.2, 6:555.6, 5:926, 4:1852, 3:3704, 2:7408, 1:18520};
-const NIC_M = {11:7.5, 10:25, 9:75, 8:185.2, 7:370.4, 6:1111.2, 5:1852, 4:3704, 3:7408, 2:14816, 1:37040};
-const hasQuality = i => RAW.nacp[i] != null || RAW.nic[i] != null;
-function plotRadiusM(i, mode) { return mode === "nacp" ? NACP_M[RAW.nacp[i]] : mode === "nic" ? (NIC_M[RAW.nic[i]] ?? (RAW.rc[i] || null)) : null; }
-function rawColor(i, mode) {
-  if (mode.startsWith("outcome:")) { const o = OUTCOMES[mode.slice(8)]; if (!o || !o.state) return SOURCE_COLOR[RAW.src[i]]; return STATE_COLOR[o.state[i]] || FILTERED; }
-  if (mode === "key") return hashColor(displayKey(RAW, i));
-  if (mode === "lateness") { const late = (RAW.r[i] - RAW.t[i]) / 1000; return late < 2 ? [204,255,0] : late < 5 ? [235,141,7] : late < 15 ? [255,26,94] : [170,130,255]; }
-  return SOURCE_COLOR[RAW.src[i]];
-}
-function hashColor(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return hsl((h >>> 0) % 360, 55 + ((h >>> 9) % 35), 45 + ((h >>> 17) % 25)); }
-function hsl(h, s, l) { s /= 100; l /= 100; const k = n => (n + h / 30) % 12, a = s * Math.min(l, 1 - l), f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1))); return [255 * f(0), 255 * f(8), 255 * f(4)].map(Math.round); }
-
-// ---------- map ----------
-// the OpenFreeMap dark style is too bright for plots on top; pull roads, fills and labels back
-function dimBasemap() {
-  for (const layer of map.getStyle().layers) {
-    try {
-      if (layer.type === "line") map.setPaintProperty(layer.id, "line-opacity", 0.28);
-      else if (layer.type === "fill") map.setPaintProperty(layer.id, "fill-opacity", 0.55);
-      else if (layer.type === "symbol") { map.setPaintProperty(layer.id, "text-opacity", 0.55); map.setPaintProperty(layer.id, "icon-opacity", 0.4); }
-      else if (layer.type === "background") map.setPaintProperty(layer.id, "background-color", "#0a0a0a");
-    } catch (e) {}
-  }
-}
-let filterStamp = 0;
-function draw() {
-  if (!RAW) return;
-  filterStamp = filterSignature() + "|" + Object.keys(OUTCOMES).filter(k => OUTCOMES[k] && OUTCOMES[k].state).join(",");
-  $("now").textContent = fmt(now); $("dbgNow").textContent = fmt(now);
-  const pct = (now / CASE.span_ms * 100) + "%"; $("nowMark").style.left = pct; $("played").style.width = pct; $("nowChip").style.left = `clamp(1.2rem, ${pct}, calc(100% - 1.2rem))`; $("nowChip").textContent = fmt(now).slice(0, 5);
-  const layers = [], b = CASE.case.box;
-  layers.push(new deck.PathLayer({ id:"box", data:[{ path:[[b.lon_min,b.lat_min],[b.lon_max,b.lat_min],[b.lon_max,b.lat_max],[b.lon_min,b.lat_max],[b.lon_min,b.lat_min]] }], getPath:d => d.path, getColor:[183,192,202,90], getWidth:1, widthUnits:"pixels" }));
-  const mode = $("rawColour").value, fadeMs = fadeWindowMs(), sizeMode = $("rawSize").value;
-  const filterPass = rawFilter(), hideFailed = document.querySelector('input[name="filterFail"]:checked').value === "hide";
-  let failed = 0;
-  const passes = i => { const ok = filterPass(i); if (!ok) failed++; return ok || !hideFailed; };
-  const isFiltered = i => !filterPass(i);
-  if (mode.startsWith("outcome:") && !OUTCOMES[mode.slice(8)]) { loadOutcomes(mode.slice(8)).then(draw); }
-  const inWin = t => !win || (t >= win[0] && t <= win[1]);
-  // opacity falls in a straight line from full at the plot's position time to zero at the end of the fade window
-  const alpha = t => { if (!fadeMs) return 210; const age = now - t; return age >= fadeMs ? 0 : Math.round(210 * (1 - age / fadeMs)); };
-  const emph = (kind, i) => trackOf(kind, i);
-  // which plots the map shows: all, only those on a compared track, or only those that are not
-  const mode2 = compare.length ? document.querySelector('input[name="filterMode"]:checked').value : "all";
-  const shown = (kind, i) => mode2 === "all" ? true : mode2 === "only" ? !!emph(kind, i) : !emph(kind, i);
-  const grey = $("greyOthers").checked && compare.length > 0, GREY = [110, 116, 122];
-
-  const rawLayers = [], ringLayers = [];
-  visible = { raw: [], runs: {} };
-  if ($("rawOn").checked) {
-    const on = activeSources(), idx = [];
-    for (let i = 0; i < RAW.n && RAW.r[i] <= now; i++) if (on.has(RAW.src[i]) && inWin(RAW.t[i]) && alpha(RAW.t[i]) > 0 && shown("raw", i) && passes(i)) idx.push(i);   // RAW is sorted by receipt time
-    if (showLate) for (let i = RAW.n - 1; i >= 0 && RAW.r[i] > CASE.span_ms; i--) if (RAW.t[i] <= now && on.has(RAW.src[i]) && inWin(RAW.t[i]) && alpha(RAW.t[i]) > 0 && shown("raw", i) && passes(i)) idx.push(i);
-    visible.raw = idx;
-    const sized = sizeMode !== "fixed";   // circles in metres, filled faintly with a firm edge, so the accuracy radius reads as an area
-    // in a sized mode, plots that do not carry the chosen number are drawn as plain grey dots of the default size
-    const plain = sized ? idx.filter(i => plotRadiusM(i, sizeMode) == null) : [];
-    const sizedIdx = sized ? idx.filter(i => plotRadiusM(i, sizeMode) != null) : idx;
-    if (plain.length) rawLayers.push(new deck.ScatterplotLayer({ id:"raw-plain", data:plain, getPosition:i => [RAW.lon[i], RAW.lat[i]], radiusUnits:"pixels",
-      getRadius:i => emph("raw", i) ? 3.5 : 2.4, getFillColor:i => [...(plainValue(i, sizeMode) === 0 ? UNKNOWN : PLAIN), alpha(RAW.t[i])],
-      getLineColor:i => { const c = emph("raw", i); return c ? [...c.color, alpha(RAW.t[i])] : [0, 0, 0, 0]; }, stroked:true, lineWidthUnits:"pixels", getLineWidth:i => emph("raw", i) ? 1.5 : 0,
-      pickable:true, onHover:info => mapHover(info, "raw"),
-      updateTriggers:{ getFillColor:[now, fadeMs, showLate, sizeMode], getLineColor:[now, fadeMs, compare, showLate], getRadius:[compare], getLineWidth:[compare] } }));
-    rawLayers.push(new deck.ScatterplotLayer({ id:"raw", data:sizedIdx, getPosition:i => [RAW.lon[i], RAW.lat[i]], radiusUnits:sized ? "meters" : "pixels", radiusMinPixels:sized ? 1.5 : 0,
-      getRadius:i => sized ? plotRadiusM(i, sizeMode) : (emph("raw", i) ? 3.5 : 2.2),
-      getFillColor:i => [...(isFiltered(i) ? FILTERED : grey && !emph("raw", i) ? GREY : rawColor(i, mode)), sized ? Math.round(alpha(RAW.t[i]) * 0.18) : alpha(RAW.t[i])],
-      getLineColor:i => { const c = emph("raw", i); return sized ? [...(c ? c.color : isFiltered(i) ? FILTERED : grey && !c ? GREY : rawColor(i, mode)), alpha(RAW.t[i])] : c ? [...c.color, alpha(RAW.t[i])] : [0, 0, 0, 0]; }, stroked:true, lineWidthUnits:"pixels", getLineWidth:i => sized ? 1 : (emph("raw", i) ? 1.5 : 0),
-      pickable:true, onHover:info => mapHover(info, "raw"),
-      updateTriggers:{ getFillColor:[now, fadeMs, mode, grey, compare, showLate, sizeMode, filterStamp], getLineColor:[now, fadeMs, compare, mode2, showLate, sizeMode, mode, grey, filterStamp], getRadius:[compare, sizeMode], getLineWidth:[compare, sizeMode] } }));
-    $("rawFilterCount").textContent = failed ? `${failed.toLocaleString()} ${hideFailed ? "hidden" : "greyed"}` : "";
-    $("dbgFiltered").textContent = failed ? failed.toLocaleString() : "0";
-  }
-  const runMode = $("runColour").value, runSize = $("runSize").value, sigmaFactor = { s95: 2.45, s2: 2, s1: 1 }[runSize];
-  for (const name of activeRuns()) {
-    const run = RUNS[name], color = colorFor(name), idx = [], paths = {};
-    // the filter's own uncertainty as a ring in metres; a run without sigmas, or the fixed mode, keeps the pixel rings
-    const sizedRun = sigmaFactor && run.sigma_horizontal_m, ringM = i => { const v = run.sigma_horizontal_m[i]; return v == null ? null : v * sigmaFactor; };
-    const runBase = i => runMode === "track" ? hashColor(run.track[i]) : color;   // a compared track keeps its own colour either way
-    const take = i => {
-      const vt = run.valid_to[i]; if (vt != null && vt <= now) return;         // already replaced by a later event
-      if (!inWin(run.t[i]) || alpha(run.t[i]) <= 0 || !shown(name, i)) return;
-      idx.push(i); (paths[run.track[i]] ||= []).push(i);
-    };
-    for (let i = 0; i < run.n && run.created[i] <= now; i++) take(i);           // sorted by created
-    if (showLate) for (let i = run.n - 1; i >= 0 && run.created[i] > CASE.span_ms; i--) if (run.t[i] <= now) take(i);
-    visible.runs[name] = idx;
-    const lines = Object.entries(paths).map(([track, ids]) => { ids.sort((a, b) => run.t[a] - run.t[b]); const c = compare.find(x => x.kind === name && x.track === track); return { track, cmp:c, first:ids[0], newest:run.t[ids[ids.length - 1]], path: ids.map(i => [run.lon[i], run.lat[i]]) }; });
-    if ($("runLines").checked) layers.push(new deck.PathLayer({ id:"run-lines-" + name, data:lines, getPath:d => d.path, getColor:d => [...(d.cmp ? d.cmp.color : grey ? GREY : runBase(d.first)), Math.max(40, alpha(d.newest))], getWidth:d => d.cmp ? 3 : 1.2, widthUnits:"pixels", updateTriggers:{ getColor:[now, fadeMs, compare, grey, runMode], getWidth:[compare] } }));
-    if ($("runRings").checked || sizedRun) ringLayers.push(new deck.ScatterplotLayer({ id:"run-dots-" + name, data:sizedRun ? idx.filter(i => ringM(i) != null) : idx, getPosition:i => [run.lon[i], run.lat[i]],
-      radiusUnits:sizedRun ? "meters" : "pixels", radiusMinPixels:sizedRun ? 1.5 : 0, getRadius:i => sizedRun ? ringM(i) : (emph(name, i) ? 6 : 4.5),
-      filled:!!sizedRun, getFillColor:i => [...(emph(name, i) ? emph(name, i).color : grey && !emph(name, i) ? GREY : runBase(i)), Math.round(alpha(run.t[i]) * 0.12)],
-      stroked:true, lineWidthUnits:"pixels", getLineWidth:i => emph(name, i) ? 2 : 1.2, getLineColor:i => { const c = emph(name, i); return [...(c ? c.color : grey ? GREY : runBase(i)), alpha(run.t[i])]; },
-      pickable:true, onHover:info => mapHover(info, name),
-      updateTriggers:{ getLineColor:[now, fadeMs, compare, grey, runMode], getFillColor:[now, fadeMs, compare, grey, runMode], getRadius:[compare, runSize], getLineWidth:[compare] } }));
-  }
-  baseLayers = [...layers, ...rawLayers, ...ringLayers];
-  drawHighlight();
-  redrawCharts();
-  pushUrl();
-}
-// the hover point and the pins, drawn on top without rebuilding everything else
-function drawHighlight() {
-  const marks = [];
-  if (hover) marks.push({ ...hover, color:[204,255,0], r:9, label:"" });
-  pins.forEach((p, k) => marks.push({ ...p, color:k === 0 ? [255,26,94] : [255,255,255], r:8, label:String(k + 1) }));
-  const layers = [...baseLayers];
-  if (marks.length) {
-    const pos = m => { const d = table(m.kind); return [d.lon[m.i], d.lat[m.i]]; };
-    layers.push(new deck.ScatterplotLayer({ id:"marks", data:marks, getPosition:pos, radiusUnits:"pixels", getRadius:m => m.r, filled:false, stroked:true, lineWidthUnits:"pixels", getLineWidth:2.5, getLineColor:m => m.color }));
-    layers.push(new deck.TextLayer({ id:"mark-labels", data:marks.filter(m => m.label), getPosition:pos, getText:m => m.label, getColor:m => m.color, getSize:13, getPixelOffset:[0, -16], fontFamily:"Inter, sans-serif", fontWeight:600 }));
-    if (pins.length === 2) layers.push(new deck.PathLayer({ id:"pin-line", data:[{ path:[pos(pins[0]), pos(pins[1])] }], getPath:d => d.path, getColor:[255,255,255,140], getWidth:1.5, widthUnits:"pixels", getDashArray:[6,4], dashJustified:true, extensions:[new deck.PathStyleExtension({ dash:true })] }));
-  }
-  overlay.setProps({ layers });
-}
-function mapHover(info, kind) { setHover(info.object == null ? null : { kind, i: info.object }, info.x, info.y); }
-// shift and drag on the map draws a box: left button adds every track with a visible plot inside it, right button removes them
-function boxSelect() {
-  const wrap = $("mapwrap"), box = $("selbox"); let start = null, removing = false;
-  const rect = (a, b) => ({ x:Math.min(a[0], b[0]), y:Math.min(a[1], b[1]), w:Math.abs(a[0] - b[0]), h:Math.abs(a[1] - b[1]) });
-  const pos = e => { const r = wrap.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
-  wrap.addEventListener("mousedown", e => {
-    shiftDown = e.shiftKey;
-    if (!e.shiftKey || (e.button !== 0 && e.button !== 2) || e.target.closest("#ctl, #pick, .maplibregl-ctrl")) return;
-    start = pos(e); removing = e.button === 2; box.classList.toggle("remove", removing); map.dragPan.disable();
-  }, true);
-  document.addEventListener("mousemove", e => { if (!start) return; const r = rect(start, pos(e)); box.style.display = "block"; box.style.left = r.x + "px"; box.style.top = r.y + "px"; box.style.width = r.w + "px"; box.style.height = r.h + "px"; });
-  document.addEventListener("mouseup", e => {
-    if (!start) return;
-    const r = rect(start, pos(e)); start = null; box.style.display = "none"; map.dragPan.enable();
-    if (r.w < 4 && r.h < 4) return;   // a plain shift click, handled as a pin by mapClickAt
-    // the box in degrees, then every visible plot inside it, grouped by track
-    const nw = map.unproject([r.x, r.y]), se = map.unproject([r.x + r.w, r.y + r.h]);
-    const latMin = Math.min(nw.lat, se.lat), latMax = Math.max(nw.lat, se.lat), lonMin = Math.min(nw.lng, se.lng), lonMax = Math.max(nw.lng, se.lng);
-    const inside = (d, i) => d.lat[i] >= latMin && d.lat[i] <= latMax && d.lon[i] >= lonMin && d.lon[i] <= lonMax;
-    const found = [], seen = new Set();
-    const consider = (kind, idx) => { const d = table(kind); for (const i of idx) { if (!inside(d, i)) continue; const key = kind === "raw" ? `raw|${d.src[i]}|${d.tid[i]}` : `${kind}|${d.track[i]}`; if (!seen.has(key)) { seen.add(key); found.push({ kind, i }); } } };
-    consider("raw", visible.raw);
-    for (const [name, idx] of Object.entries(visible.runs)) consider(name, idx);
-    // left button: add the ones not compared yet; right button: remove the ones that are
-    const work = found.filter(f => removing ? !!trackOf(f.kind, f.i) : !trackOf(f.kind, f.i));
-    for (const f of work) toggleTrack(f.kind, f.i, true);
-    renderCompare(); rebuildCharts(); draw();
-    $("status").textContent = `${RAW.n.toLocaleString()} · ${work.length} ${removing ? "removed" : "added"}`;
-  });
-}
-
-// a click on the map: every plot within a few pixels is picked, so overlapping plots can be told apart
-function mapClickAt(info, ev) {
-  closePick();
-  const picks = overlay.pickMultipleObjects({ x:info.x, y:info.y, radius:7, depth:40 });
-  const items = picks.filter(pk => pk.layer && (pk.layer.id.startsWith("raw") || pk.layer.id.startsWith("run-dots-"))).map(pk => ({ kind: pk.layer.id.startsWith("raw") ? "raw" : pk.layer.id.slice("run-dots-".length), i: pk.object }));
-  if (!items.length) return;
-  const shift = shiftDown || !!(ev && ev.srcEvent && ev.srcEvent.shiftKey);
-  if (shift) {   // pin one plot
-    if (items.length === 1) return pin(items[0]);
-    return openPick(info.x, info.y, `${items.length} plots here, pin which one?`, items.map(it => { const d = table(it.kind); return { color: it.kind === "raw" ? SOURCE_COLOR[d.src[it.i]] : runColor[it.kind], text: `${srcName(it.kind, it.i)} · ${d.cs[it.i] || d.hex[it.i] || "–"}${it.kind !== "raw" ? " · " + it.kind : ""}`, note: fmtMs(d.t[it.i]), action: () => pin(it) }; }));
-  }
-  // distinct tracks under the cursor
-  const tracks = [], seen = new Set();
-  for (const it of items) { const d = table(it.kind); const key = it.kind === "raw" ? `raw|${d.src[it.i]}|${d.tid[it.i]}` : `${it.kind}|${d.track[it.i]}`; if (seen.has(key)) continue; seen.add(key); tracks.push(it); }
-  if (tracks.length === 1) return toggleTrack(tracks[0].kind, tracks[0].i);
-  openPick(info.x, info.y, `${tracks.length} tracks here, which one?`, tracks.map(it => { const d = table(it.kind), inList = trackOf(it.kind, it.i); const label = it.kind === "raw" ? `${SOURCE_NAME[SRC_ID[d.src[it.i]]]} ${d.tid[it.i]}` : `${it.kind} ${d.track[it.i]}`; return { color: inList ? inList.color : (it.kind === "raw" ? SOURCE_COLOR[d.src[it.i]] : runColor[it.kind]), text: label + (d.cs[it.i] ? ` · ${d.cs[it.i]}` : ""), note: inList ? "remove" : "add", action: () => toggleTrack(it.kind, it.i) }; }));
-}
-function openPick(x, y, title, items) {
-  const el = $("pick");
-  el.innerHTML = `<div class="head">${title}</div>` + items.map((it, k) => `<div class="item" data-k="${k}"><span class="sw" style="background:${rgb(it.color)}"></span>${it.text}<span class="muted">${it.note}</span></div>`).join("");
-  el.querySelectorAll(".item").forEach(div => div.onclick = () => { closePick(); items[+div.dataset.k].action(); });
-  el.style.display = "block";
-  const w = $("mapwrap").clientWidth, h = $("mapwrap").clientHeight;
-  el.style.left = Math.min(x + 8, w - el.offsetWidth - 8) + "px"; el.style.top = Math.min(y + 8, h - el.offsetHeight - 8) + "px";
-}
-function closePick() { $("pick").style.display = "none"; }
-function pin(p) { if (pins.some(q => q.kind === p.kind && q.i === p.i)) pins = pins.filter(q => !(q.kind === p.kind && q.i === p.i)); else pins = [...pins.slice(-1), p]; renderCompare(); drawHighlight(); redrawCharts(); }
-function setHover(h, x, y) {
-  const same = (hover && h && hover.kind === h.kind && hover.i === h.i) || (!hover && !h);
-  hover = h;
-  if (!same) { drawHighlight(); redrawCharts(); }
-  const el = $("tip");
-  if (!h || x == null) { el.style.display = "none"; return; }
-  el.style.display = "block"; el.style.left = Math.min(x + 12, $("mapwrap").clientWidth - 360) + "px"; el.style.top = (y + 12) + "px"; el.innerHTML = describe(h);
-}
-function describe(p) {
-  const d = table(p.kind), i = p.i, raw = p.kind === "raw";
-  return `<b>${d.cs[i] || "no callsign"}</b> · hex ${d.hex[i] || "–"} · tail ${d.tail[i] || "–"}<br>${raw ? "raw plot" : p.kind + " · track " + d.track[i] + " · " + d.quality[i]} · ${srcName(p.kind, i)}${raw && RAW.kind && RAW.kind[i] ? " · " + RAW.kind[i] : ""}<br>position ${fmtMs(d.t[i])} · received ${fmt(d.r[i])} (${((d.r[i] - d.t[i]) / 1000).toFixed(2)} s late)${!raw ? `<br>emitted ${fmt(d.created[i])}${d.valid_to[i] != null ? ` · replaced ${fmt(d.valid_to[i])}` : ""}` : ""}${!raw && d.sigma_horizontal_m ? `<br><span class="muted">filter sigma: ${d.sigma_east_m[i].toFixed(1)} m east · ${d.sigma_north_m[i].toFixed(1)} m north · ${d.sigma_up_m[i].toFixed(1)} m up · ${d.sigma_velocity_mps[i].toFixed(1)} m/s</span>` : ""}<br>alt ${d.alt[i] ?? "–"} ft · ${d.gs[i] ?? "–"} kt · trk ${d.trk[i] ?? "–"} · hdg ${d.hdg[i] ?? "–"}${raw ? ` · source track ${d.tid[i]}` : ""}${raw ? qualityLine(i) + outcomeLine(i) : ""}`;
-}
-function outcomeLine(i) {
-  const parts = Object.entries(OUTCOMES).filter(([, o]) => o.state).map(([n, o]) => `${shortRun(n)}: ${o.state[i] == null ? "not seen" : o.state[i] + (o.reason[i] ? " (" + o.reason[i] + ")" : o.track[i] ? " by " + o.track[i] : "")}`);
-  return parts.length ? `<br><span class="muted">${parts.join(" · ")}</span>` : "";
-}
-function qualityLine(i) {
-  const parts = [];
-  if (RAW.nacp[i] != null) parts.push(`NACp ${RAW.nacp[i]}${NACP_M[RAW.nacp[i]] ? ` (< ${NACP_M[RAW.nacp[i]]} m)` : ""}`);
-  if (RAW.nic[i] != null) parts.push(`NIC ${RAW.nic[i]}${NIC_M[RAW.nic[i]] ? ` (Rc < ${NIC_M[RAW.nic[i]]} m)` : ""}`);
-  if (RAW.rc[i] != null) parts.push(`Rc ${RAW.rc[i]} m`);
-  if (RAW.nacv[i] != null) parts.push(`NACv ${RAW.nacv[i]}`);
-  if (RAW.sil[i] != null) parts.push(`SIL ${RAW.sil[i]}`);
-  return `<br><span class="muted">${parts.length ? parts.join(" · ") : "no accuracy numbers on this plot"}</span>`;
-}
-
-// ---------- compare list and pins ----------
-function renderCompare() {
-  if (!compare.length) { $("sel").innerHTML = `<p class="muted">Nothing to compare yet. Click plots on the map, or type a hex, callsign or tail on the left.</p>`; }
-  else {
-    const chips = compare.map((c, k) => {
-      const d = table(c.kind); let n = 0, cs = new Set(), hex = new Set(), t0 = Infinity, t1 = -Infinity;
-      for (let i = 0; i < d.n; i++) { const hit = c.kind === "raw" ? (d.src[i] === c.src && d.tid[i] === c.tid) : d.track[i] === c.track; if (!hit) continue; n++; if (d.cs[i]) cs.add(d.cs[i]); if (d.hex[i]) hex.add(d.hex[i]); t0 = Math.min(t0, d.t[i]); t1 = Math.max(t1, d.t[i]); }
-      return `<span class="chip" data-k="${k}" style="border-left-color:${rgb(c.color)}" title="click to remove · ${[...cs].join(", ")} · hex ${[...hex].join(", ") || "–"}">${trackLabel(c)} <span class="muted">${n} · ${fmt(t0).slice(0, 5)}–${fmt(t1).slice(0, 5)}${cs.size ? " · " + [...cs].join(", ") : ""}</span><span class="x">×</span></span>`;
-    }).join("");
-    $("sel").innerHTML = `<div class="label" style="margin-top:0.7rem">${compare.length} track${compare.length > 1 ? "s" : ""} · click one to remove</div><div class="chips">${chips}</div>${numbersTable()}`;
-    $("sel").querySelectorAll(".chip").forEach(b => b.onclick = () => { compare.splice(+b.dataset.k, 1); renderCompare(); rebuildCharts(); draw(); });
-    const lb = $("lateBtn"); if (lb) lb.onclick = toggleLate;
-  }
-  renderPins();
-}
-// per compared track: a few numbers that say how it behaved
-const pct = (arr, q) => { if (!arr.length) return null; const a = [...arr].sort((x, y) => x - y); return a[Math.min(a.length - 1, Math.floor(q * (a.length - 1)))]; };
-function trackNumbers(c) {
-  const d = table(c.kind), ids = [];
-  for (let i = 0; i < d.n; i++) if (c.kind === "raw" ? (d.src[i] === c.src && d.tid[i] === c.tid) : d.track[i] === c.track) ids.push(i);
-  const current = c.kind === "raw" ? ids : ids.filter(i => d.valid_to[i] == null);   // for a strategy: the versions that survived
-  current.sort((a, b) => d.t[a] - d.t[b]);
-  let jump = 0, step = 0;
-  for (let k = 1; k < current.length; k++) {
-    const a = current[k - 1], b = current[k], dt = (d.t[b] - d.t[a]) / 1000;
-    if (dt > 0.2) jump = Math.max(jump, haversine(d.lat[a], d.lon[a], d.lat[b], d.lon[b]) / dt * 1.943844);
-    if (d.alt[a] != null && d.alt[b] != null) step = Math.max(step, Math.abs(d.alt[b] - d.alt[a]));
-  }
-  const late = c.kind === "raw" ? ids.map(i => (d.r[i] - d.t[i]) / 1000) : ids.map(i => (d.created[i] - d.t[i]) / 1000);
-  const out = { plots: ids.length, jump: Math.round(jump), step: Math.round(step), late50: pct(late, 0.5), late99: pct(late, 0.99) };
-  const knownAt = i => c.kind === "raw" ? d.r[i] : d.created[i];
-  const after = ids.filter(i => knownAt(i) > CASE.span_ms);
-  if (after.length) out.afterWindow = { n: after.length, latestH: Math.max(...after.map(i => (knownAt(i) - d.t[i]) / 3600000) ) };
-  if (c.kind !== "raw") {
-    const rew = ids.filter(i => d.valid_to[i] != null), after = rew.map(i => (d.valid_to[i] - d.t[i]) / 60000);
-    out.rewritten = rew.length; out.rew50 = pct(after, 0.5); out.rewMax = after.length ? Math.max(...after) : null;
-  }
-  return out;
-}
-function numbersTable() {
-  if (!compare.length) return "";
-  const nums = compare.map(trackNumbers), f1 = v => v == null ? "–" : (Math.abs(v) >= 100 ? Math.round(v).toLocaleString() : (+v).toFixed(1));
-  const head = compare.map(c => `<th><span class="sw${c.kind === "raw" ? "" : " line"}" style="background:${rgb(c.color)}"></span></th>`).join("");
-  const row = (label, get) => `<tr><td class="k">${label}</td>${nums.map(n => `<td>${get(n)}</td>`).join("")}</tr>`;
-  const anyStrat = compare.some(c => c.kind !== "raw");
-  return `<table class="nums"><tr><th class="k"></th>${head}</tr>` +
-    row("plots", n => n.plots.toLocaleString()) +
-    (anyStrat ? row("later rewritten", n => n.rewritten == null ? "" : `${n.rewritten}${n.rewritten ? ` · ${f1(n.rew50)} / ${f1(n.rewMax)} min` : ""}`) : "") +
-    row("largest jump kt", n => f1(n.jump)) + row("largest alt step ft", n => f1(n.step)) +
-    row("late p50 / p99 s", n => `${f1(n.late50)} / ${f1(n.late99)}`) +
-    `</table>` + afterWindowNote(nums);
-}
-// plots that were only received or emitted after the case window: they count in the numbers and set the chart axes, but the timeline can never reach them
-function afterWindowNote(nums) {
-  const late = compare.map((c, k) => [c, nums[k].afterWindow]).filter(([, a]) => a);
-  if (!late.length) return "";
-  const items = late.map(([c, a]) => `<span class="sw${c.kind === "raw" ? "" : " line"}" style="background:${rgb(c.color)}"></span> ${a.n} plot${a.n > 1 ? "s" : ""} up to ${a.latestH.toFixed(1)} h late`).join(", ");
-  return `<div class="help" style="margin-top:0.4rem; display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap"><span><b style="color:var(--fg); font-weight:500">Arrived after this window:</b> ${items}.</span><button id="lateBtn" class="${showLate ? "accent" : ""}" title="show these plots at their position time, although nobody had them yet">${showLate ? "showing late arrivals" : "show late arrivals"}</button></div>`;
-}
-function toggleLate() { showLate = !showLate; renderCompare(); draw(); }
-function renderPins() {
-  if (!pins.length) { $("pins").innerHTML = ""; return; }
-  let h = pins.map((p, k) => `<div class="pin ${k ? "two" : ""}" data-k="${k}" title="click to remove this pin"><b>Pin ${k + 1}</b> · ${describe(p)}</div>`).join("");
-  if (pins.length === 2) {
-    const a = table(pins[0].kind), b = table(pins[1].kind), i = pins[0].i, j = pins[1].i;
-    const dt = (b.t[j] - a.t[i]) / 1000, dist = haversine(a.lat[i], a.lon[i], b.lat[j], b.lon[j]);
-    const dalt = (a.alt[i] != null && b.alt[j] != null) ? b.alt[j] - a.alt[i] : null, dgs = (a.gs[i] != null && b.gs[j] != null) ? b.gs[j] - a.gs[i] : null;
-    h += `<div class="diff">Pin 2 minus pin 1: ${dt.toFixed(2)} s in position time · ${dist.toFixed(0)} m apart${dt ? ` (${(dist / Math.abs(dt) * 1.943844).toFixed(0)} kt if the same aircraft)` : ""}${dalt != null ? ` · ${dalt > 0 ? "+" : ""}${dalt} ft` : ""}${dgs != null ? ` · ${dgs > 0 ? "+" : ""}${dgs.toFixed(0)} kt` : ""} · received ${((b.r[j] - a.r[i]) / 1000).toFixed(2)} s apart</div>`;
-  }
-  $("pins").innerHTML = h;
-  $("pins").querySelectorAll(".pin").forEach(el => el.onclick = () => { pins.splice(+el.dataset.k, 1); renderPins(); drawHighlight(); redrawCharts(); });
-}
-function haversine(lat1, lon1, lat2, lon2) { const R = 6371000, toR = Math.PI / 180, dLat = (lat2 - lat1) * toR, dLon = (lon2 - lon1) * toR, a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * toR) * Math.cos(lat2 * toR) * Math.sin(dLon / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(a)); }
-
-// ---------- derived values for the compared raw tracks ----------
-function computeDerived(rawTracks) {
-  derived = { gap:{}, vrate:{}, xtrack:{} };
-  // time since the previous plot of the same track, and vertical rate from the altitude change
-  for (const ids of rawTracks) for (let k = 1; k < ids.length; k++) {
-    const i = ids[k], p = ids[k - 1], dt = (RAW.t[i] - RAW.t[p]) / 1000;
-    derived.gap[i] = dt;
-    if (dt >= 1 && RAW.alt[i] != null && RAW.alt[p] != null) derived.vrate[i] = (RAW.alt[i] - RAW.alt[p]) / dt * 60;
-  }
-  // cross track distance: how far a plot sits sideways from the line through the neighbouring plots of another compared raw track
-  const ordered = [...rawTracks].sort((a, b) => b.length - a.length);
-  for (const ids of ordered) {
-    const R = ordered.find(o => o !== ids); if (!R) break;
-    let k = 0;
-    for (const i of ids) {
-      while (k < R.length - 1 && RAW.t[R[k + 1]] <= RAW.t[i]) k++;
-      const a = R[k], b = R[Math.min(k + 1, R.length - 1)];
-      if (a === b || RAW.t[i] < RAW.t[a] || RAW.t[i] > RAW.t[b] || RAW.t[b] - RAW.t[a] > 15000) continue;   // need neighbours within 15 s either side
-      derived.xtrack[i] = crossTrack(RAW.lat[a], RAW.lon[a], RAW.lat[b], RAW.lon[b], RAW.lat[i], RAW.lon[i]);
-    }
-  }
-}
-function crossTrack(lat1, lon1, lat2, lon2, lat, lon) {
-  // flat earth is fine over a few km: metres east/north from point a, then distance from the line a to b
-  const toR = Math.PI / 180, kx = 111320 * Math.cos(lat1 * toR), ky = 110540;
-  const bx = (lon2 - lon1) * kx, by = (lat2 - lat1) * ky, px = (lon - lon1) * kx, py = (lat - lat1) * ky, L = Math.hypot(bx, by);
-  return L ? (bx * py - by * px) / L : Math.hypot(px, py);
-}
-
-// ---------- charts ----------
-// each chart: how to get a value for a raw plot and for a strategy plot
-const CHARTS = [   // raw: value for a raw plot index; run: value for a strategy plot index
-  { id:"alt", title:"Altitude, shared altitude_ft field", unit:"ft", raw:i => RAW.alt[i], run:(r, i) => r.alt[i], note:"What every consumer reads: the barometric altitude, for every source. The uAvionix plots in the cases were corrected to this with src/data/cases/fix_uavionix.py after the integration fix of 22 September 2026; before that uAvionix put its GPS height here." },
-  { id:"gs", title:"Ground speed", unit:"kt", raw:i => RAW.gs[i], run:(r, i) => r.gs[i] },
-  { id:"trk", title:"Track angle", unit:"deg", raw:i => RAW.trk[i] ?? RAW.hdg[i], run:(r, i) => r.trk[i] ?? r.hdg[i] },
-  { id:"late", title:"Lateness, received minus position time", unit:"s", raw:i => (RAW.r[i] - RAW.t[i]) / 1000, run:(r, i) => (r.r[i] - r.t[i]) / 1000 },
-  { id:"xtrack", title:"Cross track distance to the other source", unit:"m", raw:i => derived.xtrack[i], run:null, zero:true },
-  { id:"gap", title:"Time since previous plot of the same source", unit:"s", raw:i => derived.gap[i], run:null },
-  { id:"vrate", title:"Vertical rate from altitude changes", unit:"ft/min", raw:i => derived.vrate[i], run:null, zero:true },
-  { id:"sigPos", title:"Filter position sigma, horizontal", unit:"m", raw:null, run:(r, i) => r.sigma_horizontal_m ? r.sigma_horizontal_m[i] : null, zero:true, note:"Strategy tracks only, for strategies that report their uncertainty. The 95% ring on the map is 2.45 times this." },
-  { id:"sigVel", title:"Filter velocity sigma, horizontal", unit:"m/s", raw:null, run:(r, i) => r.sigma_velocity_mps ? r.sigma_velocity_mps[i] : null, zero:true, note:"Strategy tracks only. Starts at the track's start value and falls as plots come in." },
-  { id:"altBaro", title:"Barometric altitude, source's own field", unit:"ft", raw:i => RAW.alt_baro[i], run:null, note:"Raw plots only. ADS-B Exchange alt_baro, PlaneFinder altitude, uAvionix flight_level × 100, TFMS and ACARS altitude_ft. Strategy plots carry one altitude of unknown kind, so they are not drawn here." },
-  { id:"altGeo", title:"Geometric height, source's own field", unit:"ft", raw:i => RAW.alt_geo[i], run:null, note:"Raw plots only. ADS-B Exchange alt_geom and uAvionix geometric_height. PlaneFinder and TFMS send no geometric height, so their series stay empty." },
-];
-const chartHeight = {};   // chart id -> height in px, kept when the charts are rebuilt
-const hiddenSeries = {};  // chart id -> set of series labels switched off in the legend, kept when the charts are rebuilt
-
-function rebuildCharts() {
-  for (const c of charts) c.u.destroy(); charts = []; chartData = null;
-  $("charts").innerHTML = "";
-  if (!compare.length) return;
-  // every plot of every compared track as {kind, i, t, track}
-  const points = [], rawTracks = [];
-  for (const c of compare) {
-    const d = table(c.kind), ids = [];
-    for (let i = 0; i < d.n; i++) if (c.kind === "raw" ? (d.src[i] === c.src && d.tid[i] === c.tid) : d.track[i] === c.track) ids.push(i);
-    ids.sort((a, b) => d.t[a] - d.t[b]);
-    if (c.kind === "raw") rawTracks.push(ids);
-    for (const i of ids) points.push({ kind:c.kind, i, t:d.t[i], track:c, rewritten:c.kind !== "raw" && d.valid_to[i] != null,
-                                        known:c.kind === "raw" ? d.r[i] : d.created[i], until:c.kind === "raw" ? null : d.valid_to[i] });
-  }
-  computeDerived(rawTracks);
-  points.sort((a, b) => a.t - b.t);
-  const xs = points.map(p => p.t / 1000);   // seconds after case start
-  chartData = { points, xs };
-  for (const spec of CHARTS) charts.push(makeChart(spec, points, xs));
-  applyWindow();
-  if (win) setTimeout(applyWindow, 80);   // new charts apply their initial full range a tick later; put the window back after that
-}
-
-function makeChart(spec, points, xs) {
-  // one series per compared track: dots for a source track, a line for a strategy track
-  const series = [{}], full = [], legend = [], allVals = [];
-  const addSeries = (label, color, filter, getter, asLine) => {
-    const ys = points.map(p => filter(p) ? (getter(p) ?? null) : null);
-    if (!ys.some(v => v != null)) return;
-    for (const v of ys) if (v != null) allVals.push(v);
-    const off = (hiddenSeries[spec.id] || new Set()).has(label);
-    series.push({ label, stroke:rgb(color), width:asLine ? 1.3 : 0, paths:asLine ? uPlot.paths.linear() : () => null, spanGaps:true, points:{ show:true, size:asLine ? 3 : 4, width:1, stroke:rgb(color), fill:rgb(color) } });
-    full.push(ys); legend.push(`<span class="item${off ? " off" : ""}" data-label="${label}" title="click to hide or show, shift click to show only this one"><span class="sw${asLine ? " line" : ""}" style="background:${rgb(color)}"></span> ${label}</span>`);
-  };
-  for (const c of compare) {
-    if (c.kind === "raw") { if (spec.raw) addSeries(trackLabel(c), c.color, p => p.track === c, p => spec.raw(p.i), false); }
-    else if (spec.run) addSeries(trackLabel(c), c.color, p => p.track === c, p => spec.run(RUNS[c.kind], p.i), !spec.categorical);
-  }
-  const yLo = allVals.length ? Math.min(...allVals) : 0, yHi = allVals.length ? Math.max(...allVals) : 1;
-  const data = maskData(full, points, spec, legend.map(l => l.match(/data-label="([^"]*)"/)[1]));
-  const box = document.createElement("div"); box.className = "chart";
-  box.innerHTML = `<div class="chart-head"><b>${spec.title}</b><span class="unit">${spec.unit}</span><span class="legend">${legend.join("")}</span></div>` + (spec.note ? `<div class="chart-note">${spec.note}</div>` : "");
-  const holder = document.createElement("div"); box.appendChild(holder); $("charts").appendChild(box);
-  const hgrip = document.createElement("div"); hgrip.className = "hgrip"; hgrip.title = "drag to change the height"; box.appendChild(hgrip);
-  const axisStyle = { stroke:"#888888", grid:{ stroke:"#1e1e1e", width:1, dash:[2, 4] }, ticks:{ stroke:"#333333", width:1, size:4 }, font:'10px "Simplon ASI Mono", "SF Mono", SFMono-Regular, Menlo, monospace' };
-  const opts = {
-    width: chartWidth(), height: chartHeight[spec.id] || 260, cursor:{ drag:{ x:true, y:false }, focus:{ prox:16 }, points:{ show:false } }, legend:{ show:false },
-    scales:{ x:{ time:false, range:(u, min, max) => (u.scales.x.min == null || syncing === "init") ? [0, CASE.span_ms / 1000] : [min, max] }, y:{ range:() => { const min = yLo, max = yHi; return spec.categorical ? [0, 14] : spec.zero ? [Math.min(0, min) - (max - min) * 0.05 - 1, Math.max(0, max) + (max - min) * 0.05 + 1] : [min - (max - min) * 0.08 - 0.5, max + (max - min) * 0.08 + 0.5]; } } },
-    axes:[ { ...axisStyle, space:90, values:(u, vals) => vals.map(v => fmt(v * 1000).slice(0, 5)) }, { ...axisStyle, size:52, values:spec.categorical ? (u, vals) => vals.map(v => SOURCE_NAME[v] ? SOURCE_NAME[v].split(" ")[0] : "") : undefined, splits:spec.categorical ? () => [1, 3, 4, 10, 11] : undefined } ],
-    series,
-    hooks:{
-      // uPlot fires setScale once more after construction with the initial full range; only a user zoom counts
-      setScale:[(u, key) => { if (key === "x" && !syncing && u._userScale) onZoom(u); }],
-      setCursor:[u => onChartCursor(u, spec)],
-      draw:[u => drawMarks(u, spec)],
-    },
-  };
-  syncing = "init"; const u = new uPlot(opts, data, holder); syncing = false;
-  // legend items: click hides or shows a series, shift click shows only that one (shift click again brings all back).
-  // hiding blanks the series' data in maskData, so uPlot itself never toggles anything
-  const items = [...box.querySelectorAll(".legend .item")], labels = items.map(it => it.dataset.label);
-  items.forEach((item, k) => item.onclick = e => {
-    const hidden = hiddenSeries[spec.id] ||= new Set();
-    if (e.shiftKey) {
-      const onlyThisShown = labels.every((l, j) => j === k ? !hidden.has(l) : hidden.has(l));
-      labels.forEach((l, j) => { const hide = onlyThisShown ? false : j !== k; hide ? hidden.add(l) : hidden.delete(l); });
-    } else hidden.has(labels[k]) ? hidden.delete(labels[k]) : hidden.add(labels[k]);
-    items.forEach((it, j) => it.classList.toggle("off", hidden.has(labels[j])));
-    redrawCharts();
-  });
-  // uPlot swallows clicks on its overlay, so listen on the overlay itself in the capture phase
-  let downAt = null;
-  u.over.addEventListener("mousedown", e => { downAt = [e.clientX, e.clientY]; u._userScale = true; }, true);
-  u.over.addEventListener("mouseup", e => { if (downAt && Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) < 4) { const p = nearestPoint(u, spec); if (p) pin({ kind:p.kind, i:p.i }); } downAt = null; }, true);
-  u.over.addEventListener("dblclick", () => { u._userScale = true; resetZoom(); }, true);
-  u.over.addEventListener("mouseleave", () => setHover(null));
-  // drag the bar under the chart up or down to change its height
-  hgrip.onmousedown = e => {
-    e.preventDefault(); const startY = e.clientY, startH = u.height;
-    const move = ev => { const h = Math.max(80, Math.min(900, startH + ev.clientY - startY)); chartHeight[spec.id] = h; u.setSize({ width:u.width, height:h }); };
-    const up = () => { document.removeEventListener("mousemove", move); document.removeEventListener("mouseup", up); };
-    document.addEventListener("mousemove", move); document.addEventListener("mouseup", up);
-  };
-  return { u, spec, full, points, labels };
-}
-// keep only what is valid at time now: raw plots we have received, strategy plots emitted and not yet replaced
-const knownNow = p => (p.known <= now || (showLate && p.known > CASE.span_ms && p.t <= now)) && (p.until == null || p.until > now);
-function maskData(full, points, spec, labels) {
-  const validAt = knownNow, hidden = hiddenSeries[spec.id] || new Set();
-  return [chartData.xs, ...full.map((ys, k) => hidden.has(labels[k]) ? ys.map(() => null) : ys.map((v, j) => v != null && validAt(points[j]) ? v : null))];
-}
-let syncing = false;
-function onZoom(u) {
-  const min = u.scales.x.min, max = u.scales.x.max;
-  // only the whole case window counts as "no zoom"; zooming to exactly the data's extent is still a zoom
-  const full = min <= 0.001 && max >= CASE.span_ms / 1000 - 0.001;
-  const next = full ? null : [min * 1000, max * 1000];
-  const same = (next == null && win == null) || (next && win && Math.abs(next[0] - win[0]) < 1 && Math.abs(next[1] - win[1]) < 1);
-  if (same) return;
-  win = next;
-  applyWindow();   // redrawCharts inside sets every chart's time axis to the window
-}
-function resetZoom() { win = null; applyWindow(); }
-function applyWindow() {
-  const hl = $("winHL");
-  $("resetZoom").style.display = win ? "inline-block" : "none"; $("resetZoom").className = win ? "accent" : "";
-  if (win) { hl.style.display = "block"; hl.style.left = (win[0] / CASE.span_ms * 100) + "%"; hl.style.width = ((win[1] - win[0]) / CASE.span_ms * 100) + "%"; hl.title = `${fmt(win[0])} to ${fmt(win[1])}`; now = clampNow(now); $("time").value = now; }
-  else hl.style.display = "none";
-  draw();
-}
-// the point closest to the cursor in this chart, in pixels
-function nearestPoint(u, spec) {
-  const { left, top } = u.cursor; if (left == null || left < 0) return null;
-  let best = null, bestD = 14;
-  const hidden = hiddenSeries[spec.id] || new Set();
-  chartData.points.forEach((p, k) => {
-    if (!knownNow(p)) return;
-    if (hidden.has(trackLabel(p.track))) return;
-    const v = valueOf(spec, p); if (v == null) return;
-    const dx = u.valToPos(chartData.xs[k], "x") - left, dy = u.valToPos(v, "y") - top, d = Math.hypot(dx, dy);
-    if (d < bestD) { bestD = d; best = p; }
-  });
-  return best;
-}
-function valueOf(spec, p) { if (p.kind === "raw") return spec.raw ? spec.raw(p.i) : null; return spec.run ? spec.run(RUNS[p.kind], p.i) : null; }
-function onChartCursor(u, spec) {
-  if (u.cursor.left == null || u.cursor.left < 0) return;
-  const p = nearestPoint(u, spec);
-  setHover(p ? { kind:p.kind, i:p.i } : null);
-  // tooltip near the chart cursor
-  const el = $("tip"); if (!p) return;
-  const rect = u.over.getBoundingClientRect(), mw = $("mapwrap").getBoundingClientRect();
-  el.style.display = "block"; el.innerHTML = describe({ kind:p.kind, i:p.i });
-  el.style.left = (mw.width - 372) + "px"; el.style.top = Math.max(8, rect.top - mw.top + u.cursor.top - 30) + "px";
-}
-// hover point, pins and the now line, drawn on every chart
-function drawMarks(u, spec) {
-  const ctx = u.ctx; ctx.save();
-  const x = ms => u.valToPos(ms / 1000, "x", true);
-  const line = (px, color, width) => { if (px < u.bbox.left || px > u.bbox.left + u.bbox.width) return; ctx.strokeStyle = color; ctx.lineWidth = width; ctx.beginPath(); ctx.moveTo(px, u.bbox.top); ctx.lineTo(px, u.bbox.top + u.bbox.height); ctx.stroke(); };
-  line(x(now), "#ccff00", 1);
-  const mark = (p, color, r, label) => {
-    const d = table(p.kind), v = valueOf(spec, p); const px = x(d.t[p.i]);
-    line(px, color + "66", 1);
-    if (v == null) return;
-    const py = u.valToPos(v, "y", true);
-    ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.stroke();
-    if (label) { ctx.fillStyle = color; ctx.font = 'bold 10px "SF Mono", Menlo, monospace'; ctx.fillText(label, px + r + 2, py - r); }
-  };
-  pins.forEach((p, k) => mark(p, k === 0 ? "#e31b23" : "#ffffff", 6, String(k + 1)));
-  if (hover) mark(hover, "#ccff00", 7, "");
-  ctx.restore();
-}
-// ---------- dropdowns in the brand style ----------
-// Every select keeps working for the code (value, options, change); a button and a list drawn next to it are what the page shows.
-function asiSelects() {
-  for (const sel of document.querySelectorAll("select:not(.asel-native)")) {
-    sel.classList.add("asel-native");
-    const wrap = document.createElement("div"); wrap.className = "asel";
-    const btn = document.createElement("button"); btn.type = "button"; btn.className = "asel-btn"; btn.innerHTML = "<span></span><i>▾</i>";
-    const list = document.createElement("div"); list.className = "asel-list";
-    wrap.append(btn, list); sel.after(wrap); wrap._sel = sel;
-    // the list is fixed to the page, not to the panel, so a scrolling side panel cannot clip it; it opens upward near the bottom edge
-    btn.onclick = e => { e.stopPropagation(); const open = !wrap.classList.contains("open"); closeSelects(); if (!open) return;
-      renderSelectList(wrap); const r = btn.getBoundingClientRect(), up = window.innerHeight - r.bottom < 260;
-      Object.assign(list.style, { left:r.left + "px", minWidth:r.width + "px", top:up ? "auto" : (r.bottom + 4) + "px", bottom:up ? (window.innerHeight - r.top + 4) + "px" : "auto" });
-      wrap.classList.add("open"); };
-    refreshSelect(wrap);
-  }
-  document.addEventListener("mousedown", e => { if (!e.target.closest(".asel")) closeSelects(); });
-  document.addEventListener("keydown", e => { if (e.key === "Escape") closeSelects(); });
-}
-function closeSelects() { document.querySelectorAll(".asel.open").forEach(w => w.classList.remove("open")); }
-function refreshSelect(wrap) { const sel = wrap._sel, o = sel.options[sel.selectedIndex]; wrap.querySelector(".asel-btn span").textContent = o ? o.textContent : ""; wrap.style.display = sel.style.display === "none" ? "none" : ""; }
-function refreshSelects() { document.querySelectorAll(".asel").forEach(refreshSelect); }
-function renderSelectList(wrap) {
-  const sel = wrap._sel, label = (sel.closest(".field, .tools") || {}).querySelector?.(".label"), title = sel.title || (label ? label.textContent : "select option");
-  const list = wrap.querySelector(".asel-list");
-  list.innerHTML = `<div class="asel-head">${title}</div>` + [...sel.options].map((o, i) => `<div class="asel-item ${i === sel.selectedIndex ? "on" : ""} ${o.disabled ? "off" : ""}" data-i="${i}">${o.textContent}<i>›</i></div>`).join("");
-  list.querySelectorAll(".asel-item").forEach(it => it.onclick = () => { const i = +it.dataset.i; if (sel.options[i].disabled) return; sel.selectedIndex = i; sel.dispatchEvent(new Event("change")); refreshSelect(wrap); closeSelects(); });
-}
-
-// the raw plot filters in one string: kinds off, nacp, lateness, flags, outcome run with states and reasons off, grey or hide
-function filterState() {
-  const kindsOff = [...document.querySelectorAll(".fKind:not(:checked)")].map(c => c.dataset.src + "." + c.value).join("|");
-  const flags = ["fAlt", "fHex", "fAir", "qualityOnly"].filter(id => $(id).checked).join("|");
-  const statesOff = [...document.querySelectorAll(".fState:not(:checked)")].map(c => c.value).join("|"), reasonsOff = [...document.querySelectorAll(".fReason:not(:checked)")].map(c => c.value).join("|");
-  return [kindsOff, $("fNacp").value, $("fLate").value, flags, $("fOutcomeRun").value, statesOff, reasonsOff, document.querySelector('input[name="filterFail"]:checked').value].map(encodeURIComponent).join(";");
-}
-async function restoreFilterState(text) {
-  const [kindsOff, nacp, late, flags, run, statesOff, reasonsOff, fail] = text.split(";").map(decodeURIComponent);
-  const off = new Set(kindsOff.split("|").filter(Boolean)); document.querySelectorAll(".fKind").forEach(c => c.checked = !off.has(c.dataset.src + "." + c.value));
-  if ([...$("fNacp").options].some(o => o.value === nacp)) $("fNacp").value = nacp; if ([...$("fLate").options].some(o => o.value === late)) $("fLate").value = late;
-  const on = new Set(flags.split("|")); for (const id of ["fAlt", "fHex", "fAir", "qualityOnly"]) $(id).checked = on.has(id);
-  const r = document.querySelector(`input[name="filterFail"][value="${fail}"]`); if (r) r.checked = true;
-  if (run && runById(run)) { $("fOutcomeRun").value = run; await loadOutcomes(run); renderOutcomeFilter(); const so = new Set(statesOff.split("|").filter(Boolean)), ro = new Set(reasonsOff.split("|").filter(Boolean)); document.querySelectorAll(".fState").forEach(c => c.checked = !so.has(c.value)); document.querySelectorAll(".fReason").forEach(c => c.checked = !ro.has(c.value)); }
-  refreshSelects();
-}
-
-// ---------- the view in the address bar ----------
-let urlTimer = null;
-function pushUrl() {
-  clearTimeout(urlTimer);
-  urlTimer = setTimeout(() => {
-    if (!CASE || !RAW) return;
-    const q = new URLSearchParams();
-    q.set("case", CASE.name);
-    q.set("t", String(Math.round(now)));
-    if (win) q.set("win", `${Math.round(win[0])}-${Math.round(win[1])}`);
-    const c = map.getCenter(); q.set("map", `${c.lng.toFixed(4)},${c.lat.toFixed(4)},${map.getZoom().toFixed(2)}`);
-    if (compare.length) q.set("cmp", compare.map(x => x.kind === "raw" ? `raw:${x.src}:${x.tid}` : `${x.kind}:${x.track}`).join(";"));
-    q.set("src", [...document.querySelectorAll(".srcOn:checked")].map(x => x.value).join(","));
-    q.set("strat", [...runChecked].join(",")); q.set("act", [...runActive].join(","));
-    const flags = ["rawOn", "runsOn", "runLines", "runRings", "greyOthers"].filter(id => $(id).checked); q.set("on", flags.join(","));
-    q.set("rc", $("rawColour").value); q.set("sc", $("runColour").value); q.set("rsz", $("rawSize").value); q.set("ssz", $("runSize").value); if ($("qualityOnly").checked) q.set("q", "1"); q.set("fade", $("fadeWin").value === "custom" ? String(fadeWindowMs() / 1000) : $("fadeWin").value);
-    q.set("show", document.querySelector('input[name="filterMode"]:checked').value);
-    q.set("flt", filterState());
-    history.replaceState(null, "", "?" + q.toString());
-  }, 150);
-}
-async function restoreUrlState() {
-  const q = new URLSearchParams(location.search);
-  if (!q.has("t")) return;
-  const list = (k) => (q.get(k) || "").split(",").filter(Boolean);
-  if (q.has("src")) { const on = new Set(list("src")); document.querySelectorAll(".srcOn").forEach(x => x.checked = on.has(x.value)); }
-  if (q.has("act")) { runActive = new Set(list("act").filter(runById)); }
-  if (q.has("strat")) { for (const name of list("strat")) if (runById(name)) { runActive.add(name); runChecked.add(name); if (!RUNS[name]) await loadRun(name); } }
-  syncRunMenus(); renderRunToolbar();
-  if (q.has("on")) { const on = new Set(list("on")); for (const id of ["rawOn", "runsOn", "runLines", "runRings", "greyOthers"]) $(id).checked = on.has(id); }
-  if (q.has("rc")) { const v = q.get("rc"); if ([...$("rawColour").options].some(o => o.value === v)) { $("rawColour").value = v; } }
-  if (q.has("sc")) $("runColour").value = q.get("sc");
-  if (q.has("rsz")) $("rawSize").value = q.get("rsz"); if (q.has("ssz")) $("runSize").value = q.get("ssz"); $("qualityOnly").checked = q.get("q") === "1";
-  if (q.has("fade")) { const v = q.get("fade"); if ([...$("fadeWin").options].some(o => o.value === v)) $("fadeWin").value = v; else { $("fadeWin").value = "custom"; $("fadeCustom").value = v; $("fadeCustom").style.display = "inline-block"; } }
-  if (q.has("show")) { const r = document.querySelector(`input[name="filterMode"][value="${q.get("show")}"]`); if (r) r.checked = true; }
-  if (q.has("flt")) await restoreFilterState(q.get("flt"));
-  if (q.has("map")) { const [lng, lat, z] = q.get("map").split(",").map(Number); map.jumpTo({ center:[lng, lat], zoom:z }); }
-  if (q.has("cmp")) for (const item of q.get("cmp").split(";")) {
-    const [kind, ...rest] = item.split(":");
-    if (kind === "raw") { const [src, tid] = [rest[0], rest.slice(1).join(":")]; let i = -1; for (let k = 0; k < RAW.n; k++) if (RAW.src[k] === src && RAW.tid[k] === tid) { i = k; break; } if (i >= 0) toggleTrack("raw", i, true); }
-    else { const track = rest.join(":"); if (!RUNS[kind]) { if (!runById(kind)) continue; runActive.add(kind); runChecked.add(kind); await loadRun(kind); syncRunMenus(); renderRunToolbar(); } const r = RUNS[kind]; let i = -1; for (let k = 0; k < r.n; k++) if (r.track[k] === track) { i = k; break; } if (i >= 0) toggleTrack(kind, i, true); }
-  }
-  if (q.has("win")) { const [a, b] = q.get("win").split("-").map(Number); if (b > a) win = [a, b]; }
-  now = clampNow(+q.get("t") || 0);
-}
-function redrawCharts() {
-  for (const c of charts) {
-    // setData with resetScales=false keeps the zoom but does not repaint on its own, so ask for the repaint
-    try {
-      // new data, repaint at the current axis, then move the axis to the window if it differs
-      // (redraw re-applies the current axis, so it has to come before setScale, whose change is applied on the next tick)
-      c.u.setData(maskData(c.full, c.points, c.spec, c.labels), false);
-      c.u.redraw(true, false);
-      const [mn, mx] = win ? [win[0] / 1000, win[1] / 1000] : [0, CASE.span_ms / 1000];
-      if (Math.abs(c.u.scales.x.min - mn) > 0.001 || Math.abs(c.u.scales.x.max - mx) > 0.001) { syncing = true; c.u.setScale("x", { min:mn, max:mx }); syncing = false; }
-    }
-    catch (err) { console.error("chart update failed", c.spec.id, err); $("status").textContent = "chart update failed: " + err.message; }
-  }
-}
-rememberControls();
-init();
-</script>
+<div id="fieldBrowser">
+  <div class="fb-head"><span class="label" id="fbTitle">fields</span><input type="text" id="fbSearch" placeholder="search"></div>
+  <div class="fb-list" id="fbList"></div>
+  <div class="fb-foot"><span class="picked" id="fbPicked">pick one or more fields</span><button class="small" id="fbCancel">cancel</button><button class="small accent" id="fbAdd">add chart</button></div>
+</div>
 </body>
 </html>

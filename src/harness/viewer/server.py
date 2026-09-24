@@ -2,151 +2,235 @@
 
 usage: uv run -m harness.viewer.server [--cases data/cases] [--port 8770]
 
-Every folder under --cases with a case.json is a case. A case is complete when it has at least one
-strategy output under runs/; incomplete ones are listed but cannot be opened.
+Every folder under --cases with a case.json is a case. The page gets a few base columns of every raw plot and
+every strategy's fused plots up front, and any other field only when a chart asks for it.
 """
 from __future__ import annotations
 
-import argparse, json, pathlib, webbrowser
-from http.server import HTTPServer, SimpleHTTPRequestHandler
+import argparse, json, os, pathlib, threading, webbrowser
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import parse_qs, urlparse
 
 import numpy as np
 import pandas as pd
 
+from .. import production
 from .. import runs as runbook
 
 HERE = pathlib.Path(__file__).parent
 RAW_SOURCES = ["adsbx", "planefinder", "uavionix", "stdds", "tfms_ti", "tfms_or", "ual", "asa"]
+ADSBX_KIND = {1: "ADS-B", 2: "ADS-B, no position in message", 3: "ADS-R", 4: "TIS-B", 5: "TIS-B track file", 6: "ADS-C", 7: "MLAT", 8: "Mode S only", 9: "ADS-B other", 10: "ADS-R other", 11: "TIS-B other", 12: "other"}
+PLANEFINDER_KIND = {1: "ADS-B", 2: "PlaneFinder MLAT", 3: "FLARM", 4: "third party MLAT", 5: "blocked"}
+# ADS-B accuracy numbers where the source carries them
+NACP_COLUMN = {"adsbx": "nac_p", "uavionix": "quality_indicators.nacp", "stdds": "status.nacp"}
+NIC_COLUMN = {"adsbx": "nic", "uavionix": "quality_indicators.nucp_or_nic", "stdds": "status.nic"}
 
 
-def columnar(frame: pd.DataFrame) -> dict:
-    """Column arrays, nulls as None, so the page gets one array per field instead of one object per row."""
-    out = {}
-    for c in frame.columns:
-        s = frame[c]
-        if pd.api.types.is_numeric_dtype(s):
-            out[c] = [None if pd.isna(v) else (int(v) if float(v).is_integer() else round(float(v), 6)) for v in s.tolist()]
-        else:
-            out[c] = ["" if pd.isna(v) else str(v) for v in s.tolist()]
+# ---------- small helpers ----------
+
+def jsonable(series: pd.Series) -> list:
+    """One array per column for the page: numbers as numbers, nulls as None, text as text."""
+    if pd.api.types.is_bool_dtype(series):
+        return [None if pd.isna(v) else int(v) for v in series.tolist()]
+    if pd.api.types.is_numeric_dtype(series):
+        return [None if pd.isna(v) else (int(v) if float(v).is_integer() else round(float(v), 6)) for v in series.tolist()]
+    return ["" if pd.isna(v) else str(v) for v in series.tolist()]
+
+
+def number(frame: pd.DataFrame, column: str | None) -> pd.Series:
+    """A numeric column, or all missing when the table has no such column."""
+    if column is None or column not in frame.columns:
+        return pd.Series([None] * len(frame), index=frame.index, dtype="Float64")
+    return pd.to_numeric(frame[column], errors="coerce")
+
+
+def text(frame: pd.DataFrame, column: str) -> pd.Series:
+    return frame[column].fillna("").astype(str) if column in frame.columns else pd.Series([""] * len(frame), index=frame.index)
+
+
+def micros(frame: pd.DataFrame, column: str) -> pd.Series:
+    """A timestamp in microseconds: the exact twin column (<column>_us) when the pull recovered one."""
+    twin = column.replace(".", "_") + "_us"
+    return number(frame, twin if twin in frame.columns else column)
+
+
+def as_values(series: pd.Series) -> pd.Series:
+    """A raw column as chart values: numbers stay numbers, true/false become 1/0, anything else is text."""
+    present = series.dropna()
+    if present.empty:
+        return pd.Series([None] * len(series), index=series.index, dtype="Float64")
+    lowered = present.astype(str).str.lower()
+    if lowered.isin(["true", "false"]).all():
+        return series.astype(str).str.lower().map({"true": 1, "false": 0})
+    numbers = pd.to_numeric(series, errors="coerce")
+    return numbers if numbers.notna().sum() >= 0.9 * len(present) else series
+
+
+def schema(frame: pd.DataFrame, skip: set[str]) -> list[dict]:
+    """The fields of a table: name, kind (number or text) and on how many rows it is set."""
+    out = []
+    for column in frame.columns:
+        if column in skip or column.endswith("_us") or column.startswith("_"):
+            continue
+        present = frame[column].dropna()
+        if len(present) and not np.isscalar(present.iloc[0]):
+            continue   # repeated fields are not chartable
+        values = as_values(frame[column])
+        kind = "number" if pd.api.types.is_numeric_dtype(values) else "text"
+        out.append(dict(name=column, kind=kind, count=int(values.notna().sum() if kind == "number" else (values.astype(str) != "").sum())))
     return out
 
 
-def num(f: pd.DataFrame, col: str | None) -> pd.Series:
-    """A numeric column, or all missing when the source has no such field."""
-    if col is None or col not in f.columns:
-        return pd.Series([None] * len(f), dtype="Float64")
-    return pd.to_numeric(f[col], errors="coerce")
+# ---------- a case, loaded once ----------
 
+class Case:
+    def __init__(self, path: pathlib.Path):
+        self.path = path
+        self.info = json.loads((path / "case.json").read_text())
+        self.t0_us = int(pd.Timestamp(self.info["t_start"], tz="UTC").timestamp() * 1e6)
+        self.t1_us = int(pd.Timestamp(self.info["t_end"], tz="UTC").timestamp() * 1e6)
+        self.sources: dict[str, pd.DataFrame] = {}
+        self.raw_order: pd.DataFrame | None = None   # source and row of every raw plot, in the page's order
+        self.raw_payload: dict | None = None
+        self.runs: dict[str, tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame | None]] = {}   # id -> fused, raw outcomes, track state
 
-ADSBX_TYPE = {1: "ADS-B", 2: "ADS-B, no position in message", 3: "ADS-R", 4: "TIS-B", 5: "TIS-B track file", 6: "ADS-C", 7: "MLAT", 8: "Mode S only", 9: "ADS-B other", 10: "ADS-R other", 11: "TIS-B other", 12: "other"}
-PF_SOURCE = {1: "ADS-B", 2: "PlaneFinder MLAT", 3: "FLARM", 4: "third party MLAT", 5: "blocked"}
+    def ms(self, us: pd.Series) -> pd.Series:
+        """Microseconds since the epoch to milliseconds after the case start, the page's time axis."""
+        return (us - self.t0_us) // 1000
+
+    def run_list(self) -> list[dict]:
+        """Every strategy run with its manifest, then the two production entries."""
+        out = runbook.list_runs(self.path)
+        for name, part in production.PARTS.items():
+            if (self.path / "production" / f"{part}.parquet").exists():
+                out.append(dict(id=name, strategy=name, label="", production=True, note=f"production, from the case's production/{production.PARTS[name]}.parquet"))
+        return out
+
+    # the raw plots
+
+    def source(self, name: str) -> pd.DataFrame:
+        if name not in self.sources:
+            path = self.path / "raw" / f"{name}.parquet"
+            self.sources[name] = pd.read_parquet(path) if path.exists() else pd.DataFrame()
+        return self.sources[name]
+
+    def raw(self) -> dict:
+        """The base columns of every raw plot, sorted by the time we received them, and every source's fields."""
+        if self.raw_payload is not None:
+            return self.raw_payload
+        parts = []
+        for name in RAW_SOURCES:
+            f = self.source(name)
+            if f.empty:
+                continue
+            parts.append(pd.DataFrame(dict(
+                src=name, row=range(len(f)),
+                t=self.ms(micros(f, "common.position_timestamp")), r=self.ms(micros(f, "common.asi_received_timestamp")),
+                lat=number(f, "common.latitude"), lon=number(f, "common.longitude"),
+                alt=number(f, "common.altitude_ft"), gs=number(f, "common.ground_speed_kt"), trk=number(f, "common.track_deg"),
+                cs=text(f, "common.callsign"), hex=text(f, "common.adshex"), tail=text(f, "common.tail_number"), tid=text(f, "common.track_identifier"),
+                nacp=number(f, NACP_COLUMN.get(name)), nic=number(f, NIC_COLUMN.get(name)), rc=number(f, "rc" if name == "adsbx" else None),
+                kind=plot_kind(f, name), ground=on_ground(f, name),
+            )))
+        frame = pd.concat(parts, ignore_index=True).sort_values("r", kind="stable").reset_index(drop=True)
+        self.raw_order = frame[["src", "row"]]
+        self.raw_payload = dict(**{c: jsonable(frame[c]) for c in frame.columns}, schema={name: schema(self.source(name), set()) for name in RAW_SOURCES if not self.source(name).empty})
+        return self.raw_payload
+
+    def raw_field(self, source: str, column: str) -> list | None:
+        """One field of one source, lined up with the page's raw plots; plots of other sources get None."""
+        if column not in self.source(source).columns:
+            return None
+        values = as_values(self.source(source)[column])
+        page = pd.Series([None] * len(self.raw_order), dtype="object")
+        rows = self.raw_order["src"] == source
+        page[rows] = values.iloc[self.raw_order.loc[rows, "row"].to_numpy()].to_numpy()
+        return jsonable(pd.to_numeric(page, errors="coerce") if pd.api.types.is_numeric_dtype(values) else page)
+
+    # the strategies
+
+    def load_run(self, run_id: str) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame | None]:
+        if run_id not in self.runs:
+            if run_id in production.PARTS:
+                fused, outcomes = production.load(self.path, run_id)
+                state = None
+            else:
+                folder = self.path / "runs" / run_id
+                fused, outcomes = pd.read_parquet(folder / "fused_plots.parquet"), pd.read_parquet(folder / "raw_plots.parquet")
+                state = pd.read_parquet(folder / "track_state.parquet") if (folder / "track_state.parquet").exists() else None
+            fused = fused.sort_values("created_at", kind="stable").reset_index(drop=True)
+            if state is not None:
+                # the strategy's numbers about a track, on the fused plot of the same track and position time
+                keys = ["track_id", "position_timestamp", "created_at"]
+                fused = fused.merge(state.drop_duplicates(keys, keep="last"), on=keys, how="left", suffixes=("", "_state"))
+            self.runs[run_id] = (fused, outcomes, state)
+        return self.runs[run_id]
+
+    def run(self, run_id: str) -> dict:
+        """The base columns of a strategy's fused plots, sorted by when they were emitted, plus its fields."""
+        fused, _, state = self.load_run(run_id)
+        state_columns = [] if state is None else [c for c in state.columns if c not in ("track_id", "position_timestamp", "created_at")]
+        base = dict(track=fused["track_id"], created=self.ms(fused["created_at"]), valid_to=self.ms(fused["valid_to"]),
+                    t=self.ms(fused["position_timestamp"]), r=self.ms(fused["asi_received_timestamp"]), src=number(fused, "source_identifier"),
+                    lat=number(fused, "latitude"), lon=number(fused, "longitude"), alt=number(fused, "altitude_ft"), gs=number(fused, "ground_speed_kt"), trk=number(fused, "track_deg"),
+                    cs=fused["callsign"], hex=fused["adshex"], tail=fused["tail_number"], quality=fused["quality"],
+                    **{c: fused[c] for c in state_columns})
+        fields = schema(fused.drop(columns=state_columns), {"event", "track_id"})
+        fields += [dict(field, table="track_state") for field in schema(fused[state_columns], set())]
+        return dict(**{k: jsonable(v) for k, v in base.items()}, state_columns=state_columns, schema=fields)
+
+    def run_field(self, run_id: str, column: str) -> list | None:
+        fused, _, _ = self.load_run(run_id)
+        if column not in fused.columns:
+            return None
+        return jsonable(as_values(fused[column]))
+
+    def outcomes(self, run_id: str) -> dict:
+        """What the strategy did with every raw plot, lined up with the page's raw plots, and its recorded numbers."""
+        _, outcomes, _ = self.load_run(run_id)
+        page = self.raw_order.merge(outcomes.rename(columns={"source": "src"}), on=["src", "row"], how="left")
+        numbers = [c for c in outcomes.columns if c not in ("source", "row", "state", "track_id", "reason")]
+        return dict(state=jsonable(page["state"].fillna("unknown")), track=jsonable(page["track_id"]), reason=jsonable(page["reason"]),
+                    numbers={c: jsonable(page[c]) for c in numbers})
 
 
 def plot_kind(f: pd.DataFrame, source: str) -> pd.Series:
     """The kind of plot inside a source, as words, or empty when the source has only one kind."""
     if source == "adsbx" and "type" in f.columns:
-        return pd.to_numeric(f["type"], errors="coerce").map(ADSBX_TYPE).fillna("")
+        return pd.to_numeric(f["type"], errors="coerce").map(ADSBX_KIND).fillna("")
     if source == "planefinder" and "data_source" in f.columns:
-        return pd.to_numeric(f["data_source"], errors="coerce").map(PF_SOURCE).fillna("")
+        return pd.to_numeric(f["data_source"], errors="coerce").map(PLANEFINDER_KIND).fillna("")
     return pd.Series([""] * len(f))
 
 
-def load_raw(case: pathlib.Path, t0_us: int) -> dict:
-    parts = []
-    for source in RAW_SOURCES:
-        path = case / f"{source}.parquet"
-        if not path.exists():
-            continue
-        f = pd.read_parquet(path)
-        if f.empty:
-            continue
-        c = lambda name: f[name] if name in f.columns else pd.Series([None] * len(f))
-        # common timestamps: the exact recovered column when the table had a TIMESTAMP, else the source's own int64 micros
-        micros = lambda base: pd.to_numeric(f[f"common_{base}_us"] if f"common_{base}_us" in f.columns else f[f"common.{base}"], errors="coerce")
-        parts.append(pd.DataFrame(dict(
-            src=source,
-            t=(micros("position_timestamp") - t0_us) // 1000,      # ms after the case start, position time
-            r=(micros("asi_received_timestamp") - t0_us) // 1000,  # ms after the case start, when we received it
-            lat=pd.to_numeric(c("common.latitude")), lon=pd.to_numeric(c("common.longitude")),
-            alt=pd.to_numeric(c("common.altitude_ft"), errors="coerce"), gs=pd.to_numeric(c("common.ground_speed_kt"), errors="coerce"),
-            trk=pd.to_numeric(c("common.track_deg"), errors="coerce"), hdg=pd.to_numeric(c("common.heading_deg"), errors="coerce"),
-            cs=c("common.callsign"), hex=c("common.adshex"), tail=c("common.tail_number"), tid=c("common.track_identifier"),
-            # ADS-B accuracy numbers where the source carries them: NACp, NIC, Rc in metres, NACv, SIL
-            nacp=num(f, {"adsbx": "nac_p", "uavionix": "quality_indicators.nacp", "stdds": "status.nacp"}.get(source)),
-            nic=num(f, {"adsbx": "nic", "uavionix": "quality_indicators.nucp_or_nic", "stdds": "status.nic"}.get(source)),
-            rc=num(f, {"adsbx": "rc"}.get(source)),
-            # the two kinds of altitude a source carries in its own fields; common.altitude_ft is the barometric one for every source
-            alt_baro=(num(f, "flight_level") * 100 if source == "uavionix" else num(f, {"adsbx": "alt_baro", "planefinder": "altitude", "tfms_ti": "common.altitude_ft", "tfms_or": "common.altitude_ft", "ual": "common.altitude_ft", "asa": "common.altitude_ft"}.get(source))),
-            alt_geo=num(f, {"adsbx": "alt_geom", "uavionix": "geometric_height"}.get(source)),
-            nacv=num(f, {"adsbx": "nac_v", "uavionix": "quality_indicators.nucr_or_nacv"}.get(source)),
-            sil=num(f, {"adsbx": "sil", "uavionix": "quality_indicators.sil", "stdds": "status.sil"}.get(source)),
-            # the kind of plot inside the source: ADS-B Exchange's type, PlaneFinder's data_source; empty when the source has only one kind
-            kind=plot_kind(f, source),
-            _pos_us=micros("position_timestamp").astype("Int64"),
-            # on the ground, as the source says it: ADS-B Exchange writes "ground" into alt_baro, uAvionix sets the ground bit
-            ground=((c("alt_baro").astype("string") == "ground") if source == "adsbx" else (c("target_report_descriptor.is_ground_bit_set").astype("string").str.lower() == "true") if source == "uavionix" else pd.Series([False] * len(f))).fillna(False).astype(int),
-        )))
-    frame = pd.concat(parts, ignore_index=True).sort_values("r").reset_index(drop=True)
-    out = columnar(frame.drop(columns=["_pos_us"]))
-    out["_pos_us"] = [int(v) if pd.notna(v) else None for v in (frame["_pos_us"] if "_pos_us" in frame else [])]
-    out["_t0_us"] = t0_us   # server side only, stripped before sending
-    return out
-
-
-def load_run(case: pathlib.Path, name: str, t0_us: int) -> dict:
-    """name is 'strategy/label', the run's folder under runs/."""
-    f = pd.read_parquet(case / "runs" / name / "fused_plots.parquet")
-    frame = pd.DataFrame(dict(
-        track=f["track_id"], created=(f["created_at_us"] - t0_us) // 1000,
-        valid_to=((f["valid_to_us"] - t0_us) // 1000) if "valid_to_us" in f else None,
-        t=(f["position_us"] - t0_us) // 1000, r=(f["asi_received_us"] - t0_us) // 1000,
-        src=f["source_identifier"], lat=f["latitude"], lon=f["longitude"], alt=f["altitude_ft"], gs=f["ground_speed_kt"],
-        trk=f["track_deg"], hdg=f["heading_deg"], cs=f["callsign"], hex=f["adshex"], tail=f["tail_number"], quality=f["quality"],
-        # whatever the strategy added, for example sigma_horizontal_m; a run without them has no such columns
-        **{c: f[c] for c in f.columns if c.startswith("sigma_")},
-    )).sort_values("created").reset_index(drop=True)
-    return columnar(frame)
-
-
-def load_outcomes(case: pathlib.Path, name: str, raw: dict) -> dict:
-    """For every raw plot, in the page's raw order: the state the strategy gave it, the track it went into and the
-    reason. A run without raw_outcomes.parquet (made before outcomes existed) answers with nulls."""
-    path = case / "runs" / name / "raw_outcomes.parquet"
-    if not path.exists():
-        return dict(state=None, track=None, reason=None)
-    o = pd.read_parquet(path)
-    key = list(zip(o["source"], pd.to_numeric(o["position_us"]).astype("Int64").tolist(), o["source_track_identifier"].fillna("")))
-    lookup = dict(zip(key, zip(o["state"], o["track_id"].astype("string").fillna(""), o["reason"].fillna(""))))
-    state, track, reason = [], [], []
-    for src, pos_us, tid in zip(raw["src"], raw["_pos_us"], raw["tid"]):
-        v = lookup.get((src, pos_us, tid))
-        state.append(v[0] if v else None); track.append(v[1] if v else None); reason.append(v[2] if v else None)
-    return dict(state=state, track=track, reason=reason)
+def on_ground(f: pd.DataFrame, source: str) -> pd.Series:
+    """On the ground, as the source says it: ADS-B Exchange writes "ground" into alt_baro, uAvionix sets the ground bit."""
+    if source == "adsbx" and "alt_baro" in f.columns:
+        return (f["alt_baro"].astype("string") == "ground").fillna(False).astype(int)
+    if source == "uavionix" and "target_report_descriptor.is_ground_bit_set" in f.columns:
+        return (f["target_report_descriptor.is_ground_bit_set"].astype("string").str.lower() == "true").fillna(False).astype(int)
+    return pd.Series([0] * len(f))
 
 
 def list_cases(root: pathlib.Path) -> list[dict]:
     out = []
     for folder in sorted(p for p in root.iterdir() if (p / "case.json").exists()):
-        runs = [r["id"] for r in runbook.list_runs(folder)]
         info = json.loads((folder / "case.json").read_text())
-        out.append(dict(name=folder.name, complete=bool(runs), runs=runs, t_start=info.get("t_start"), suspect=(info.get("suspect") or {}).get("callsign")))
+        complete = (folder / "raw").exists() and any((folder / "raw").glob("*.parquet"))
+        out.append(dict(name=folder.name, complete=complete, t_start=info.get("t_start"), suspect=(info.get("suspect") or {}).get("callsign")))
     return out
 
 
 def make_handler(root: pathlib.Path):
-    cache = {}   # case name -> dict(info, t0_us, t1_us, runs, raw, run data)
+    cases: dict[str, Case] = {}
+    lock = threading.Lock()   # one request at a time loads case data; static files are served alongside
 
-    def open_case(name: str) -> dict:
-        if name in cache:
-            return cache[name]
-        case = root / name
-        info = json.loads((case / "case.json").read_text())
-        t0_us = int(pd.Timestamp(info["t_start"], tz="UTC").timestamp() * 1e6)
-        t1_us = int(pd.Timestamp(info["t_end"], tz="UTC").timestamp() * 1e6)
-        cache[name] = dict(path=case, info=info, t0_us=t0_us, t1_us=t1_us, runs=runbook.list_runs(case), data={})
-        return cache[name]
+    def open_case(name: str) -> Case:
+        if name not in cases:
+            cases[name] = Case(root / name)
+        return cases[name]
 
-    class H(SimpleHTTPRequestHandler):
+    class Handler(SimpleHTTPRequestHandler):
         def end_headers(self):
             # the page changes often while we work on it; never let the browser keep an old copy
             self.send_header("Cache-Control", "no-store")
@@ -159,69 +243,87 @@ def make_handler(root: pathlib.Path):
             self.end_headers(); self.wfile.write(body)
 
         def do_GET(self):
-            if self.path in ("/", "/index.html") or self.path.startswith("/?"):
+            url = urlparse(self.path)
+            if url.path in ("/", "/index.html"):
                 self.path = "/viewer.html"
                 return SimpleHTTPRequestHandler.do_GET(self)
-            parts = [p for p in self.path.split("?")[0].split("/") if p]
-            if parts == ["api", "cases"]:
+            if not url.path.startswith("/api/"):
+                return SimpleHTTPRequestHandler.do_GET(self)
+            try:
+                with lock:
+                    return self._api(url.path[len("/api/"):], {k: v[0] for k, v in parse_qs(url.query).items()})
+            except (FileNotFoundError, KeyError) as error:
+                return self._json(dict(error=f"not found: {error}"), 404)
+            except Exception as error:
+                return self._json(dict(error=f"{type(error).__name__}: {error}"), 500)
+
+        def _api(self, what: str, q: dict) -> None:
+            if what == "cases":
                 return self._json(dict(cases=list_cases(root)))
-            if len(parts) >= 3 and parts[0] == "api":
-                kind, name = parts[1], parts[2]
-                if not (root / name / "case.json").exists():
-                    return self._json(dict(error="no such case"), 404)
-                c = open_case(name)
-                if kind == "case":
-                    c["runs"] = runbook.list_runs(c["path"])   # a run may have been added since the case was first opened
-                    return self._json(dict(case=c["info"], t0_us=c["t0_us"], span_ms=(c["t1_us"] - c["t0_us"]) // 1000, runs=c["runs"]))
-                if kind == "raw":
-                    c["data"].setdefault("raw", load_raw(c["path"], c["t0_us"]))
-                    return self._json({k: v for k, v in c["data"]["raw"].items() if not k.startswith("_")})
-                if kind in ("run", "outcomes") and len(parts) == 5:
-                    run = parts[3] + "/" + parts[4]
-                    if run not in [r["id"] for r in c["runs"]]:
-                        return self._json(dict(error="no such strategy"), 404)
-                    if kind == "run":
-                        c["data"].setdefault("run:" + run, load_run(c["path"], run, c["t0_us"]))
-                        return self._json(c["data"]["run:" + run])
-                    c["data"].setdefault("raw", load_raw(c["path"], c["t0_us"]))
-                    c["data"].setdefault("outcomes:" + run, load_outcomes(c["path"], run, c["data"]["raw"]))
-                    return self._json(c["data"]["outcomes:" + run])
-            return SimpleHTTPRequestHandler.do_GET(self)
+            if "case" not in q or not (root / q["case"] / "case.json").exists():
+                return self._json(dict(error="no such case"), 404)
+            case = open_case(q["case"])
+            known = {r["id"] for r in case.run_list()}
+            if "run" in q and q["run"] not in known:
+                return self._json(dict(error="no such strategy run"), 404)
+            if case.raw_order is None and what != "case":
+                case.raw()   # the page's raw order is needed to line up outcomes and fields
+            if what == "case":
+                return self._json(dict(case=case.info, t0_us=case.t0_us, span_ms=(case.t1_us - case.t0_us) // 1000, runs=case.run_list()))
+            if what == "raw":
+                return self._json(case.raw())
+            if what == "run":
+                return self._json(case.run(q["run"]))
+            if what == "outcomes":
+                return self._json(case.outcomes(q["run"]))
+            if what == "field" and not q.get("column"):
+                return self._json(dict(error="a field request needs a column"), 400)
+            if what == "field" and q.get("source"):
+                return self._json(dict(values=case.raw_field(q["source"], q["column"])))
+            if what == "field" and q.get("run"):
+                return self._json(dict(values=case.run_field(q["run"], q["column"])))
+            return self._json(dict(error="not found"), 404)
 
         def do_POST(self):
             # the one thing the page may write: the note of a run, into its run.json
-            parts = [p for p in self.path.split("?")[0].split("/") if p]
-            if len(parts) == 5 and parts[:2] == ["api", "note"] and (root / parts[2] / "case.json").exists():
+            url = urlparse(self.path)
+            q = {k: v[0] for k, v in parse_qs(url.query).items()}
+            if self.headers.get("Origin") not in (None, f"http://localhost:{self.server.server_port}", f"http://127.0.0.1:{self.server.server_port}"):
+                return self._json(dict(error="notes are only written from the viewer's own page"), 403)
+            if url.path == "/api/note" and (root / q.get("case", "") / "case.json").exists():
+                runs = {r["id"] for r in open_case(q["case"]).run_list() if not r.get("production")}
+                if q.get("run") not in runs:
+                    return self._json(dict(error="no such strategy run"), 404)
                 body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0)) or 0) or b"{}")
+                strategy, label = q["run"].split("/", 1)
                 try:
-                    manifest = runbook.set_note(root / parts[2], parts[3], parts[4], str(body.get("note", ""))[:2000])
+                    manifest = runbook.set_note(root / q["case"], strategy, label, str(body.get("note", ""))[:2000])
                 except FileNotFoundError:
                     return self._json(dict(error="no such run"), 404)
-                if parts[2] in cache:
-                    cache[parts[2]]["runs"] = runbook.list_runs(root / parts[2])
                 return self._json(manifest)
             return self._json(dict(error="not found"), 404)
 
         def log_message(self, *a):
             pass
 
-    return H
+    return Handler
 
 
 def main():
-    import os
     ap = argparse.ArgumentParser()
     ap.add_argument("--cases", default=str(pathlib.Path.cwd() / "data" / "cases"), help="folder with one sub folder per case")
     ap.add_argument("--port", type=int, default=8770)
+    ap.add_argument("--no-browser", action="store_true", help="do not open a browser tab")
     a = ap.parse_args()
     root = pathlib.Path(a.cases).resolve()
     if not root.is_dir():
         raise SystemExit(f"no such folder: {root}")
     os.chdir(HERE)
-    srv = HTTPServer(("127.0.0.1", a.port), make_handler(root))
+    server = ThreadingHTTPServer(("127.0.0.1", a.port), make_handler(root))
     print(f"viewer: http://localhost:{a.port}  (ctrl-c to stop)")
-    webbrowser.open(f"http://localhost:{a.port}")
-    srv.serve_forever()
+    if not a.no_browser:
+        webbrowser.open(f"http://localhost:{a.port}")
+    server.serve_forever()
 
 
 if __name__ == "__main__":
