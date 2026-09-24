@@ -1,6 +1,6 @@
 // The map: raw plots underneath, strategy points and lines on top, all as known at time now.
-import { S, $, table, compareEntry, trackLabel, fadeWindowMs, fmt, fmtMs, fmtN, runName, SOURCE_NAME, SOURCE_BY_ID, escapeHtml } from "./state.js";
-import { rawColourFunction, strategyColourFunction, SOURCE_COLOR, GREY, FILTERED, ICONS, rgb, runColour } from "./palette.js";
+import { S, $, table, compareEntry, comparing, trackLabel, fadeWindowMs, fmt, fmtMs, fmtN, runName, SOURCE_NAME, SOURCE_BY_ID, escapeHtml, sliderMetres } from "./state.js";
+import { rawColourFunction, strategyColourFunction, SOURCE_COLOR, GREY, FILTERED, rgb, runColour } from "./palette.js";
 import { hideFailed } from "./filters.js";
 import { toggleTrack } from "./compare.js";
 import { bus } from "./bus.js";
@@ -13,18 +13,40 @@ export const NACP_M = { 11:3, 10:10, 9:30, 8:92.6, 7:185.2, 6:555.6, 5:926, 4:18
 export const NIC_M = { 11:7.5, 10:25, 9:75, 8:185.2, 7:370.4, 6:1111.2, 5:1852, 4:3704, 3:7408, 2:14816, 1:37040 };
 const SIGMA_FACTOR = { s1:1, s2:2, s95:2.45 };
 
+// how big a plot is drawn: { units:"pixels"|"meters", radius }, for the layers and for the hover ring
+function rawRadius(i) {
+  const R = S.RAW, mode = $("rawSize").value;
+  if (mode === "fixed") return { units:"pixels", radius:+$("rawPx").value };
+  const metres = mode === "nacp" ? NACP_M[R.nacp[i]] : (NIC_M[R.nic[i]] ?? (R.rc[i] || null));
+  return { units:"meters", radius:metres || sliderMetres("rawMetres") };
+}
+// the horizontal sigma from the strategy's recorded east and north sigmas, when it records them
+function sigma(run, i) {
+  if (!run.sigma_east_m || !run.sigma_north_m) return null;
+  const e = run.sigma_east_m[i], n = run.sigma_north_m[i];
+  return e == null || n == null ? null : Math.sqrt((e * e + n * n) / 2);
+}
+function pointRadius(id, i) {
+  const factor = SIGMA_FACTOR[$("pointSize").value];
+  if (!factor) return { units:"pixels", radius:+$("pointPx").value };
+  const s = sigma(S.RUNS[id], i);
+  return { units:"meters", radius:s == null ? sliderMetres("pointMetres") : s * factor };
+}
+
 export function initMap(onReady) {
   const box = S.CASE.case.box;
   map = new maplibregl.Map({ container:"map", style:"https://tiles.openfreemap.org/styles/dark", center:[(box.lon_min + box.lon_max) / 2, (box.lat_min + box.lat_max) / 2], zoom:8.3, boxZoom:false, dragRotate:false, pitchWithRotate:false, touchPitch:false });
   $("mapwrap").addEventListener("contextmenu", e => e.preventDefault());
   map.addControl(new maplibregl.NavigationControl(), "top-right"); map.addControl(new maplibregl.ScaleControl({ unit:"metric" }));
-  overlay = new deck.MapboxOverlay({ interleaved:false, layers:[], onClick:(info, event) => clickAt(info, event) });
+  overlay = new deck.MapboxOverlay({ interleaved:false, layers:[], onClick:(info, event) => clickAt(info, event), onHover:info => hoverAt(info.x, info.y) });
   map.addControl(overlay);
   new ResizeObserver(() => map.resize()).observe($("mapwrap"));
   const placeDbg = () => { $("dbg").style.bottom = ($("ctl").offsetHeight + 12) + "px"; }; placeDbg(); new ResizeObserver(placeDbg).observe($("ctl"));
   map.on("load", dimBasemap);
   map.on("mousemove", e => { $("dbgLat").textContent = e.lngLat.lat.toFixed(4); $("dbgLon").textContent = e.lngLat.lng.toFixed(4); });
-  map.on("move", () => { $("dbgZoom").textContent = map.getZoom().toFixed(2); }); $("dbgZoom").textContent = map.getZoom().toFixed(2);
+  map.on("move", () => { $("dbgZoom").textContent = map.getZoom().toFixed(2); });
+  map.on("moveend", () => { if (lastPointer) hoverAt(...lastPointer); });
+  $("dbgZoom").textContent = map.getZoom().toFixed(2);
   document.addEventListener("mousedown", e => { if (!$("pick").contains(e.target)) closePick(); });
   boxSelect();
   map.loaded() ? onReady() : map.once("idle", onReady);
@@ -51,19 +73,20 @@ function fader() {
 }
 // while comparing: everything, only the compared tracks, or everything else
 function shownFilter() {
-  const mode = S.compare.length ? $("mapShows").value : "all";
-  return (kind, i) => mode === "all" ? true : mode === "only" ? !!compareEntry(kind, i) : !compareEntry(kind, i);
+  // a compared track switched off with its eye is never drawn; the rest follows "while comparing"
+  const mode = comparing() ? $("mapShows").value : "all";
+  return (kind, i) => { const e = compareEntry(kind, i); if (e && e.hidden) return false; return mode === "all" ? true : mode === "only" ? !!e : !e; };
 }
 const inWindow = t => !S.win || (t >= S.win[0] && t <= S.win[1]);
 
 export function draw() {
   if (!S.RAW || !map) return;
-  const alpha = fader(), shown = shownFilter(), comparing = S.compare.length > 0;
+  const alpha = fader(), shown = shownFilter(), isComparing = comparing();
   const layers = [boxLayer()];
   S.visible = { raw:[], runs:{} };
-  if ($("rawOn").checked) layers.push(...rawLayers(alpha, shown, comparing));
+  if ($("rawOn").checked) layers.push(...rawLayers(alpha, shown, isComparing));
   const pointLayers = [];
-  for (const id of S.runShown) if (S.RUNS[id]) { const [lines, points] = strategyLayers(id, alpha, shown, comparing); if (lines) layers.push(lines); pointLayers.push(...points); }
+  for (const id of S.runShown) if (S.RUNS[id]) { const [lines, points] = strategyLayers(id, alpha, shown, isComparing); if (lines) layers.push(lines); pointLayers.push(...points); }
   baseLayers = [...layers, ...pointLayers];
   drawHighlight();
 }
@@ -73,33 +96,47 @@ function boxLayer() {
   return new deck.PathLayer({ id:"box", data:[{ path:[[b.lon_min, b.lat_min], [b.lon_max, b.lat_min], [b.lon_max, b.lat_max], [b.lon_min, b.lat_max], [b.lon_min, b.lat_min]] }], getPath:d => d.path, getColor:[183, 192, 202, 90], getWidth:1, widthUnits:"pixels" });
 }
 
-function rawLayers(alpha, shown, comparing) {
+function rawLayers(alpha, shown, isComparing) {
   const R = S.RAW, pass = S.rawPass, hide = hideFailed(), mode = $("rawColour").value, sizeMode = $("rawSize").value, px = +$("rawPx").value;
   const colourOf = rawColourFunction(mode);
   // compared tracks take their own colour and everything else goes grey; a plot that fails the filters is darker still
-  const colour = i => { if (!pass[i]) return FILTERED; if (comparing) { const c = compareEntry("raw", i); return c ? c.color : GREY; } return colourOf(i); };
+  const colour = i => { if (!pass[i]) return FILTERED; if (isComparing) { const c = compareEntry("raw", i); return c ? c.color : GREY; } return colourOf(i); };
   const idx = [];
   for (let i = 0; i < R.n && R.r[i] <= S.now; i++) if ((pass[i] || !hide) && inWindow(R.t[i]) && alpha(R.t[i]) > 0 && shown("raw", i)) idx.push(i);   // RAW is sorted by receipt time
   S.visible.raw = idx;
-  const stamp = [S.now, mode, sizeMode, px, S.compare.length, S.compare.map(c => c.color).join(), pass, fadeWindowMs()];
-  const common = { getPosition:i => [R.lon[i], R.lat[i]], pickable:true, onHover:info => mapHover(info, "raw") };
+  const stamp = [S.now, mode, sizeMode, px, sliderMetres("rawMetres"), comparing(), S.compare.map(c => c.color + c.hidden).join(), pass, fadeWindowMs()];
+  const common = { getPosition:i => [R.lon[i], R.lat[i]], pickable:true };
   if (sizeMode === "fixed") return [new deck.ScatterplotLayer({ id:"raw", data:idx, ...common, radiusUnits:"pixels", getRadius:px, getFillColor:i => [...colour(i), alpha(R.t[i])], updateTriggers:{ getFillColor:stamp } })];
 
-  // sized by NACp or NIC: a circle of that radius in metres; no number gets a cross at the fixed size, a 0 gets a ring
+  // sized by NACp or NIC: a circle of that radius in metres; no number gets a solid circle with a cross cut out, a 0 gets a ring,
+  // both of the size in metres from the slider; all drawn as shapes, so they stay sharp at any zoom
   const value = i => sizeMode === "nacp" ? R.nacp[i] : R.nic[i];
-  const radius = i => sizeMode === "nacp" ? NACP_M[R.nacp[i]] : (NIC_M[R.nic[i]] ?? (R.rc[i] || null));
+  const radius = i => rawRadius(i).radius;
   const sized = [], zero = [], missing = [];
-  for (const i of idx) { const v = value(i); if (v == null) missing.push(i); else if (v === 0) zero.push(i); else if (radius(i)) sized.push(i); else missing.push(i); }
-  const icon = (id, data, kind) => new deck.IconLayer({ id, data, ...common, getIcon:() => ({ url:ICONS[kind], id:kind, width:64, height:64, mask:true }), sizeUnits:"pixels", getSize:px * 2, getColor:i => [...colour(i), alpha(R.t[i])], updateTriggers:{ getColor:stamp, getSize:stamp } });
+  for (const i of idx) { const v = value(i); if (v == null) missing.push(i); else if (v === 0) zero.push(i); else if (sizeMode === "nacp" ? NACP_M[v] : (NIC_M[v] ?? R.rc[i])) sized.push(i); else missing.push(i); }
+  const bigFirst = list => list.sort((a, b) => radius(b) - radius(a));
+  const shape = { getPosition:common.getPosition, radiusUnits:"meters", getRadius:radius, pickable:false };
+  const metres = sliderMetres("rawMetres");
   return [
-    new deck.ScatterplotLayer({ id:"raw-sized", data:sized, ...common, radiusUnits:"meters", getRadius:radius, filled:true, stroked:true, lineWidthUnits:"pixels", getLineWidth:1,
-      getFillColor:i => [...colour(i), Math.round(alpha(R.t[i]) * 0.35)], getLineColor:i => [...colour(i), alpha(R.t[i])], updateTriggers:{ getFillColor:stamp, getLineColor:stamp, getRadius:[sizeMode] } }),
-    icon("raw-zero", zero, "ring"),
-    icon("raw-missing", missing, "cross"),
+    new deck.ScatterplotLayer({ id:"raw-missing", data:missing, ...shape, getFillColor:i => [...colour(i), alpha(R.t[i])], updateTriggers:{ getFillColor:stamp, getRadius:stamp } }),
+    new deck.PathLayer({ id:"raw-cross", data:missing.flatMap(i => [[i, 0], [i, 1]]), pickable:false, getPath:([i, stroke]) => cross(R.lon[i], R.lat[i], metres, stroke), widthUnits:"meters", getWidth:metres * 0.24, capRounded:false,
+      getColor:([i]) => [10, 10, 10, alpha(R.t[i])], updateTriggers:{ getPath:stamp, getWidth:stamp, getColor:stamp } }),
+    new deck.ScatterplotLayer({ id:"raw-zero", data:zero, ...shape, getRadius:metres * 0.88, filled:false, stroked:true, lineWidthUnits:"meters", getLineWidth:metres * 0.24,
+      getLineColor:i => [...colour(i), alpha(R.t[i])], updateTriggers:{ getLineColor:stamp, getRadius:stamp, getLineWidth:stamp } }),
+    new deck.ScatterplotLayer({ id:"raw-sized", data:bigFirst(sized), ...shape, filled:true, stroked:false,
+      getFillColor:i => [...colour(i), Math.round(alpha(R.t[i]) * 0.55)], updateTriggers:{ getFillColor:stamp, getRadius:stamp } }),
+    // what the mouse finds: one invisible circle per plot, the whole disc, biggest first so the smallest under the mouse is on top
+    new deck.ScatterplotLayer({ id:"raw", data:bigFirst([...idx]), ...common, radiusUnits:"meters", getRadius:radius, getFillColor:[0, 0, 0, 0], updateTriggers:{ getRadius:stamp } }),
   ];
 }
 
-function strategyLayers(id, alpha, shown, comparing) {
+// one of the two strokes of a cross inside a circle of radius metres, as a lon/lat path
+function cross(lon, lat, metres, stroke) {
+  const arm = metres * 0.5, dLat = arm / 111320, dLon = arm / (111320 * Math.cos(lat * Math.PI / 180));
+  return stroke === 0 ? [[lon - dLon, lat - dLat], [lon + dLon, lat + dLat]] : [[lon + dLon, lat - dLat], [lon - dLon, lat + dLat]];
+}
+
+function strategyLayers(id, alpha, shown, isComparing) {
   const run = S.RUNS[id], idx = [], paths = {};
   for (let i = 0; i < run.n && run.created[i] <= S.now; i++) {   // sorted by created
     const replaced = run.valid_to[i]; if (replaced != null && replaced <= S.now) continue;   // a later event replaced it
@@ -108,8 +145,8 @@ function strategyLayers(id, alpha, shown, comparing) {
   }
   S.visible.runs[id] = idx;
   const pointColour = strategyColourFunction($("pointColour").value, id), lineColour = strategyColourFunction($("lineColour").value, id);
-  const override = (i, base) => { if (!comparing) return base(i); const c = compareEntry(id, i); return c ? c.color : GREY; };
-  const stamp = [S.now, $("pointColour").value, $("lineColour").value, $("pointSize").value, $("pointPx").value, $("lineWidth").value, S.compare.length, S.compare.map(c => c.color).join(), fadeWindowMs()];
+  const override = (i, base) => { if (!isComparing) return base(i); const c = compareEntry(id, i); return c ? c.color : GREY; };
+  const stamp = [S.now, $("pointColour").value, $("lineColour").value, $("pointSize").value, $("pointPx").value, sliderMetres("pointMetres"), $("lineWidth").value, comparing(), S.compare.map(c => c.color + c.hidden).join(), fadeWindowMs()];
   let lines = null;
   if ($("linesOn").checked) {
     const data = Object.values(paths).map(ids => { ids.sort((a, b) => run.t[a] - run.t[b]); return { first:ids[0], newest:run.t[ids[ids.length - 1]], path:ids.map(i => [run.lon[i], run.lat[i]]) }; });
@@ -117,16 +154,18 @@ function strategyLayers(id, alpha, shown, comparing) {
   }
   const points = [];
   if ($("pointsOn").checked) {
-    const common = { getPosition:i => [run.lon[i], run.lat[i]], pickable:true, onHover:info => mapHover(info, id), stroked:true, lineWidthUnits:"pixels" };
-    const factor = SIGMA_FACTOR[$("pointSize").value], px = +$("pointPx").value;
-    // the horizontal sigma from the strategy's recorded east and north sigmas, when it records them
-    const sigma = run.sigma_east_m && run.sigma_north_m ? i => { const e = run.sigma_east_m[i], n = run.sigma_north_m[i]; return e == null || n == null ? null : Math.sqrt((e * e + n * n) / 2); } : () => null;
-    const sized = factor ? idx.filter(i => sigma(i) != null) : [], fixed = factor ? idx.filter(i => sigma(i) == null) : idx;
-    if (sized.length) points.push(new deck.ScatterplotLayer({ id:"pts-sized-" + id, data:sized, ...common, radiusUnits:"meters", getRadius:i => sigma(i) * factor, getLineWidth:1,
+    const common = { getPosition:i => [run.lon[i], run.lat[i]], pickable:false, stroked:true, lineWidthUnits:"pixels" };
+    const factor = SIGMA_FACTOR[$("pointSize").value], radius = i => pointRadius(id, i).radius, bigFirst = list => list.sort((a, b) => radius(b) - radius(a));
+    const sized = factor ? bigFirst(idx.filter(i => sigma(run, i) != null)) : [], fixed = factor ? bigFirst(idx.filter(i => sigma(run, i) == null)) : idx;
+    if (sized.length) points.push(new deck.ScatterplotLayer({ id:"vpts-sized-" + id, data:sized, ...common, radiusUnits:"meters", getRadius:i => pointRadius(id, i).radius, getLineWidth:1,
       getFillColor:i => [...override(i, pointColour), Math.round(alpha(run.t[i]) * 0.15)], getLineColor:i => [...override(i, pointColour), alpha(run.t[i])], updateTriggers:{ getFillColor:stamp, getLineColor:stamp, getRadius:stamp } }));
-    // fixed size: a solid point with a thin black edge, so it stands out from the line through it
-    if (fixed.length) points.push(new deck.ScatterplotLayer({ id:"pts-" + id, data:fixed, ...common, radiusUnits:"pixels", getRadius:px, getLineWidth:1,
+    // a solid point with a thin black edge, so it stands out from the line through it: pixels in the fixed mode,
+    // the size in metres from the slider for points without a sigma in the uncertainty modes
+    if (fixed.length) points.push(new deck.ScatterplotLayer({ id:"vpts-" + id, data:fixed, ...common, radiusUnits:factor ? "meters" : "pixels", getRadius:i => pointRadius(id, i).radius, getLineWidth:1,
       getFillColor:i => [...override(i, pointColour), alpha(run.t[i])], getLineColor:i => [0, 0, 0, alpha(run.t[i])], updateTriggers:{ getFillColor:stamp, getLineColor:stamp, getRadius:stamp } }));
+    // what the mouse finds: every point once, biggest first, so the smallest under the mouse wins
+    points.push(new deck.ScatterplotLayer({ id:"pts-" + id, data:factor ? bigFirst([...idx]) : idx, getPosition:common.getPosition, pickable:true,
+      radiusUnits:factor ? "meters" : "pixels", getRadius:radius, getFillColor:[0, 0, 0, 0], updateTriggers:{ getRadius:stamp } }));
   }
   return [lines, points];
 }
@@ -135,19 +174,42 @@ function strategyLayers(id, alpha, shown, comparing) {
 export function drawHighlight() {
   const layers = [...baseLayers];
   if (S.hover && table(S.hover.kind)) {
-    const d = table(S.hover.kind);
-    layers.push(new deck.ScatterplotLayer({ id:"hover", data:[S.hover], getPosition:h => [d.lon[h.i], d.lat[h.i]], radiusUnits:"pixels", getRadius:9, filled:false, stroked:true, lineWidthUnits:"pixels", getLineWidth:2.5, getLineColor:[204, 255, 0] }));
+    // the ring outlines the plot just outside its edge, in the plot's own units, so it fits at any zoom
+    const d = table(S.hover.kind), { i } = S.hover;
+    const size = S.hover.kind === "raw" ? rawRadius(i) : $("pointsOn").checked ? pointRadius(S.hover.kind, i) : { units:"pixels", radius:3 };
+    const ring = size.units === "pixels" ? { radiusUnits:"pixels", getRadius:size.radius + 4 } : { radiusUnits:"meters", getRadius:size.radius * 1.12, radiusMinPixels:6 };
+    layers.push(new deck.ScatterplotLayer({ id:"hover", data:[S.hover], getPosition:h => [d.lon[h.i], d.lat[h.i]], ...ring, filled:false, stroked:true, lineWidthUnits:"pixels", getLineWidth:2, getLineColor:[204, 255, 0] }));
   }
   overlay.setProps({ layers });
 }
 
 // ---------- hover, click, box ----------
 
-function mapHover(info, kind) { setHover(info.object == null ? null : { kind, i:info.object }, info.x, info.y); }
+// everything under the mouse, from every layer, and the one drawn smallest on screen wins: a small raw plot inside a
+// strategy's big uncertainty circle, or a small circle inside a big one of the same layer, can always be hovered
+// while the map pans or zooms nothing is looked up: finding everything under the mouse redraws the picking buffer once
+// per plot found, which on a big case takes most of a frame; the lookup runs once when the map stops
+let lastPointer = null;
+function hoverAt(x, y) {
+  lastPointer = x == null || x < 0 ? null : [x, y];
+  if (map.isMoving()) return;
+  if (!lastPointer) return setHover(null);
+  const candidates = pickables(overlay.pickMultipleObjects({ x, y, radius:1, depth:24 }));
+  if (!candidates.length) return setHover(null);
+  const pixels = c => { const size = c.kind === "raw" ? rawRadius(c.i) : pointRadius(c.kind, c.i); return size.units === "pixels" ? size.radius : size.radius / metresPerPixel(table(c.kind).lat[c.i]); };
+  const best = candidates.reduce((a, b) => pixels(b) < pixels(a) ? b : a);
+  setHover(best, x, y);
+}
+// the raw plots and strategy points among picks, as {kind, i}
+function pickables(picks) {
+  return picks.filter(p => p.layer && (p.layer.id === "raw" || p.layer.id.startsWith("pts-"))).map(p => ({ kind:p.layer.id === "raw" ? "raw" : p.layer.id.slice("pts-".length), i:p.object }));
+}
+// metres per screen pixel at a latitude, for MapLibre's 512 pixel tiles
+const metresPerPixel = lat => 40075016.686 * Math.cos(lat * Math.PI / 180) / (512 * 2 ** map.getZoom());
 export function setHover(hover, x, y, fromChart) {
   const same = (S.hover && hover && S.hover.kind === hover.kind && S.hover.i === hover.i) || (!S.hover && !hover);
   S.hover = hover;
-  if (!same) { drawHighlight(); bus.redrawCharts(); }
+  if (!same) { drawHighlight(); bus.repaintCharts(); }
   const tip = $("tip");
   if (!hover || x == null) { tip.style.display = "none"; return; }
   tip.innerHTML = describe(hover); tip.style.display = "block";
@@ -193,7 +255,7 @@ function clickAt(info) {
   closePick();
   if (shiftDown) return;   // shift belongs to the box select
   const picks = overlay.pickMultipleObjects({ x:info.x, y:info.y, radius:7, depth:40 });
-  const items = picks.filter(p => p.layer && (p.layer.id.startsWith("raw") || p.layer.id.startsWith("pts-"))).map(p => ({ kind:p.layer.id.startsWith("raw") ? "raw" : p.layer.id.replace(/^pts-(sized-)?/, ""), i:p.object }));
+  const items = pickables(picks);
   const tracks = [], seen = new Set();
   for (const it of items) { const d = table(it.kind), key = it.kind === "raw" ? `raw|${d.src[it.i]}|${d.tid[it.i]}` : `${it.kind}|${d.track[it.i]}`; if (!seen.has(key)) { seen.add(key); tracks.push(it); } }
   if (!tracks.length) return;
