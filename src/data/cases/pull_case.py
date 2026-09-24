@@ -49,6 +49,13 @@ def dry_run_gb(sql: str) -> float:
     return int(st.get("totalBytesProcessed") or st["query"]["totalBytesProcessed"]) / 1e9
 
 
+def table_path(folder: pathlib.Path, name: str) -> pathlib.Path:
+    """Where a pulled table lives in a case folder: raw/<source>.parquet, production/append.parquet, production/final.parquet."""
+    path = folder / "production" / f"{name.removeprefix('fusion_')}.parquet" if name.startswith("fusion_") else folder / "raw" / f"{name}.parquet"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return path
+
+
 def to_parquet(rows: list[dict], path: pathlib.Path) -> int:
     # bq JSON gives every scalar as a string; keep them as strings here, the loader in the harness types the columns it uses
     frame = pd.json_normalize(rows, sep=".") if rows else pd.DataFrame()
@@ -84,7 +91,7 @@ def main():
         else:
             text = run_bq(sql_for(name, case), False)
         rows = json.loads(text) if text.strip() else []
-        counts[name] = to_parquet(rows, folder / f"{name}.parquet")
+        counts[name] = to_parquet(rows, table_path(folder, name))
         print(f"{name:14s} {counts[name]:8d} rows")
     (folder / "sql").mkdir(exist_ok=True)
     for name in TABLES:

@@ -4,8 +4,8 @@ Two bugs in uni-track-source-uavionix were fixed on 22 September 2026, after the
 - common.altitude_ft held the geometric height; it is now flight_level * 100, the barometric altitude, with no fallback (#113, TS-1927)
 - common.ground_speed_kt held NM/s; it is now knots, the raw value * 3600 (#114)
 
-This rewrites uavionix.parquet in place and also the uAvionix plots that production copied into fusion_append.parquet
-and fusion_final.parquet, matched to the raw plot by position time and hex. case.json records the fixes, so running
+This rewrites raw/uavionix.parquet in place and also the uAvionix plots that production copied into production/append.parquet
+and production/final.parquet, matched to the raw plot by position time and hex. case.json records the fixes, so running
 it again does nothing.
 
 usage: uv run src/data/cases/fix_uavionix.py src/data/cases            # or one case folder
@@ -35,7 +35,7 @@ def fix_case(case: pathlib.Path) -> None:
     if info.get("fixes"):
         print(f"{case.name}: already fixed ({len(info['fixes'])} fixes recorded)")
         return
-    raw_path = case / "uavionix.parquet"
+    raw_path = case / "raw" / "uavionix.parquet"
     raw = pd.read_parquet(raw_path) if raw_path.exists() else pd.DataFrame()
     if raw.empty:
         print(f"{case.name}: no uAvionix plots, only recording the fixes")
@@ -48,8 +48,8 @@ def fix_case(case: pathlib.Path) -> None:
 
         # the copies production made of those plots, matched back to the raw plot
         lookup = raw.drop_duplicates(["position_timestamp_us", "common.adshex"]).set_index(["position_timestamp_us", "common.adshex"])
-        for name in ["fusion_append", "fusion_final"]:
-            f = pd.read_parquet(case / f"{name}.parquet")
+        for name in ["append", "final"]:
+            f = pd.read_parquet(case / "production" / f"{name}.parquet")
             rows = f["source_identifier"] == UAVIONIX_SOURCE_ID
             if not rows.any():
                 continue
@@ -61,7 +61,7 @@ def fix_case(case: pathlib.Path) -> None:
             f.loc[rows, "altitude_ft"] = altitude
             f.loc[rows, "mean_sea_level_altitude_ft"] = altitude
             f.loc[rows, "ground_speed_kt"] = speed_raw.fillna(speed_fallback)
-            f.to_parquet(case / f"{name}.parquet", index=False)
+            f.to_parquet(case / "production" / f"{name}.parquet", index=False)
             print(f"  {name}: {int(rows.sum())} uAvionix plots rewritten, {sum(matched)} matched to a raw plot, {int(rows.sum()) - sum(matched)} took speed * 3600 and lost their altitude")
     info["fixes"] = FIXES
     (case / "case.json").write_text(json.dumps(info, indent=2) + "\n")

@@ -11,6 +11,9 @@ import argparse, json, pathlib, subprocess, sys
 
 import pandas as pd
 
+sys.path.insert(0, str(pathlib.Path(__file__).parent))
+from pull_case import table_path
+
 BQ = "/opt/homebrew/share/google-cloud-sdk/bin/bq"
 
 
@@ -55,14 +58,14 @@ def main():
         gb = int(st.get("totalBytesProcessed") or st["query"]["totalBytesProcessed"]) / 1e9
         rows = bq_json(["query", "--use_legacy_sql=false", "--format=json", "--max_rows=5000000"], sql) or []
 
-        frame = pd.read_parquet(folder / f"{name}.parquet")
+        frame = pd.read_parquet(table_path(folder, name))
         if len(rows) != len(frame):
             sys.exit(f"{name}: {len(rows)} rows from BigQuery but {len(frame)} in the parquet file, order cannot be trusted")
         # the anonymous table keeps the rows in query output order, same as the JSON export we converted
         micros = pd.DataFrame(rows)
         for col in micros.columns:
             frame[col] = pd.to_numeric(micros[col]).astype("Int64")
-        frame.to_parquet(folder / f"{name}.parquet", index=False)
+        frame.to_parquet(table_path(folder, name), index=False)
         print(f"{name}: {len(paths)} timestamp columns made exact ({gb:.3f} GB scanned)")
 
 

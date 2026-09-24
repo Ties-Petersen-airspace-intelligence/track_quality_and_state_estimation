@@ -6,7 +6,7 @@ A case costs a full day scan of every source whatever its box, so cases of the s
 one scan per source (about $4 per day instead of $4 per case). The cases file is a list with, per
 case: name, day, t_event (unix seconds) and regular_track (fused track id). Each case gets the hour
 centred on t_event and a box around its regular fusion track in that hour, plus a margin.
-Writes src/data/cases/<name>/ like pull_case.py: case.json, one Parquet per source, sql/.
+Writes src/data/cases/<name>/ like pull_case.py: case.json, raw/ with one Parquet per source, production/, sql/.
 Run from src/.
 """
 import argparse, json, pathlib, subprocess, sys, time, uuid
@@ -18,7 +18,7 @@ import pyarrow.parquet as pq
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from add_micros import timestamp_paths
-from pull_case import BQ, PRICE_PER_TB, TABLES, dry_run_gb, run_bq
+from pull_case import BQ, PRICE_PER_TB, TABLES, dry_run_gb, run_bq, table_path
 
 HERE = pathlib.Path(__file__).parent
 MARGIN_DEG = 0.5            # box margin around the track
@@ -201,10 +201,10 @@ def main():
                 (folder / "sql").mkdir(parents=True, exist_ok=True)
                 if parts[case["name"]]:
                     merged = pa.concat_tables(parts.pop(case["name"]), promote_options="default")
-                    pq.write_table(merged, folder / f"{name}.parquet")
+                    pq.write_table(merged, table_path(folder, name))
                     counts[case["name"]][name] = merged.num_rows
                 else:
-                    pd.DataFrame().to_parquet(folder / f"{name}.parquet", index=False)
+                    pd.DataFrame().to_parquet(table_path(folder, name), index=False)
                     counts[case["name"]][name] = 0
                 (folder / "sql" / f"{name}.sql").write_text(source_sql(name, day, [case], "t.*") + "\n")
             print(f"{day} {name:14s} {total:9d} rows in {time.time() - started:.0f} s", flush=True)

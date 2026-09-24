@@ -34,7 +34,7 @@ def load(case: pathlib.Path) -> pd.DataFrame:
     """Every raw plot of the case in one frame with exact times and the accuracy numbers each source has."""
     parts = []
     for src in SOURCES:
-        path = case / f"{src}.parquet"
+        path = case / "raw" / f"{src}.parquet"
         if not path.exists() or pq.read_metadata(path).num_rows == 0:
             continue
         f = pd.read_parquet(path)

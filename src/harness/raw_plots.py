@@ -49,7 +49,7 @@ def load_case(folder: str | pathlib.Path) -> list[RawPlot]:
     folder = pathlib.Path(folder)
     plots: list[RawPlot] = []
     for source, message_class in SOURCE_MESSAGE.items():
-        path = folder / f"{source}.parquet"
+        path = folder / "raw" / f"{source}.parquet"
         if not path.exists():
             continue
         frame = pd.read_parquet(path)
