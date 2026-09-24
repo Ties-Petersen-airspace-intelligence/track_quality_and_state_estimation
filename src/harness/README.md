@@ -66,7 +66,7 @@ The record takes one call per raw plot. The harness points it at the current plo
 
 ```python
 self.record.used(track.hex, distance_m=41.0)     # went into this track as a measurement
-self.record.skipped("type 7")                    # a fixed rule says this kind of plot is not for this strategy
+self.record.skipped("not an ADS-B position: ADS-B Exchange type is MLAT")   # a fixed rule says this plot is not for this strategy
 self.record.dropped("out of order", track.hex)   # the right kind of plot, but its timing made it unusable
 self.record.rejected(track.hex, "too far")       # checked against a track and refused
 self.record.track(track.hex, sigma_east_m=12.3)  # numbers about the track as of this plot's position time

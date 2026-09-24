@@ -33,7 +33,7 @@ def accept(plot: RawPlot) -> Measurement | str:
     proto, common = plot.proto, plot.proto.common
     if plot.source == "adsbx":
         if proto.type not in ADSB_TYPES:
-            return ADSBXPlotType.Name(proto.type)
+            return f"not an ADS-B position: ADS-B Exchange type is {ADSBXPlotType.Name(proto.type)}"
         if proto.alt_baro == "ground":
             return "on the ground"
         nacp = proto.nac_p if proto.HasField("nac_p") else None
@@ -42,7 +42,7 @@ def accept(plot: RawPlot) -> Measurement | str:
             return "on the ground"
         nacp = proto.quality_indicators.nacp if proto.quality_indicators.HasField("nacp") else None
     else:
-        return "other source"
+        return f"source not used: {plot.source}"
     if not common.adshex:
         return "no hex"
     if not common.HasField("altitude_ft"):
