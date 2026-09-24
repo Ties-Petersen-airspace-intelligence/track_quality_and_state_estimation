@@ -50,7 +50,7 @@ The label counts up per strategy and case, r001, r002, and so on. Nothing is ove
 - the note, and a few counts: raw plots, events, fused plots, tracks, plots later rewritten, raw plots per state and per reason
 - the command line, so it can be pasted back
 
-In the viewer, "all runs…" opens a table of every run of the case and the two production entries, sortable by any column. Ticking "active" lists a run under Strategies on the left. A click on a row shows the full manifest, two ticked runs are compared field by field, and the note can be edited in place. The note is the only thing the viewer ever writes, into that run's `run.json`.
+In the viewer, "all runs…" opens a table of every run of the case and the two production entries, sortable by any column; batch, commit and rewritten counts are only in the detail. Ticking "active" lists a run under Strategies on the left; when a case opens the newest run of every strategy but baseline is active, and production. A click on a row shows the full manifest, two ticked runs are compared field by field, and the note can be edited in place. The note is the only thing the viewer ever writes, into that run's `run.json`.
 
 Every run is committed, so a version in the runs table can be opened on any checkout.
 

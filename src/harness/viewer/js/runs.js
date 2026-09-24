@@ -60,6 +60,7 @@ export function renderRunList() {
 }
 
 // ---------- the panel with every run ----------
+// batch, commit and rewritten are left out of the columns; the detail row of a clicked run has them
 let sort = { key:"created", asc:true }, openRow = null, diff = [];
 const COLUMNS = [
   { key:"on", title:"active", val:r => S.runActive.has(r.id) ? 1 : 0, cell:r => `<input type="checkbox" class="rp-on" data-id="${r.id}" ${S.runActive.has(r.id) ? "checked" : ""}>` },
@@ -67,11 +68,8 @@ const COLUMNS = [
   { key:"strategy", title:"strategy", val:r => strategyOf(r.id), cell:r => strategyOf(r.id).replace(/_/g, " ") },
   { key:"label", title:"label", cls:"lab", cell:r => r.label || "" },
   { key:"created", title:"when", cls:"dim", cell:r => r.created ? r.created.slice(5, 16).replace("T", " ") : "" },
-  { key:"batch", title:"batch", cls:"dim", cell:r => r.batch ? r.batch.slice(4, 8) + " " + r.batch.slice(9, 13) : "" },
-  { key:"commit", title:"commit", cls:"dim", val:r => (r.git || {}).commit || "", cell:r => r.git && r.git.commit ? r.git.commit.slice(0, 7) + (r.git.dirty ? `<span class="dirty" title="the working tree had uncommitted changes">*</span>` : "") : "" },
   { key:"fused", title:"plots", cls:"num", val:r => (r.counts || {}).fused_plots, cell:r => fmtN((r.counts || {}).fused_plots) },
   { key:"tracks", title:"tracks", cls:"num", val:r => (r.counts || {}).tracks, cell:r => fmtN((r.counts || {}).tracks) },
-  { key:"rewritten", title:"rewritten", cls:"num", val:r => (r.counts || {}).rewritten, cell:r => fmtN((r.counts || {}).rewritten) },
   { key:"duration", title:"took", cls:"num dim", val:r => r.duration_s, cell:r => r.duration_s == null ? "" : r.duration_s + " s" },
   { key:"note", title:"note", cls:"note", cell:r => escapeHtml(r.note || "") },
 ];
