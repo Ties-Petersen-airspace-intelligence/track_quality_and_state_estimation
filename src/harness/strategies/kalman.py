@@ -8,7 +8,7 @@ import pymap3d
 from .. import protos_path  # noqa: F401
 from uni.protobuf.uni_track_schemas.fusion.v1beta.fusion_changed_event_pb2 import APPEND_ONLY, FusionChangedEvent
 from ..raw_plots import RawPlot
-from ..strategy import Outcome, Result
+from ..strategy import Record
 
 FEET = 0.3048                 # metres per foot
 KNOTS = 1.943844              # knots per metre per second
@@ -99,13 +99,15 @@ def enu_to_ecef(matrix_enu: np.ndarray, lat: float, lon: float) -> np.ndarray:
     return rotation @ matrix_enu @ rotation.T
 
 
-def update(track: Track, z: np.ndarray, R: np.ndarray) -> None:
-    """Correct the state with a position measurement z of uncertainty R."""
+def update(track: Track, z: np.ndarray, R: np.ndarray) -> tuple[float, float]:
+    """Correct the state with a position measurement z of uncertainty R. Returns how far the plot was from
+    where we expected it, in metres and in sigmas (below 3 in 97 of 100 plots if the noise is right; 10 is far off what we believed)."""
     innovation = z - H @ track.x                       # how far the plot is from where we expected it
     S = H @ track.P @ H.T + R                          # how far off that difference may be
     K = track.P @ H.T @ np.linalg.inv(S)               # how much of the difference to believe
     track.x = track.x + K @ innovation
     track.P = (np.eye(6) - K @ H) @ track.P
+    return float(np.linalg.norm(innovation)), float(np.sqrt(innovation @ np.linalg.inv(S) @ innovation))
 
 
 class Kalman:
@@ -117,14 +119,16 @@ class Kalman:
         start_velocity_sigma_mps=300.0,   # how unsure a new track is about its velocity
     )
 
-    def __init__(self, **overrides):
+    def __init__(self, record: Record, **overrides):
+        self.record = record
         self.params = {**Kalman.params, **overrides}
         self.tracks: dict[str, Track] = {}
 
-    def on_plot(self, plot: RawPlot) -> Result:
+    def on_plot(self, plot: RawPlot) -> list[FusionChangedEvent]:
         measurement = accept(plot)
         if isinstance(measurement, str):
-            return Result([], Outcome("skipped", reason=measurement))
+            self.record.skipped(measurement)
+            return []
         z = np.array(pymap3d.geodetic2ecef(measurement.lat, measurement.lon, measurement.altitude_m))
         R = measurement_noise(measurement, self.params)
 
@@ -132,24 +136,29 @@ class Kalman:
         track = self.tracks.get(measurement.hex)
         if track is None:
             track = self.tracks[measurement.hex] = start(measurement, z, R, self.params)
-            return Result([make_event(track, plot)], Outcome("used", track.hex), uncertainty(track))
+            self.record.used(track.hex)
+            self.record.track(track.hex, **sigmas(track))
+            return [make_event(track, plot)]
 
         # an older or duplicate plot is dropped, the filter only moves forward in time
         if measurement.timestamp_s <= track.timestamp_s:
-            return Result([], Outcome("dropped", track.hex, "duplicate" if measurement.timestamp_s == track.timestamp_s else "out of order"))
+            self.record.dropped("duplicate" if measurement.timestamp_s == track.timestamp_s else "out of order", track.hex)
+            return []
 
         # move the track to the plot's time, then pull it toward the plot
         predict(track, measurement.timestamp_s - track.timestamp_s, self.params["spectral_density"])
-        update(track, z, R)
+        distance_m, distance_sigmas = update(track, z, R)
         track.timestamp_s = measurement.timestamp_s
-        return Result([make_event(track, plot)], Outcome("used", track.hex), uncertainty(track))
+        self.record.used(track.hex, distance_m=distance_m, distance_sigmas=distance_sigmas)
+        self.record.track(track.hex, **sigmas(track))
+        return [make_event(track, plot)]
 
     def finish(self) -> list[FusionChangedEvent]:
         return []
 
 
-def uncertainty(track: Track) -> dict[str, float]:
-    """The filter's own sigmas at this moment, in east, north, up metres and metres per second, for the viewer.
+def sigmas(track: Track) -> dict[str, float]:
+    """The filter's own sigmas at this moment: east, north, up in metres and horizontal speed in metres per second.
     P is in ECEF, so its position and velocity blocks are rotated into east, north, up at the track's position."""
     lat, lon, _ = pymap3d.ecef2geodetic(*track.x[:3])
     rotation = np.array(pymap3d.enu2uvw(np.eye(3)[0], np.eye(3)[1], np.eye(3)[2], lat, lon))
@@ -157,7 +166,7 @@ def uncertainty(track: Track) -> dict[str, float]:
     velocity = rotation.T @ track.P[3:, 3:] @ rotation
     sigma = np.sqrt(np.diag(position)); sigma_velocity = np.sqrt(np.diag(velocity))
     return dict(sigma_east_m=float(sigma[0]), sigma_north_m=float(sigma[1]), sigma_up_m=float(sigma[2]),
-                sigma_horizontal_m=float(np.sqrt((sigma[0] ** 2 + sigma[1] ** 2) / 2)), sigma_velocity_mps=float(np.sqrt(np.mean(sigma_velocity[:2] ** 2))))
+                sigma_speed_mps=float(np.sqrt(np.mean(sigma_velocity[:2] ** 2))))
 
 
 def make_event(track: Track, plot: RawPlot) -> FusionChangedEvent:

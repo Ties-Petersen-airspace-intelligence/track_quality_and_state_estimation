@@ -8,13 +8,16 @@ from __future__ import annotations
 from .. import protos_path  # noqa: F401
 from uni.protobuf.uni_track_schemas.fusion.v1beta.fusion_changed_event_pb2 import APPEND_ONLY, FusionChangedEvent
 from ..raw_plots import RawPlot
-from ..strategy import Outcome, Result
+from ..strategy import Record
 
 
 class Baseline:
     name = "baseline"
 
-    def on_plot(self, plot: RawPlot) -> Result:
+    def __init__(self, record: Record):
+        self.record = record
+
+    def on_plot(self, plot: RawPlot) -> list[FusionChangedEvent]:
         common = plot.proto.common
 
         # one track per source track id; the source name in front keeps ids from different sources apart
@@ -25,7 +28,8 @@ class Baseline:
         segment = event.changed_segments.add(since=plot.position_us, until=plot.position_us)
         fused = segment.fused_track.plots.add()
         fused.common.ParseFromString(common.SerializeToString())
-        return Result([event], Outcome("used", track_id))
+        self.record.used(track_id)
+        return [event]
 
     def finish(self) -> list[FusionChangedEvent]:
         return []

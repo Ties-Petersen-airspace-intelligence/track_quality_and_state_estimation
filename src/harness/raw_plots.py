@@ -39,6 +39,7 @@ SOURCE_MESSAGE = {
 @dataclass
 class RawPlot:
     source: str            # table name, e.g. "adsbx"
+    row: int               # row number in raw/<source>.parquet; source and row name one raw plot
     received_us: int       # when it reached us, common.asi_received_timestamp
     position_us: int       # common.position_timestamp
     proto: Message         # the source's plot message, common inside
@@ -56,10 +57,10 @@ def load_case(folder: str | pathlib.Path) -> list[RawPlot]:
         if frame.empty:
             continue
         columns = set(frame.columns)
-        for row in frame.to_dict("records"):
+        for number, row in enumerate(frame.to_dict("records")):
             message = message_class()
             fill_message(message, row, columns, "")
-            plots.append(RawPlot(source, message.common.asi_received_timestamp, message.common.position_timestamp, message))
+            plots.append(RawPlot(source, number, message.common.asi_received_timestamp, message.common.position_timestamp, message))
     plots.sort(key=lambda p: (p.received_us, p.position_us))
     return plots
 
