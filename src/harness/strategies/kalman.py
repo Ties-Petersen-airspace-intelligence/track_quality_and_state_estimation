@@ -7,6 +7,7 @@ import pymap3d
 
 from .. import protos_path  # noqa: F401
 from uni.protobuf.uni_track_schemas.fusion.v1beta.fusion_changed_event_pb2 import APPEND_ONLY, FusionChangedEvent
+from uni_track_source_adsbx_plot_schema.proto.plot_pb2 import ADSBXPlotType
 from ..raw_plots import RawPlot
 from ..strategy import Record
 
@@ -32,7 +33,7 @@ def accept(plot: RawPlot) -> Measurement | str:
     proto, common = plot.proto, plot.proto.common
     if plot.source == "adsbx":
         if proto.type not in ADSB_TYPES:
-            return f"type {proto.type}"
+            return ADSBXPlotType.Name(proto.type)
         if proto.alt_baro == "ground":
             return "on the ground"
         nacp = proto.nac_p if proto.HasField("nac_p") else None
