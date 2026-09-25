@@ -4,10 +4,11 @@ usage: uv run -m harness.run --case data/cases/<name> --strategy baseline [--not
        uv run -m harness.run --case data/cases --strategy baseline      # every case in the folder
 
 Output goes to <case>/runs/<strategy>/<label>/, a fresh folder every time (labels r001, r002, ...):
-fused_plots.parquet   one row per fused plot of every event, with the event's fields and valid_to
-raw_plots.parquet     one row per raw plot: what the strategy did with it and why, plus its recorded numbers
-track_state.parquet   one row per record.track call, when the strategy made any
-run.json              what produced the run (see runs.py)
+fused_plots.parquet     one row per fused plot of every event, with the event's fields and valid_to
+raw_plots.parquet       one row per raw plot: what the strategy did with it and why, plus its recorded numbers
+track_state.parquet     one row per record.track call, when the strategy made any
+strategy_state.parquet  the strategy's own state (numbers named state_...) per track row, for its predict(); not committed
+run.json                what produced the run (see runs.py)
 """
 from __future__ import annotations
 
@@ -20,7 +21,7 @@ from google.protobuf.message import Message
 from . import protos_path  # noqa: F401
 from uni.protobuf.uni_track_schemas.fusion.v1beta.fusion_changed_event_pb2 import FusionChangedEvent, FusionQuality
 from .raw_plots import load_case
-from .strategy import Record
+from .strategy import STATE_PREFIX, Record
 from .strategies.baseline import Baseline
 from .strategies.kalman import Kalman
 from . import runs
@@ -68,7 +69,13 @@ def run_one(case: pathlib.Path, name: str, note: str, batch: str, git: dict) -> 
     raw = pd.DataFrame(record.plots)
     raw.to_parquet(out / "raw_plots.parquet", index=False)
     if record.tracks:
-        pd.DataFrame(record.tracks).to_parquet(out / "track_state.parquet", index=False)
+        # the strategy's own state goes to a file of its own: it only feeds predict(), is large, and is not committed
+        tracks = pd.DataFrame(record.tracks)
+        own = [c for c in tracks.columns if c.startswith(STATE_PREFIX)]
+        tracks.drop(columns=own).to_parquet(out / "track_state.parquet", index=False)
+        if own:
+            keys = ["track_id", "position_timestamp", "created_at"]
+            tracks[keys + own].astype({c: "float32" for c in own}).to_parquet(out / "strategy_state.parquet", index=False)
 
     # what produced it, and a few counts
     counts = dict(raw_plots=len(plots), events=len(events), fused_plots=len(fused), tracks=int(fused["track_id"].nunique()), rewritten=int(fused["valid_to"].notna().sum()),

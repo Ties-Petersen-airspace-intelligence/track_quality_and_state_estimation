@@ -18,6 +18,10 @@ from .raw_plots import RawPlot
 # checked against a track and refused. unknown: the strategy recorded nothing, and production never says.
 STATES = ("used", "skipped", "dropped", "rejected", "unknown")
 
+# numbers a strategy passes to track() under a name starting with this are its own state, only for its predict(); the
+# harness stores them as 32-bit floats and the viewer never shows them
+STATE_PREFIX = "state_"
+
 
 class Record:
     """The strategy's notes next to its events. The harness points it at the current raw plot before each
@@ -98,3 +102,9 @@ class Strategy(Protocol):
     def finish(self) -> list[FusionChangedEvent]:
         """Called once after the last plot, for anything still buffered."""
         ...
+
+# Optional: a strategy that records its state (numbers named state_...) can let the viewer look ahead from any of its fused
+# plots with a static method on its class:
+#     predict(state: dict[str, float], seconds: float, params: dict) -> dict
+# giving latitude, longitude, sigma_east_m, sigma_north_m and cov_east_north_m2 of where it expects the aircraft that many
+# seconds later, by its own model; params are the run's parameters from run.json.

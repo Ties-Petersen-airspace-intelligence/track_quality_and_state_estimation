@@ -102,12 +102,13 @@ function legends() {
   $("pointPxRow").style.display = sized ? "none" : ""; $("pointMetresRow").style.display = sized ? "" : "none";
   $("pointPxValue").textContent = $("pointPx").value + " px"; $("pointMetresValue").textContent = sliderMetres("pointMetres") + " m";
   $("lineWidthValue").textContent = $("lineWidth").value + " px";
-  $("pointSizeNote").textContent = sized ? "A circle in metres from the sigma east and north the strategy recorded in track_state. Points without a sigma get the size in metres below." : "";
+  $("pointSizeNote").textContent = sized ? "An ellipse in metres from the sigmas east and north and their covariance the strategy recorded in track_state. Points without a sigma get the size in metres below." : "";
+  $("predictRow").style.display = sized ? "" : "none";   // looking ahead draws ellipses, so it needs an uncertainty size
 }
 
 function wire() {
   const redraw = () => { legends(); bus.draw(); };
-  for (const id of ["rawOn", "runsOn", "rawColour", "rawSize", "rawPx", "rawMetres", "pointsOn", "linesOn", "pointColour", "lineColour", "pointSize", "pointPx", "pointMetres", "lineWidth", "mapShows"]) {
+  for (const id of ["rawOn", "runsOn", "rawColour", "rawSize", "rawPx", "rawMetres", "pointsOn", "linesOn", "pointColour", "lineColour", "pointSize", "predictOn", "pointPx", "pointMetres", "lineWidth", "mapShows"]) {
     $(id).addEventListener($(id).type === "range" ? "input" : "change", redraw);
   }
   $("fadeWin").onchange = () => { $("fadeCustom").style.display = $("fadeWin").value === "custom" ? "" : "none"; bus.draw(); };

@@ -9,7 +9,7 @@ from .. import protos_path  # noqa: F401
 from uni.protobuf.uni_track_schemas.fusion.v1beta.fusion_changed_event_pb2 import APPEND_ONLY, FusionChangedEvent
 from uni_track_source_adsbx_plot_schema.proto.plot_pb2 import ADSBXPlotType
 from ..raw_plots import RawPlot
-from ..strategy import Record
+from ..strategy import STATE_PREFIX, Record
 
 FEET = 0.3048                 # metres per foot
 KNOTS = 1.943844              # knots per metre per second
@@ -138,7 +138,7 @@ class Kalman:
         if track is None:
             track = self.tracks[measurement.hex] = start(measurement, z, R, self.params)
             self.record.used(track.hex)
-            self.record.track(track.hex, **sigmas(track))
+            self.record.track(track.hex, **sigmas(track), **state_numbers(track))
             return [make_event(track, plot)]
 
         # an older or duplicate plot is dropped, the filter only moves forward in time
@@ -151,11 +151,40 @@ class Kalman:
         distance_m, distance_sigmas = update(track, z, R)
         track.timestamp_s = measurement.timestamp_s
         self.record.used(track.hex, distance_m=distance_m, distance_sigmas=distance_sigmas)
-        self.record.track(track.hex, **sigmas(track))
+        self.record.track(track.hex, **sigmas(track), **state_numbers(track))
         return [make_event(track, plot)]
 
     def finish(self) -> list[FusionChangedEvent]:
         return []
+
+    @staticmethod
+    def predict(state: dict[str, float], seconds: float, params: dict) -> dict:
+        """Where the filter expects the aircraft `seconds` after one of its fused plots, by the same constant velocity
+        step and process noise it runs on, from the state it recorded there."""
+        track = from_state(state)
+        predict(track, seconds, {**Kalman.params, **params}["spectral_density"])
+        lat, lon, _ = pymap3d.ecef2geodetic(*track.x[:3])
+        s = sigmas(track)
+        return dict(latitude=float(lat), longitude=float(lon), sigma_east_m=s["sigma_east_m"], sigma_north_m=s["sigma_north_m"],
+                    cov_east_north_m2=s["cov_east_north_m2"])
+
+
+# the state x in ECEF, then P by its upper triangle, as named numbers for record.track
+STATE_NAMES = ["x_m", "y_m", "z_m", "vx_mps", "vy_mps", "vz_mps"]
+
+
+def state_numbers(track: Track) -> dict[str, float]:
+    out = {STATE_PREFIX + name: float(value) for name, value in zip(STATE_NAMES, track.x)}
+    out.update({f"{STATE_PREFIX}p_{i}_{j}": float(track.P[i, j]) for i in range(6) for j in range(i, 6)})
+    return out
+
+
+def from_state(state: dict[str, float]) -> Track:
+    P = np.zeros((6, 6))
+    for i in range(6):
+        for j in range(i, 6):
+            P[i, j] = P[j, i] = state[f"{STATE_PREFIX}p_{i}_{j}"]
+    return Track(hex="", timestamp_s=0.0, x=np.array([state[STATE_PREFIX + name] for name in STATE_NAMES]), P=P)
 
 
 def sigmas(track: Track) -> dict[str, float]:

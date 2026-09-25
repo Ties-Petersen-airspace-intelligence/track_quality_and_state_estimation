@@ -223,3 +223,6 @@ __marimo__/
 
 # the Simplon ASI font files: licensed to ASI for design and development, so they are not redistributed here
 src/harness/viewer/fonts/
+
+# a strategy's own state per track row, only for looking ahead in the viewer: large, and written again by any local rerun
+src/data/cases/*/runs/*/*/strategy_state.parquet

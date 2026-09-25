@@ -19,6 +19,8 @@ import pyarrow.parquet as pq
 from .. import production, protodocs
 from .. import runs as runbook
 from ..raw_plots import SOURCE_MESSAGE
+from ..run import STRATEGIES
+from ..strategy import STATE_PREFIX
 
 HERE = pathlib.Path(__file__).parent
 # our own plain description of every field, per source and for the strategy output ("fused"), written from the code
@@ -149,6 +151,8 @@ class Case:
     def run_list(self) -> list[dict]:
         """Every strategy run with its manifest, then the two production entries."""
         out = runbook.list_runs(self.path)
+        for r in out:
+            r["predicts"] = hasattr(STRATEGIES.get(r.get("strategy")), "predict")   # the viewer can look ahead from its fused plots
         for name, part in production.PARTS.items():
             path = self.path / "production" / f"{part}.parquet"
             if path.exists():
@@ -219,6 +223,12 @@ class Case:
                 folder = self.path / "runs" / run_id
                 fused, outcomes = pd.read_parquet(folder / "fused_plots.parquet"), pd.read_parquet(folder / "raw_plots.parquet")
                 state = pd.read_parquet(folder / "track_state.parquet") if (folder / "track_state.parquet").exists() else None
+                # the strategy's own state, for predict(); only where the run was made locally, it is not committed
+                # its rows are the track_state rows in the same order, so the two sit side by side
+                if state is not None and (folder / "strategy_state.parquet").exists():
+                    own = pd.read_parquet(folder / "strategy_state.parquet")
+                    if len(own) == len(state):
+                        state = pd.concat([state, own.drop(columns=["track_id", "position_timestamp", "created_at"])], axis=1)
             fused = fused.sort_values("created_at", kind="stable").reset_index(drop=True)
             if state is not None:
                 # the strategy's numbers about a track, on the fused plot of the same track and position time
@@ -230,7 +240,8 @@ class Case:
     def run(self, run_id: str) -> dict:
         """The base columns of a strategy's fused plots, sorted by when they were emitted, plus its fields."""
         fused, _, state = self.load_run(run_id)
-        state_columns = [] if state is None else [c for c in state.columns if c not in ("track_id", "position_timestamp", "created_at")]
+        # the strategy's own state (state_...) stays here, for predict(); the page gets the numbers meant for people
+        state_columns = [] if state is None else [c for c in state.columns if c not in ("track_id", "position_timestamp", "created_at") and not c.startswith(STATE_PREFIX)]
         base = dict(track=fused["track_id"], created=self.ms(fused["created_at"]), valid_to=self.ms(fused["valid_to"]),
                     t=self.ms(fused["position_timestamp"]), r=self.ms(fused["asi_received_timestamp"]), src=number(fused, "source_identifier"),
                     lat=number(fused, "latitude"), lon=number(fused, "longitude"), alt=number(fused, "altitude_ft"), gs=number(fused, "ground_speed_kt"), trk=number(fused, "track_deg"),
@@ -239,6 +250,18 @@ class Case:
         fields = schema(fused.drop(columns=state_columns), {"event", "track_id"}, fused_docs(), NOTES.get("fused"))
         fields += [dict(field, table="track_state") for field in schema(fused[state_columns], set(), None, NOTES.get("fused"))]
         return dict(**{k: jsonable(v) for k, v in base.items()}, state_columns=state_columns, schema=fields)
+
+    def predict(self, run_id: str, i: int, seconds: list[float]) -> dict:
+        """Where the strategy expects the aircraft some seconds after its fused plot i (in the page's order), by its own
+        predict() from the state it recorded there; nothing when it has no predict or recorded no state for that plot."""
+        strategy = STRATEGIES.get(run_id.split("/")[0])
+        fused, _, _ = self.load_run(run_id)
+        own = [c for c in fused.columns if c.startswith(STATE_PREFIX)]
+        if not hasattr(strategy, "predict") or not own or not 0 <= i < len(fused) or fused.loc[i, own].isna().any():
+            return dict(ellipses=[])
+        state = {c: float(fused.loc[i, c]) for c in own}
+        params = next(r for r in self.run_list() if r["id"] == run_id).get("params") or {}
+        return dict(ellipses=[dict(seconds=t, **strategy.predict(state, t, params)) for t in seconds])
 
     def run_field(self, run_id: str, column: str) -> dict | None:
         fused, _, _ = self.load_run(run_id)
@@ -350,6 +373,10 @@ def make_handler(root: pathlib.Path):
                 return self._json(case.raw())
             if what == "schema":
                 return case.schema_job
+            if what == "predict":
+                if "run" not in q or not q.get("i", "").isdigit():
+                    return self._json(dict(error="a prediction needs a run and a plot number"), 400)
+                return self._json(case.predict(q["run"], int(q["i"]), [float(t) for t in q.get("seconds", "5,10,20,30,60").split(",")]))
             if what == "run":
                 return self._json(case.run(q["run"]))
             if what == "outcomes":

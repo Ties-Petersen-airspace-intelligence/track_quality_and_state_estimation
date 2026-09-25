@@ -1,5 +1,5 @@
 // The map: raw plots underneath, strategy points and lines on top, all as known at time now.
-import { S, $, table, compareEntry, comparing, trackLabel, fadeWindowMs, fmt, fmtMs, fmtN, runName, SOURCE_NAME, SOURCE_BY_ID, escapeHtml, sliderMetres } from "./state.js";
+import { S, $, api, runById, table, compareEntry, comparing, trackLabel, fadeWindowMs, fmt, fmtMs, fmtN, runName, SOURCE_NAME, SOURCE_BY_ID, escapeHtml, sliderMetres } from "./state.js";
 import { rawColourFunction, strategyColourFunction, SOURCE_COLOR, GREY, FILTERED, rgb, runColour } from "./palette.js";
 import { hideFailed } from "./filters.js";
 import { toggleTrack } from "./compare.js";
@@ -206,7 +206,44 @@ export function drawHighlight() {
       layers.push(new deck.ScatterplotLayer({ id:"hover-ring", data:[S.hover], getPosition:h => [d.lon[h.i], d.lat[h.i]], ...ring, filled:false, stroked:true, lineWidthUnits:"pixels", getLineWidth:2, getLineColor:[204, 255, 0] }));
     }
   }
+  layers.push(...lookAhead());
   overlay.setProps({ layers });
+}
+
+// ---------- looking ahead from the hovered strategy point ----------
+// the server asks the strategy's own predict() where the aircraft goes next; each answer is kept, so moving back over a
+// point draws at once, and an answer that arrives after the mouse moved on is kept but not drawn
+const AHEAD_S = [5, 10, 20, 30, 60], ahead = {};
+// the switch shows, and counts, only with an uncertainty size
+const lookingAhead = () => $("predictOn").checked && !!SIGMA_FACTOR[$("pointSize").value];
+function lookAhead() {
+  const h = S.hover;
+  const factor = SIGMA_FACTOR[$("pointSize").value];
+  if (!lookingAhead() || !h || h.kind === "raw") return [];
+  if (!(runById(h.kind) || {}).predicts) { $("status").textContent = `${runName(h.kind)} cannot look ahead: its strategy has no predict()`; return []; }
+  const key = h.kind + "|" + h.i, got = ahead[key];
+  if (!got) {
+    ahead[key] = "asking";
+    api("predict", { run:h.kind, i:h.i, seconds:AHEAD_S.join(",") })
+      .then(answer => {
+        ahead[key] = answer.ellipses || [];
+        if (!ahead[key].length) $("status").textContent = `${runName(h.kind)} recorded no state at this point, nothing to look ahead from; rerun it to record one`;
+        if (S.hover && S.hover.kind + "|" + S.hover.i === key) drawHighlight();
+      })
+      .catch(() => { delete ahead[key]; });
+    return [];
+  }
+  if (got === "asking" || !got.length) return [];
+  const d = table(h.kind);
+  const shapes = got.map(e => ({ seconds:e.seconds, path:ellipsePath(e.longitude, e.latitude, ellipseOf(e.sigma_east_m, e.sigma_north_m, e.cov_east_north_m2), factor) }));
+  // the label sits at the northernmost point of its ellipse; a dashed line joins the point to the predicted centres
+  const north = path => path.reduce((a, b) => b[1] > a[1] ? b : a);
+  const dashed = { widthUnits:"pixels", getWidth:1.5, getColor:[255, 255, 255, 220], getDashArray:[5, 4], dashJustified:true, extensions:[new deck.PathStyleExtension({ dash:true })] };
+  return [
+    new deck.PathLayer({ id:"ahead", data:[{ path:[[d.lon[h.i], d.lat[h.i]], ...got.map(e => [e.longitude, e.latitude])] }, ...shapes], getPath:s => s.path, ...dashed }),
+    new deck.TextLayer({ id:"ahead-labels", data:shapes, getPosition:s => north(s.path), getText:s => `+${s.seconds} s`, getSize:11, getColor:[255, 255, 255, 230],
+      fontFamily:getComputedStyle(document.documentElement).getPropertyValue("--mono"), getTextAnchor:"middle", getAlignmentBaseline:"bottom", getPixelOffset:[0, -3] }),
+  ];
 }
 
 // ---------- hover, click, box ----------
@@ -220,8 +257,10 @@ function hoverAt(x, y) {
   lastPointer = x == null || x < 0 ? null : [x, y];
   if (map.isMoving()) return;
   if (!lastPointer) return setHover(null);
-  const candidates = pickables(overlay.pickMultipleObjects({ x, y, radius:1, depth:24 }));
+  let candidates = pickables(overlay.pickMultipleObjects({ x, y, radius:1, depth:24 }));
   if (!candidates.length) return setHover(null);
+  // while looking ahead, a strategy point under the mouse wins over raw plots, which are nearly always smaller
+  if (lookingAhead() && candidates.some(c => c.kind !== "raw")) candidates = candidates.filter(c => c.kind !== "raw");
   const pixels = c => { const size = c.kind === "raw" ? rawRadius(c.i) : pointRadius(c.kind, c.i); return size.units === "pixels" ? size.radius : size.radius / metresPerPixel(table(c.kind).lat[c.i]); };
   const best = candidates.reduce((a, b) => pixels(b) < pixels(a) ? b : a);
   setHover(best, x, y);

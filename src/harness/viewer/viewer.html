@@ -86,6 +86,10 @@
       <div class="field" id="pointPxRow"><span class="label">size</span><input type="range" class="slider" id="pointPx" min="1" max="10" step="0.5" value="3.5"><span class="value" id="pointPxValue"></span></div>
       <div class="field" id="pointMetresRow"><span class="label">size without sigma</span><input type="range" class="slider" id="pointMetres" min="0" max="100" step="1" value="20"><span class="value" id="pointMetresValue"></span></div>
       <div class="note" id="pointSizeNote"></div>
+      <div id="predictRow">
+        <div class="field"><span class="label">look ahead from the hovered point</span><label class="label"><input type="checkbox" id="predictOn">show</label></div>
+        <div class="note">Where the strategy expects the aircraft 5, 10, 20, 30 and 60 s later, by its own model, as dashed white ellipses at the size above. Only for strategies that record their state, Kalman today, and only where the run was made on this machine. While it is on, a strategy point under the mouse wins over raw plots.</div>
+      </div>
     </div>
     <div class="block">
       <div class="group">lines<span class="spacer"></span><label class="label"><input type="checkbox" id="linesOn" checked>show</label></div>
