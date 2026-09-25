@@ -4,7 +4,6 @@ import { S, $, SOURCE_NAME, runName, fmtN, escapeHtml } from "./state.js";
 import { asiSelects, rangeSlider, setOptions } from "./controls.js";
 import { loadOutcomes } from "./runs.js";
 import { bus } from "./bus.js";
-import { STATE_COLOR, OTHER, swatch } from "./palette.js";
 
 const R = () => S.RAW;
 // numeric fields: a range, or whether the field is set at all, or is 0
@@ -126,7 +125,7 @@ function renderOutcomeOptions() {
   if (!o) { statesBox.innerHTML = reasonsBox.innerHTML = ""; return; }
   const states = {}, reasons = {};
   for (let i = 0; i < R().n; i++) { states[o.state[i]] = (states[o.state[i]] || 0) + 1; if (o.reason[i]) { const k = o.state[i] + ": " + o.reason[i]; reasons[k] = (reasons[k] || 0) + 1; } }
-  statesBox.innerHTML = Object.entries(states).map(([st, n]) => `<label><input type="checkbox" data-state="${st}" ${state.outcome.statesOff.has(st) ? "" : "checked"}>${swatch(STATE_COLOR[st] || OTHER)} ${st} <span class="n">${fmtN(n)}</span></label>`).join("");
+  statesBox.innerHTML = Object.entries(states).map(([st, n]) => `<label><input type="checkbox" data-state="${st}" ${state.outcome.statesOff.has(st) ? "" : "checked"}> ${st} <span class="n">${fmtN(n)}</span></label>`).join("");
   reasonsBox.innerHTML = Object.entries(reasons).sort((a, b) => b[1] - a[1]).map(([k, n]) => `<label class="sub"><input type="checkbox" data-reason="${escapeHtml(k)}" ${state.outcome.reasonsOff.has(k) ? "" : "checked"}> ${escapeHtml(k)} <span class="n">${fmtN(n)}</span></label>`).join("");
   statesBox.querySelectorAll("input").forEach(cb => cb.onchange = () => { cb.checked ? state.outcome.statesOff.delete(cb.dataset.state) : state.outcome.statesOff.add(cb.dataset.state); changed(); });
   reasonsBox.querySelectorAll("input").forEach(cb => cb.onchange = () => { cb.checked ? state.outcome.reasonsOff.delete(cb.dataset.reason) : state.outcome.reasonsOff.add(cb.dataset.reason); changed(); });
