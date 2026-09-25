@@ -1,0 +1,122 @@
+src/data/cases/kielce-thy3121-2026-09-16/runs/kalman/r001/run.json
+  801653f3250d1a49 4,6-7,10
+src/data/cases/fw01-nvd8524-2026-09-21/runs/kalman/r001/run.json
+  801653f3250d1a49 4,6-7,10
+src/data/cases/fw14-fgmqh-2026-09-22/runs/kalman/r001/run.json
+  801653f3250d1a49 4,6-7,10
+src/data/cases/fw04-n535gw-2026-09-21/runs/kalman/r001/run.json
+  801653f3250d1a49 4,6-7,10
+src/data/cases/fw25-igo955-2026-09-21/runs/kalman/r001/run.json
+  801653f3250d1a49 4,6-7,10
+src/data/cases/fw21-hbztn-2026-09-21/runs/kalman/r001/run.json
+  801653f3250d1a49 4,6-7,10
+src/data/cases/fw15-n311tx-2026-09-22/runs/kalman/r001/run.json
+  801653f3250d1a49 4,6-7,10
+src/data/cases/fw02-hbpil-2026-09-21/runs/kalman/r001/run.json
+  801653f3250d1a49 4,6-7,10
+src/data/cases/fw11-sxs1en-2026-09-21/runs/kalman/r001/run.json
+  801653f3250d1a49 4,6-7,10
+src/data/cases/fw13-qtr8954-2026-09-21/runs/kalman/r001/run.json
+  801653f3250d1a49 4,6-7,10
+src/data/cases/fw27-eju525-2026-09-21/runs/kalman/r001/run.json
+  801653f3250d1a49 4,6-7,10
+src/data/cases/fw23-n2122z-2026-09-21/runs/kalman/r001/run.json
+  801653f3250d1a49 4,6-7,10
+src/data/cases/fw05-n220mr-2026-09-21/runs/kalman/r001/run.json
+  801653f3250d1a49 4,6-7,10
+src/data/cases/fw09-cmp886-2026-09-21/runs/kalman/r001/run.json
+  801653f3250d1a49 4,6-7,10
+src/data/cases/fw24-nak276-2026-09-21/runs/kalman/r001/run.json
+  801653f3250d1a49 4,6-7,10
+src/data/cases/fw17-lpe2391-2026-09-22/runs/kalman/r001/run.json
+  801653f3250d1a49 4,6-7,10
+src/data/cases/paris-tx-n464ae-2026-09-16/runs/kalman/r001/run.json
+  801653f3250d1a49 4,6-7,10
+src/data/cases/fw20-n998m-2026-09-21/runs/kalman/r001/run.json
+  801653f3250d1a49 4,6-7,10
+src/data/cases/fw22-spskl-2026-09-21/runs/kalman/r001/run.json
+  801653f3250d1a49 4,6-7,10
+src/data/cases/fw26-rtv2-2026-09-21/runs/kalman/r001/run.json
+  801653f3250d1a49 4,6-7,10
+src/data/cases/fw16-ryr7sn-2026-09-22/runs/kalman/r001/run.json
+  801653f3250d1a49 4,6-7,10
+src/data/cases/fw30-vampyr1-2026-09-21/runs/kalman/r001/run.json
+  801653f3250d1a49 4,6-7,10
+src/data/cases/fw29-fys33la-2026-09-21/runs/kalman/r001/run.json
+  801653f3250d1a49 4,6-7,10
+src/data/cases/fw12-arg1708-2026-09-21/runs/kalman/r001/run.json
+  801653f3250d1a49 4,6-7,10
+src/data/cases/fw08-aee4552-2026-09-21/runs/kalman/r001/run.json
+  801653f3250d1a49 4,6-7,10
+src/data/cases/fw03-fhaux-2026-09-22/runs/kalman/r001/run.json
+  801653f3250d1a49 4,6-7,10
+src/data/cases/fw19-fhdgq1-2026-09-21/runs/kalman/r001/run.json
+  801653f3250d1a49 4,6-7,10
+src/data/cases/fw18-fab2901-2026-09-21/runs/kalman/r001/run.json
+  801653f3250d1a49 4,6-7,10
+src/data/cases/fw10-rsx324-2026-09-21/runs/kalman/r001/run.json
+  801653f3250d1a49 4,6-7,10
+src/data/cases/fw07-iaw2-2026-09-21/runs/kalman/r001/run.json
+  801653f3250d1a49 4,6-7,10
+src/data/cases/dubai-fr113-2026-09-16/runs/kalman/r001/run.json
+  801653f3250d1a49 4,6-7,10
+src/data/cases/fw28-n7407w-2026-09-22/runs/kalman/r001/run.json
+  801653f3250d1a49 4,6-7,10
+src/data/cases/vancouver-ual517-2026-09-16/runs/kalman/r001/run.json
+  801653f3250d1a49 4,6-7,10
+src/data/cases/fw06-n970wc-2026-09-22/runs/kalman/r001/run.json
+  801653f3250d1a49 4,6-7,10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.5",
+  "base_commit_sha": "e6bac7ea7205d5b5e5655f6d346caede9df930b9",
+  "prompts": {
+    "801653f3250d1a49": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "37b41715-3531-42af-8c01-d8be46680ab3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Ties Petersen",
+      "messages": [],
+      "total_additions": 130698,
+      "total_deletions": 150,
+      "accepted_lines": 130834,
+      "overriden_lines": 0,
+      "messages_url": "https://uni-git-ai-cas.sre.aws.ai-internal.com//cas/f61e429e82d57ebe6aff390bfc79bdd2b5834eebb04ab74a1930a0443c33b03e",
+      "context_window_samples": [
+        {
+          "used_tokens": 556272,
+          "timestamp": "2026-09-25T13:03:16.108Z"
+        },
+        {
+          "used_tokens": 557272,
+          "timestamp": "2026-09-25T13:03:32.398Z"
+        }
+      ],
+      "skill_usages": [
+        {
+          "name": "office-task",
+          "timestamp": "2026-09-23T16:53:30.903Z",
+          "source": "slash_command"
+        },
+        {
+          "name": "office-pause",
+          "timestamp": "2026-09-23T16:57:23.475Z",
+          "source": "slash_command"
+        },
+        {
+          "name": "dataviz",
+          "timestamp": "2026-09-23T18:33:36.503Z",
+          "source": "skill_tool"
+        },
+        {
+          "name": "office-pause",
+          "timestamp": "2026-09-24T13:23:04.543Z",
+          "source": "skill_tool"
+        }
+      ]
+    }
+  }
+}
