@@ -24,12 +24,12 @@ data/cases/<case>/
   raw/<source>.parquet             the raw plots as pulled, one file per source
   production/append.parquet        production's append table (append_only_plots), as pulled
   production/final.parquet         production's provider table (fused_plots_aws), as pulled
-  runs/<strategy>/<label>/         one folder per run: r001, r002, ...
+  runs/<strategy>/<label>/         one folder per run: r001, r002, ...; made locally, not committed
     run.json                       what produced the run
     fused_plots.parquet            what the strategy published
     raw_plots.parquet              what the strategy did with each raw plot
     track_state.parquet            what the strategy recorded about its tracks, when it recorded anything
-    strategy_state.parquet         the strategy's own state per track row, for looking ahead; not committed
+    strategy_state.parquet         the strategy's own state per track row, for looking ahead
 ```
 
 A raw plot is named by its source and its row number in `raw/<source>.parquet`.
@@ -38,7 +38,7 @@ A raw plot is named by its source and its row number in `raw/<source>.parquet`.
 
 `raw_plots.parquet` has one row per raw plot: source, row, state, track id, reason, and one column per number the strategy recorded with that plot. `track_state.parquet` has one row per `record.track` call: track id, position time, and one column per number. The viewer matches a track state row to the fused plot of the same track and position time.
 
-Numbers a strategy passes to `record.track` under a name starting with `state_` are its own state, for example the Kalman filter's state vector and covariance. They go to `strategy_state.parquet`, one row per track state row in the same order, as 32-bit floats. That file is large (about four times `track_state.parquet`), so it is in `.gitignore` and only exists where a run was made: a checked out run has none, and the viewer then simply cannot look ahead from it. Rerun the strategy locally to get it (`uv run -m harness.run --case data/cases --strategy kalman`, about 10 minutes for every case). A strategy that records state can offer a static `predict(state, seconds, params)`, see `strategy.py`; the viewer server calls it to look ahead.
+Numbers a strategy passes to `record.track` under a name starting with `state_` are its own state, for example the Kalman filter's state vector and covariance. They go to `strategy_state.parquet`, one row per track state row in the same order, as 32-bit floats. That file is large (about four times `track_state.parquet`). Like every run file it only exists where the run was made. A strategy that records state can offer a static `predict(state, seconds, params)`, see `strategy.py`; the viewer server calls it to look ahead.
 
 Production is not stored as a run. The viewer converts the two tables when it opens a case (`production.py`) and finds the raw plots production used by matching position times: production copies a raw plot into a fused plot, so a raw plot was used when a fused plot from the same source has the same position time to the microsecond and the same aircraft: the same source track id for the append table, the same hex for the final table, which does not keep the source track id. Every other raw plot is `unknown`, because production never says why it left one out.
 
@@ -55,7 +55,11 @@ The label counts up per strategy and case, r001, r002, and so on. Nothing is ove
 
 In the viewer, "all runs…" opens a table of every run of the case and the two production entries, sortable by any column; batch, commit and rewritten counts are only in the detail. Ticking "active" lists a run under Strategies on the left; when a case opens the newest run of every strategy but baseline is active, and production. A click on a row shows the full manifest, two ticked runs are compared field by field, and the note can be edited in place. The note is the only thing the viewer ever writes, into that run's `run.json`.
 
-Every run is committed, so a version in the runs table can be opened on any checkout.
+Runs are not committed. The whole `runs/` folder of every case is in `.gitignore`, because runs are large and anyone can make them again from the code. A fresh checkout has no runs, and the viewer then shows only the two production entries. To get the Kalman strategy, run it on every case from `src/` (about 25 minutes):
+
+```bash
+uv run -m harness.run --case data/cases --strategy kalman
+```
 
 ## How a strategy works
 
