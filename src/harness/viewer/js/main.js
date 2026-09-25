@@ -2,7 +2,7 @@
 import { S, $, api, apiProgress, fmtN, escapeHtml, sliderMetres } from "./state.js";
 import { bus } from "./bus.js";
 import { asiSelects, setOptions, grips, closeSelects } from "./controls.js";
-import { rawColourOptions, rawColourLegend, strategyLegend, legend } from "./palette.js";
+import { rawColourOptions, rawSizeOptions, rawColourLegend, strategyLegend, legend } from "./palette.js";
 import { buildFilters, syncOutcomeRuns } from "./filters.js";
 import { defaultActive, renderRunList, openRunsPanel, loadOutcomes } from "./runs.js";
 import { renderCompare, findTracks, clearCompare } from "./compare.js";
@@ -82,6 +82,7 @@ function caseHeader() {
 function renderStrategies() {
   renderRunList();
   setOptions($("rawColour"), rawColourOptions(), $("rawColour").value || "source");
+  setOptions($("rawSize"), rawSizeOptions(), $("rawSize").value || "fixed");
   syncOutcomeRuns();
   legends();
 }
@@ -90,12 +91,16 @@ function legends() {
   const mode = $("rawColour").value;
   if (mode.startsWith("outcome:") && !S.OUTCOMES[mode.slice(8)]) loadOutcomes(mode.slice(8)).then(() => { legends(); bus.draw(); });
   $("rawColourLegend").innerHTML = rawColourLegend(mode);
-  const size = $("rawSize").value, label = { nacp:"NACp", nic:"NIC" }[size];
-  // pixels in the fixed mode; in the NACp and NIC modes every plot has a size in metres, the ones without the number too
+  const size = $("rawSize").value, sigmaRun = size.startsWith("sigma:") ? size.slice(6) : null, label = sigmaRun ? "sigma" : { nacp:"NACp", nic:"NIC" }[size];
+  if (sigmaRun && !S.OUTCOMES[sigmaRun]) loadOutcomes(sigmaRun).then(() => { legends(); bus.draw(); });
+  // pixels in the fixed mode; in the other modes every plot has a size in metres, the ones without the number too
   $("rawPxRow").style.display = size === "fixed" ? "" : "none"; $("rawMetresRow").style.display = size === "fixed" ? "none" : "";
   $("rawMetresLabel").textContent = `size without ${label || "NACp"}`;
   $("rawPxValue").textContent = $("rawPx").value + " px"; $("rawMetresValue").textContent = sliderMetres("rawMetres") + " m";
-  $("rawSizeLegend").innerHTML = size === "fixed" ? "" : legend([{ shape:"dot", color:[170, 170, 170], label:`circle: the ${label} radius in metres` }, { shape:"cross", label:`no ${label} on the plot` }, { shape:"ring", label:`${label} 0, accuracy unknown` }]);
+  const sigmaMissing = sigmaRun && S.OUTCOMES[sigmaRun] && !S.OUTCOMES[sigmaRun].numbers?.measurement_sigma_m;
+  $("rawSizeLegend").innerHTML = size === "fixed" ? ""
+    : sigmaRun ? legend([{ shape:"dot", color:[170, 170, 170], label:"circle: 2.45 times the sigma the strategy gave the plot, holding 95 %" }, { shape:"cross", label:sigmaMissing ? "this run recorded no measurement_sigma_m" : "no sigma: the strategy did not use the plot" }])
+    : legend([{ shape:"dot", color:[170, 170, 170], label:`circle: the ${label} radius in metres` }, { shape:"cross", label:`no ${label} on the plot` }, { shape:"ring", label:`${label} 0, accuracy unknown` }]);
   $("pointLegend").innerHTML = strategyLegend($("pointColour").value, "point");
   $("lineLegend").innerHTML = strategyLegend($("lineColour").value, "line");
   const sized = $("pointSize").value !== "fixed";

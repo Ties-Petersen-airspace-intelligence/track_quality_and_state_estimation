@@ -12,11 +12,14 @@ let shiftDown = false;   // shift held at the last mouse down on the map
 export const NACP_M = { 11:3, 10:10, 9:30, 8:92.6, 7:185.2, 6:555.6, 5:926, 4:1852, 3:3704, 2:7408, 1:18520 };
 export const NIC_M = { 11:7.5, 10:25, 9:75, 8:185.2, 7:370.4, 6:1111.2, 5:1852, 4:3704, 3:7408, 2:14816, 1:37040 };
 const SIGMA_FACTOR = { s1:1, s2:2, s95:2.45 };
+// the measurement sigma a strategy run recorded for a raw plot it used, in metres, from a "sigma:<run>" size mode
+const runSigma = (mode, i) => { const v = S.OUTCOMES[mode.slice(6)]?.numbers?.measurement_sigma_m?.[i]; return v == null ? null : +v; };
 
 // how big a plot is drawn: { units:"pixels"|"meters", radius }, for the layers and for the hover ring
 function rawRadius(i) {
   const R = S.RAW, mode = $("rawSize").value;
   if (mode === "fixed") return { units:"pixels", radius:+$("rawPx").value };
+  if (mode.startsWith("sigma:")) { const sigma = runSigma(mode, i); return { units:"meters", radius:sigma ? sigma * SIGMA_FACTOR.s95 : sliderMetres("rawMetres") }; }
   const metres = mode === "nacp" ? NACP_M[R.nacp[i]] : (NIC_M[R.nic[i]] ?? (R.rc[i] || null));
   return { units:"meters", radius:metres || sliderMetres("rawMetres") };
 }
@@ -126,12 +129,14 @@ function rawLayers(alpha, shown, isComparing) {
   const common = { getPosition:i => [R.lon[i], R.lat[i]], pickable:true };
   if (sizeMode === "fixed") return [new deck.ScatterplotLayer({ id:"raw", data:idx, ...common, radiusUnits:"pixels", getRadius:px, getFillColor:i => [...colour(i), alpha(R.t[i])], updateTriggers:{ getFillColor:stamp } })];
 
-  // sized by NACp or NIC: a circle of that radius in metres; no number gets a solid circle with a cross cut out, a 0 gets a ring,
-  // both of the size in metres from the slider; all drawn as shapes, so they stay sharp at any zoom
-  const value = i => sizeMode === "nacp" ? R.nacp[i] : R.nic[i];
+  // sized by NACp, NIC or a strategy run's sigma: a circle of that radius in metres (for the sigma the 95 % circle, 2.45 sigma);
+  // no number gets a solid circle with a cross cut out, a 0 gets a ring, both of the size in metres from the slider;
+  // all drawn as shapes, so they stay sharp at any zoom
+  const sigmaMode = sizeMode.startsWith("sigma:");
+  const value = i => sigmaMode ? runSigma(sizeMode, i) : sizeMode === "nacp" ? R.nacp[i] : R.nic[i];
   const radius = i => rawRadius(i).radius;
   const sized = [], zero = [], missing = [];
-  for (const i of idx) { const v = value(i); if (v == null) missing.push(i); else if (v === 0) zero.push(i); else if (sizeMode === "nacp" ? NACP_M[v] : (NIC_M[v] ?? R.rc[i])) sized.push(i); else missing.push(i); }
+  for (const i of idx) { const v = value(i); if (v == null) missing.push(i); else if (v === 0) zero.push(i); else if (sigmaMode || (sizeMode === "nacp" ? NACP_M[v] : (NIC_M[v] ?? R.rc[i]))) sized.push(i); else missing.push(i); }
   const bigFirst = list => list.sort((a, b) => radius(b) - radius(a));
   const shape = { getPosition:common.getPosition, radiusUnits:"meters", getRadius:radius, pickable:false };
   const metres = sliderMetres("rawMetres");

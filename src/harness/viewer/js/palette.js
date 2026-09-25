@@ -19,6 +19,13 @@ export const FILTERED = [44, 44, 44];    // a raw plot that fails the filters, w
 
 // ---------- raw plots ----------
 
+// sizes: the plot's own accuracy numbers, or the sigma a strategy run gave the plots it used
+export function rawSizeOptions() {
+  const out = [["fixed", "fixed"], ["nacp", "NACp, 95 % radius in metres"], ["nic", "NIC, containment radius in metres"]];
+  for (const id of [...S.runActive]) if (!id.startsWith("prod_fusion")) out.push(["sigma:" + id, `sigma ${runName(id)} gave it, 95 % radius in metres`]);
+  return out;
+}
+
 export function rawColourOptions() {
   const out = [["source", "source"], ["kind", "source and plot kind"], ["track", "source track id"], ["identity", "hex, else tail, else source track id"]];
   for (const id of [...S.runActive]) out.push(["outcome:" + id, `what ${runName(id)} did with it`]);
