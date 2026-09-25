@@ -20,17 +20,34 @@ function rawRadius(i) {
   const metres = mode === "nacp" ? NACP_M[R.nacp[i]] : (NIC_M[R.nic[i]] ?? (R.rc[i] || null));
   return { units:"meters", radius:metres || sliderMetres("rawMetres") };
 }
-// the horizontal sigma from the strategy's recorded east and north sigmas, when it records them
-function sigma(run, i) {
+// the horizontal uncertainty ellipse from the strategy's recorded east and north sigmas and their covariance, in metres:
+// the long and short axis at one sigma and the angle of the long axis from east. Without a covariance the axes run east and north.
+function ellipse(run, i) {
   if (!run.sigma_east_m || !run.sigma_north_m) return null;
   const e = run.sigma_east_m[i], n = run.sigma_north_m[i];
-  return e == null || n == null ? null : Math.sqrt((e * e + n * n) / 2);
+  return e == null || n == null ? null : ellipseOf(e, n, (run.cov_east_north_m2 && run.cov_east_north_m2[i]) || 0);
 }
+function ellipseOf(e, n, c) {
+  const mid = (e * e + n * n) / 2, half = Math.sqrt(((e * e - n * n) / 2) ** 2 + c * c);
+  return { major:Math.sqrt(mid + half), minor:Math.sqrt(Math.max(0, mid - half)), angle:0.5 * Math.atan2(2 * c, e * e - n * n) };
+}
+// a point's size: pixels, or in the uncertainty modes the ellipse scaled by the chosen factor; radius is the circle of the same
+// area, which is what sorts the points and decides which one is smallest under the mouse
 function pointRadius(id, i) {
   const factor = SIGMA_FACTOR[$("pointSize").value];
   if (!factor) return { units:"pixels", radius:+$("pointPx").value };
-  const s = sigma(S.RUNS[id], i);
-  return { units:"meters", radius:s == null ? sliderMetres("pointMetres") : s * factor };
+  const el = ellipse(S.RUNS[id], i);
+  if (!el) return { units:"meters", radius:sliderMetres("pointMetres") };
+  return { units:"meters", radius:Math.sqrt(el.major * el.minor) * factor, ellipse:el, factor };
+}
+// the outline of an ellipse around a point, as longitude and latitude, scale times its one sigma size
+function ellipsePath(lon, lat, el, scale) {
+  const east = 111320 * Math.cos(lat * Math.PI / 180), north = 110540, cos = Math.cos(el.angle), sin = Math.sin(el.angle), path = [];
+  for (let k = 0; k <= 32; k++) {
+    const t = k / 32 * 2 * Math.PI, x = el.major * scale * Math.cos(t), y = el.minor * scale * Math.sin(t);
+    path.push([lon + (x * cos - y * sin) / east, lat + (x * sin + y * cos) / north]);
+  }
+  return path;
 }
 
 export function initMap(onReady) {
@@ -157,16 +174,20 @@ function strategyLayers(id, alpha, shown, isComparing) {
   if ($("pointsOn").checked) {
     const common = { getPosition:i => [run.lon[i], run.lat[i]], pickable:false, stroked:true, lineWidthUnits:"pixels" };
     const factor = SIGMA_FACTOR[$("pointSize").value], radius = i => pointRadius(id, i).radius, bigFirst = list => list.sort((a, b) => radius(b) - radius(a));
-    const sized = factor ? bigFirst(idx.filter(i => sigma(run, i) != null)) : [], fixed = factor ? bigFirst(idx.filter(i => sigma(run, i) == null)) : idx;
-    if (sized.length) points.push(new deck.ScatterplotLayer({ id:"vpts-sized-" + id, data:sized, ...common, radiusUnits:"meters", getRadius:i => pointRadius(id, i).radius, getLineWidth:1,
-      getFillColor:i => [...override(i, pointColour), Math.round(alpha(run.t[i]) * 0.15)], getLineColor:i => [...override(i, pointColour), alpha(run.t[i])], updateTriggers:{ getFillColor:stamp, getLineColor:stamp, getRadius:stamp } }));
+    const sized = factor ? bigFirst(idx.filter(i => ellipse(run, i))) : [], fixed = factor ? bigFirst(idx.filter(i => !ellipse(run, i))) : idx;
+    // the uncertainty ellipses, each outline worked out once per run and factor
+    const outlines = (run.outlines ||= {})[factor] ||= [], outline = i => outlines[i] ||= ellipsePath(run.lon[i], run.lat[i], ellipse(run, i), factor);
+    const shape = { data:sized, getPolygon:outline, filled:true, stroked:true, lineWidthUnits:"pixels", getLineWidth:1 };
+    if (sized.length) points.push(new deck.PolygonLayer({ id:"vpts-sized-" + id, ...shape, pickable:false,
+      getFillColor:i => [...override(i, pointColour), Math.round(alpha(run.t[i]) * 0.15)], getLineColor:i => [...override(i, pointColour), alpha(run.t[i])], updateTriggers:{ getFillColor:stamp, getLineColor:stamp, getPolygon:factor } }));
     // a solid point with a thin black edge, so it stands out from the line through it: pixels in the fixed mode,
     // the size in metres from the slider for points without a sigma in the uncertainty modes
     if (fixed.length) points.push(new deck.ScatterplotLayer({ id:"vpts-" + id, data:fixed, ...common, radiusUnits:factor ? "meters" : "pixels", getRadius:i => pointRadius(id, i).radius, getLineWidth:1,
       getFillColor:i => [...override(i, pointColour), alpha(run.t[i])], getLineColor:i => [0, 0, 0, alpha(run.t[i])], updateTriggers:{ getFillColor:stamp, getLineColor:stamp, getRadius:stamp } }));
-    // what the mouse finds: every point once, biggest first, so the smallest under the mouse wins
-    points.push(new deck.ScatterplotLayer({ id:"pts-" + id, data:factor ? bigFirst([...idx]) : idx, getPosition:common.getPosition, pickable:true,
+    // what the mouse finds: every point once, biggest first, so the smallest under the mouse wins; an ellipse is found by its own shape
+    points.push(new deck.ScatterplotLayer({ id:"pts-" + id, data:fixed, getPosition:common.getPosition, pickable:true,
       radiusUnits:factor ? "meters" : "pixels", getRadius:radius, getFillColor:[0, 0, 0, 0], updateTriggers:{ getRadius:stamp } }));
+    if (sized.length) points.push(new deck.PolygonLayer({ id:"pts-" + id + "#ellipse", ...shape, pickable:true, stroked:false, getFillColor:[0, 0, 0, 0], updateTriggers:{ getPolygon:factor } }));
   }
   return [lines, points];
 }
@@ -178,8 +199,12 @@ export function drawHighlight() {
     // the ring outlines the plot just outside its edge, in the plot's own units, so it fits at any zoom
     const d = table(S.hover.kind), { i } = S.hover;
     const size = S.hover.kind === "raw" ? rawRadius(i) : $("pointsOn").checked ? pointRadius(S.hover.kind, i) : { units:"pixels", radius:3 };
-    const ring = size.units === "pixels" ? { radiusUnits:"pixels", getRadius:size.radius + 4 } : { radiusUnits:"meters", getRadius:size.radius * 1.12, radiusMinPixels:6 };
-    layers.push(new deck.ScatterplotLayer({ id:"hover", data:[S.hover], getPosition:h => [d.lon[h.i], d.lat[h.i]], ...ring, filled:false, stroked:true, lineWidthUnits:"pixels", getLineWidth:2, getLineColor:[204, 255, 0] }));
+    // a layer cannot change its kind under one id, so the ellipse ring and the round ring each have their own
+    if (size.ellipse) layers.push(new deck.PathLayer({ id:"hover-ellipse", data:[S.hover], getPath:h => ellipsePath(d.lon[h.i], d.lat[h.i], size.ellipse, size.factor * 1.12), widthUnits:"pixels", getWidth:2, getColor:[204, 255, 0] }));
+    else {
+      const ring = size.units === "pixels" ? { radiusUnits:"pixels", getRadius:size.radius + 4 } : { radiusUnits:"meters", getRadius:size.radius * 1.12, radiusMinPixels:6 };
+      layers.push(new deck.ScatterplotLayer({ id:"hover-ring", data:[S.hover], getPosition:h => [d.lon[h.i], d.lat[h.i]], ...ring, filled:false, stroked:true, lineWidthUnits:"pixels", getLineWidth:2, getLineColor:[204, 255, 0] }));
+    }
   }
   overlay.setProps({ layers });
 }
@@ -203,7 +228,7 @@ function hoverAt(x, y) {
 }
 // the raw plots and strategy points among picks, as {kind, i}
 function pickables(picks) {
-  return picks.filter(p => p.layer && (p.layer.id === "raw" || p.layer.id.startsWith("pts-"))).map(p => ({ kind:p.layer.id === "raw" ? "raw" : p.layer.id.slice("pts-".length), i:p.object }));
+  return picks.filter(p => p.layer && (p.layer.id === "raw" || p.layer.id.startsWith("pts-"))).map(p => ({ kind:p.layer.id === "raw" ? "raw" : p.layer.id.slice("pts-".length).split("#")[0], i:p.object }));
 }
 // metres per screen pixel at a latitude, for MapLibre's 512 pixel tiles
 const metresPerPixel = lat => 40075016.686 * Math.cos(lat * Math.PI / 180) / (512 * 2 ** map.getZoom());

@@ -159,7 +159,8 @@ class Kalman:
 
 
 def sigmas(track: Track) -> dict[str, float]:
-    """The filter's own sigmas at this moment: east, north, up in metres and horizontal speed in metres per second.
+    """The filter's own sigmas at this moment: east, north, up in metres and horizontal speed in metres per second, and the
+    east-north covariance in square metres, which with the two sigmas gives the horizontal uncertainty ellipse.
     P is in ECEF, so its position and velocity blocks are rotated into east, north, up at the track's position."""
     lat, lon, _ = pymap3d.ecef2geodetic(*track.x[:3])
     rotation = np.array(pymap3d.enu2uvw(np.eye(3)[0], np.eye(3)[1], np.eye(3)[2], lat, lon))
@@ -167,7 +168,7 @@ def sigmas(track: Track) -> dict[str, float]:
     velocity = rotation.T @ track.P[3:, 3:] @ rotation
     sigma = np.sqrt(np.diag(position)); sigma_velocity = np.sqrt(np.diag(velocity))
     return dict(sigma_east_m=float(sigma[0]), sigma_north_m=float(sigma[1]), sigma_up_m=float(sigma[2]),
-                sigma_speed_mps=float(np.sqrt(np.mean(sigma_velocity[:2] ** 2))))
+                cov_east_north_m2=float(position[0, 1]), sigma_speed_mps=float(np.sqrt(np.mean(sigma_velocity[:2] ** 2))))
 
 
 def make_event(track: Track, plot: RawPlot) -> FusionChangedEvent:
