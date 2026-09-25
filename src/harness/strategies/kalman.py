@@ -8,13 +8,16 @@ import pymap3d
 from .. import protos_path  # noqa: F401
 from uni.protobuf.uni_track_schemas.fusion.v1beta.fusion_changed_event_pb2 import APPEND_ONLY, FusionChangedEvent
 from uni_track_source_adsbx_plot_schema.proto.plot_pb2 import ADSBXPlotType
+from uni_track_source_planefinder_plot_schema.proto.plot_pb2 import DataSource
 from ..raw_plots import RawPlot
 from ..strategy import STATE_PREFIX, Record
 
 FEET = 0.3048                 # metres per foot
 KNOTS = 1.943844              # knots per metre per second
-SOURCE_ID = {"adsbx": 4, "uavionix": 11}   # common.source_identifier per source name
-ADSB_TYPES = {1, 2}           # ADSB_ICAO and ADSB_ICAO_NT: positions the aircraft broadcast itself
+SOURCE_ID = {"adsbx": 4, "uavionix": 11, "planefinder": 3}   # common.source_identifier per source name
+OWN_GPS_TYPES = {1, 2, 3, 9, 10}   # ADS-B Exchange ADSB_ICAO, ADSB_ICAO_NT, ADSR_ICAO, ADSB_OTHER, ADSR_OTHER: the aircraft's own GPS position
+MLAT_TYPE = 7                 # ADS-B Exchange MLAT: a position worked out on the ground from arrival times
+COPY_WINDOW_S = 10.0          # a PlaneFinder plot at a position already used for this aircraft this recently is a copy of that fix
 NACP_95_M = {11: 3, 10: 10, 9: 30, 8: 92.6, 7: 185.2, 6: 555.6, 5: 926, 4: 1852, 3: 3704, 2: 7408, 1: 18520}
 H = np.hstack([np.eye(3), np.zeros((3, 3))])   # the measurement is the position part of the state
 
@@ -26,29 +29,46 @@ class Measurement:
     lon: float
     altitude_m: float   # barometric altitude
     nacp: int | None
+    kind: str           # own_gps, mlat or planefinder: decides the measurement noise
 
 def accept(plot: RawPlot) -> Measurement | str:
-    """ADS-B Exchange and uAvionix plots of an ADS-B position with a hex and an altitude, in the air.
+    """Plots in the air with a hex and an altitude: the aircraft's own GPS position from ADS-B Exchange (ADS-B and ADS-R),
+    uAvionix and PlaneFinder ADS-B, and ADS-B Exchange MLAT.
     Anything else comes back as the reason it was skipped, a few words the viewer can show."""
     proto, common = plot.proto, plot.proto.common
+    hex_ = common.adshex
+    nacp = None
     if plot.source == "adsbx":
-        if proto.type not in ADSB_TYPES:
-            return f"not an ADS-B position: ADS-B Exchange type is {ADSBXPlotType.Name(proto.type)}"
+        if proto.type in OWN_GPS_TYPES:
+            kind = "own_gps"
+        elif proto.type == MLAT_TYPE:
+            kind = "mlat"
+        else:
+            return f"adsbx type not used: {ADSBXPlotType.Name(proto.type)}"
         if proto.alt_baro == "ground":
             return "on the ground"
         nacp = proto.nac_p if proto.HasField("nac_p") else None
+        # ADSB_OTHER and ADSR_OTHER carry no ICAO address, only ADS-B Exchange's own one, which starts with ~
+        hex_ = hex_ or proto.hex
     elif plot.source == "uavionix":
         if proto.target_report_descriptor.is_ground_bit_set:
             return "on the ground"
+        kind = "own_gps"
         nacp = proto.quality_indicators.nacp if proto.quality_indicators.HasField("nacp") else None
+    elif plot.source == "planefinder":
+        if proto.data_source != DataSource.ADSB:
+            return f"planefinder data_source not used: {DataSource.Name(proto.data_source)}"
+        if proto.is_on_ground:
+            return "on the ground"
+        kind = "planefinder"
     else:
         return f"source not used: {plot.source}"
-    if not common.adshex:
+    if not hex_:
         return "no hex"
     if not common.HasField("altitude_ft"):
         return "no altitude"
-    return Measurement(hex=common.adshex, timestamp_s=common.position_timestamp / 1e6, lat=common.latitude, lon=common.longitude,
-                       altitude_m=common.altitude_ft * FEET, nacp=nacp)
+    return Measurement(hex=hex_, timestamp_s=common.position_timestamp / 1e6, lat=common.latitude, lon=common.longitude,
+                       altitude_m=common.altitude_ft * FEET, nacp=nacp, kind=kind)
 
 
 @dataclass
@@ -85,11 +105,22 @@ def process_noise(dt: float, q: float) -> np.ndarray:
     return Q
 
 
-def measurement_noise(m: Measurement, params: dict) -> np.ndarray:
-    """R: how far off this plot may be, as a 3 by 3 matrix in ECEF. NACp gives the 95% radius; half of
-    it is the sigma east and north, up gets a bit more, and no NACp means the default."""
-    radius = NACP_95_M.get(m.nacp or 0)
-    sigma = radius / 2 if radius else params["default_sigma_m"]
+def measurement_sigma_m(m: Measurement, params: dict) -> float:
+    """How far off this plot may be east and north, one sigma in metres.
+    Own GPS: NACp gives the 95% radius and half of it is the sigma. Without any NACp (most ADS-R plots carry none) the
+    own GPS default; NACp 0 means the aircraft does not know, so the general default.
+    MLAT: one fixed sigma, it carries no NACp.
+    PlaneFinder ADS-B: the aircraft's own GPS without NACp, so the own GPS default. Its time errors are not modelled yet."""
+    if m.kind == "mlat":
+        return params["mlat_sigma_m"]
+    if m.nacp is None:
+        return params["own_gps_no_nacp_sigma_m"]
+    radius = NACP_95_M.get(m.nacp)
+    return radius / 2 if radius else params["default_sigma_m"]
+
+
+def measurement_noise(sigma: float, m: Measurement, params: dict) -> np.ndarray:
+    """R: the plot's sigma east and north, up a bit more, as a 3 by 3 matrix in ECEF."""
     return enu_to_ecef(np.diag([sigma ** 2, sigma ** 2, (sigma * params["vertical_ratio"]) ** 2]), m.lat, m.lon)
 
 
@@ -115,7 +146,9 @@ class Kalman:
     name = "kalman"
     params = dict(
         spectral_density=0.5,         # process noise: how much the velocity may wander, (m/s^2)^2 * s
-        default_sigma_m=500.0,        # position sigma when the plot has no usable NACp
+        default_sigma_m=500.0,        # position sigma when the plot says NACp 0, accuracy unknown
+        own_gps_no_nacp_sigma_m=15.0,  # position sigma of an own GPS plot that carries no NACp at all, like most ADS-R and all PlaneFinder
+        mlat_sigma_m=75.0,            # position sigma of an ADS-B Exchange MLAT plot; 95% of them scatter less than 141 m across the flight
         vertical_ratio=1.5,           # up sigma = horizontal sigma * this
         start_velocity_sigma_mps=300.0,   # how unsure a new track is about its velocity
     )
@@ -124,35 +157,58 @@ class Kalman:
         self.record = record
         self.params = {**Kalman.params, **overrides}
         self.tracks: dict[str, Track] = {}
+        self.used_fixes: dict[str, dict[tuple[float, float], tuple[float, str]]] = {}   # per hex: position -> (time, source) of used plots
 
     def on_plot(self, plot: RawPlot) -> list[FusionChangedEvent]:
         measurement = accept(plot)
         if isinstance(measurement, str):
             self.record.skipped(measurement)
             return []
+
+        # PlaneFinder repeats itself per station and mostly relays fixes we already have: use each fix once
+        if measurement.kind == "planefinder" and (source := self.earlier_copy(measurement)):
+            self.record.dropped(f"copy of a fix already used from {source}", measurement.hex)
+            return []
+
         z = np.array(pymap3d.geodetic2ecef(measurement.lat, measurement.lon, measurement.altitude_m))
-        R = measurement_noise(measurement, self.params)
+        sigma = measurement_sigma_m(measurement, self.params)
+        R = measurement_noise(sigma, measurement, self.params)
 
         # first plot of this aircraft: a new track that knows its position and nothing about its velocity
         track = self.tracks.get(measurement.hex)
         if track is None:
             track = self.tracks[measurement.hex] = start(measurement, z, R, self.params)
-            self.record.used(track.hex)
+            self.remember_fix(measurement, plot.source)
+            self.record.used(track.hex, measurement_sigma_m=sigma)
             self.record.track(track.hex, **sigmas(track), **state_numbers(track))
             return [make_event(track, plot)]
 
-        # an older or duplicate plot is dropped, the filter only moves forward in time
+        # an older plot, or one at the same position time as the last used plot, is dropped: the filter only moves forward in time
         if measurement.timestamp_s <= track.timestamp_s:
-            self.record.dropped("duplicate" if measurement.timestamp_s == track.timestamp_s else "out of order", track.hex)
+            self.record.dropped("same position time as the last used plot" if measurement.timestamp_s == track.timestamp_s else "out of order", track.hex)
             return []
 
         # move the track to the plot's time, then pull it toward the plot
         predict(track, measurement.timestamp_s - track.timestamp_s, self.params["spectral_density"])
         distance_m, distance_sigmas = update(track, z, R)
         track.timestamp_s = measurement.timestamp_s
-        self.record.used(track.hex, distance_m=distance_m, distance_sigmas=distance_sigmas)
+        self.remember_fix(measurement, plot.source)
+        self.record.used(track.hex, distance_m=distance_m, distance_sigmas=distance_sigmas, measurement_sigma_m=sigma)
         self.record.track(track.hex, **sigmas(track), **state_numbers(track))
         return [make_event(track, plot)]
+
+    def remember_fix(self, m: Measurement, source: str) -> None:
+        """Keep the positions used for this aircraft over the last COPY_WINDOW_S seconds."""
+        fixes = self.used_fixes.setdefault(m.hex, {})
+        fixes[(m.lat, m.lon)] = (m.timestamp_s, source)
+        for position, (timestamp_s, _) in list(fixes.items()):
+            if m.timestamp_s - timestamp_s > COPY_WINDOW_S:
+                del fixes[position]
+
+    def earlier_copy(self, m: Measurement) -> str | None:
+        """The source of a used plot of this aircraft at exactly this position within COPY_WINDOW_S seconds, if any."""
+        seen = self.used_fixes.get(m.hex, {}).get((m.lat, m.lon))
+        return seen[1] if seen and abs(m.timestamp_s - seen[0]) <= COPY_WINDOW_S else None
 
     def finish(self) -> list[FusionChangedEvent]:
         return []

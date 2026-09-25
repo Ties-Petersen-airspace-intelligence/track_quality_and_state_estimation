@@ -73,7 +73,7 @@ The record takes one call per raw plot. The harness points it at the current plo
 
 ```python
 self.record.used(track.hex, distance_m=41.0)     # went into this track as a measurement
-self.record.skipped("not an ADS-B position: ADS-B Exchange type is MLAT")   # a fixed rule says this plot is not for this strategy
+self.record.skipped("adsbx type not used: MODE_S")   # a fixed rule says this plot is not for this strategy
 self.record.dropped("out of order", track.hex)   # the right kind of plot, but its timing made it unusable
 self.record.rejected(track.hex, "too far")       # checked against a track and refused
 self.record.track(track.hex, sigma_east_m=12.3)  # numbers about the track as of this plot's position time
@@ -83,7 +83,7 @@ Extra keyword numbers become columns: on the raw plot's row for the first four, 
 
 The baseline: one event per raw plot, quality APPEND_ONLY, track id `<source>:<source track id>`, one segment with the raw common block copied into a fused plot. No merging across sources, no filtering, no smoothing.
 
-The Kalman strategy (`strategies/kalman.py`): a constant velocity filter per hex on ADS-B Exchange and uAvionix ADS-B plots in the air, with NACp for the measurement noise. It records, per used plot, `distance_m` and `distance_sigmas`: how far the plot was from where the filter expected the aircraft, in metres and in sigmas. Per track state it records `sigma_east_m`, `sigma_north_m`, `sigma_up_m`, `cov_east_north_m2` (the east-north covariance, for the uncertainty ellipse) and `sigma_speed_mps`. Its state vector and covariance in ECEF go to `strategy_state.parquet` as `state_x_m` … `state_vz_mps` and `state_p_i_j`, and `Kalman.predict` runs its own constant velocity step and process noise from there. Its measurement and process noise are the same east and north, so today its ellipse is a circle and the covariance 0 up to rounding (correlation at most 0.0001).
+The Kalman strategy (`strategies/kalman.py`): a constant velocity filter per hex on plots in the air. It uses the aircraft's own GPS position from ADS-B Exchange (types ADSB_ICAO, ADSB_ICAO_NT, ADSR_ICAO, ADSB_OTHER and ADSR_OTHER; the last two have no ICAO address and are keyed by ADS-B Exchange's own `~` address), uAvionix and PlaneFinder ADS-B, plus ADS-B Exchange MLAT. The measurement noise is half the NACp 95% radius; an own GPS plot without NACp (most ADS-R, all PlaneFinder) gets `own_gps_no_nacp_sigma_m`, NACp 0 gets `default_sigma_m`, and MLAT gets `mlat_sigma_m`. A PlaneFinder plot at exactly the position of a plot the filter used for that aircraft in the last 10 s is dropped as a copy of that fix. There is no outlier check and no model of time errors yet. It records, per used plot, `distance_m` and `distance_sigmas`: how far the plot was from where the filter expected the aircraft, in metres and in sigmas, and `measurement_sigma_m`, the noise it gave the plot. Per track state it records `sigma_east_m`, `sigma_north_m`, `sigma_up_m`, `cov_east_north_m2` (the east-north covariance, for the uncertainty ellipse) and `sigma_speed_mps`. Its state vector and covariance in ECEF go to `strategy_state.parquet` as `state_x_m` … `state_vz_mps` and `state_p_i_j`, and `Kalman.predict` runs its own constant velocity step and process noise from there. Its measurement and process noise are the same east and north, so today its ellipse is a circle and the covariance 0 up to rounding (correlation at most 0.0001).
 
 ## Files
 
