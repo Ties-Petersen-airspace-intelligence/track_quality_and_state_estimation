@@ -17,7 +17,6 @@ KNOTS = 1.943844              # knots per metre per second
 SOURCE_ID = {"adsbx": 4, "uavionix": 11, "planefinder": 3}   # common.source_identifier per source name
 OWN_GPS_TYPES = {1, 2, 3}     # ADS-B Exchange ADSB_ICAO, ADSB_ICAO_NT, ADSR_ICAO: the aircraft's own GPS position
 MLAT_TYPE = 7                 # ADS-B Exchange MLAT: a position worked out on the ground from arrival times
-COPY_WINDOW_S = 10.0          # a PlaneFinder plot at a position already used for this aircraft this recently is a copy of that fix
 RADIUS_95_IN_SIGMAS = 2.45    # a circle of this many sigmas holds 95% of positions spread evenly in east and north
 NACP_95_M = {11: 3, 10: 10, 9: 30, 8: 92.6, 7: 185.2, 6: 555.6, 5: 926, 4: 1852, 3: 3704, 2: 7408, 1: 18520}
 H = np.hstack([np.eye(3), np.zeros((3, 3))])   # the measurement is the position part of the state
@@ -156,17 +155,11 @@ class Kalman:
         self.record = record
         self.params = {**Kalman.params, **overrides}
         self.tracks: dict[str, Track] = {}
-        self.used_fixes: dict[str, dict[tuple[float, float], tuple[float, str]]] = {}   # per hex: position -> (time, source) of used plots
 
     def on_plot(self, plot: RawPlot) -> list[FusionChangedEvent]:
         measurement = accept(plot)
         if isinstance(measurement, str):
             self.record.skipped(measurement)
-            return []
-
-        # PlaneFinder repeats itself per station and mostly relays fixes we already have: use each fix once
-        if measurement.kind == "planefinder" and (source := self.earlier_copy(measurement)):
-            self.record.dropped(f"copy of a fix already used from {source}", measurement.hex)
             return []
 
         z = np.array(pymap3d.geodetic2ecef(measurement.lat, measurement.lon, measurement.altitude_m))
@@ -177,7 +170,6 @@ class Kalman:
         track = self.tracks.get(measurement.hex)
         if track is None:
             track = self.tracks[measurement.hex] = start(measurement, z, R, self.params)
-            self.remember_fix(measurement, plot.source)
             self.record.used(track.hex, measurement_sigma_m=sigma)
             self.record.track(track.hex, **sigmas(track), **state_numbers(track))
             return [make_event(track, plot)]
@@ -191,23 +183,9 @@ class Kalman:
         predict(track, measurement.timestamp_s - track.timestamp_s, self.params["spectral_density"])
         distance_m, distance_sigmas = update(track, z, R)
         track.timestamp_s = measurement.timestamp_s
-        self.remember_fix(measurement, plot.source)
         self.record.used(track.hex, distance_m=distance_m, distance_sigmas=distance_sigmas, measurement_sigma_m=sigma)
         self.record.track(track.hex, **sigmas(track), **state_numbers(track))
         return [make_event(track, plot)]
-
-    def remember_fix(self, m: Measurement, source: str) -> None:
-        """Keep the positions used for this aircraft over the last COPY_WINDOW_S seconds."""
-        fixes = self.used_fixes.setdefault(m.hex, {})
-        fixes[(m.lat, m.lon)] = (m.timestamp_s, source)
-        for position, (timestamp_s, _) in list(fixes.items()):
-            if m.timestamp_s - timestamp_s > COPY_WINDOW_S:
-                del fixes[position]
-
-    def earlier_copy(self, m: Measurement) -> str | None:
-        """The source of a used plot of this aircraft at exactly this position within COPY_WINDOW_S seconds, if any."""
-        seen = self.used_fixes.get(m.hex, {}).get((m.lat, m.lon))
-        return seen[1] if seen and abs(m.timestamp_s - seen[0]) <= COPY_WINDOW_S else None
 
     def finish(self) -> list[FusionChangedEvent]:
         return []
