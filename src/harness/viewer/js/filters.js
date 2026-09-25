@@ -36,8 +36,8 @@ export function buildFilters() {
   computePass();
 }
 
-// a filter block, folded until it is switched on: ticking opens it, unticking folds it, the arrow or the name
-// folds and unfolds it; a switched on filter says in its header what it keeps
+// a filter block, folded until it is switched on: ticking the box or the empty part of the bar opens it, unticking folds it,
+// the arrow or the name folds and unfolds it; a switched on filter says in its header what it keeps
 function block(id, name, body, summary) {
   const el = document.createElement("div"); el.className = "filter"; el.dataset.id = id;
   el.innerHTML = `<div class="fhead"><input type="checkbox" title="switch this filter on or off"><span class="name">${name}</span><span class="summary"></span><span class="arrow" title="fold or unfold"></span></div><div class="fbody"></div>`;
@@ -46,6 +46,8 @@ function block(id, name, body, summary) {
   const cb = el.querySelector(".fhead input");
   cb.onchange = () => { state[id].on = cb.checked; el.classList.toggle("on", cb.checked); fold(el, cb.checked); changed(); };
   for (const part of el.querySelectorAll(".arrow, .name")) part.onclick = () => fold(el, !el.classList.contains("open"));
+  // the rest of the bar switches the filter on or off, as the box does
+  el.querySelector(".fhead").onclick = e => { if (!e.target.closest("input, .arrow, .name")) cb.click(); };
   return el;
 }
 function fold(el, open) { el.classList.toggle("open", open); }
