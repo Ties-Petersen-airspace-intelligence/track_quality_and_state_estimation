@@ -15,9 +15,10 @@ from ..strategy import STATE_PREFIX, Record
 FEET = 0.3048                 # metres per foot
 KNOTS = 1.943844              # knots per metre per second
 SOURCE_ID = {"adsbx": 4, "uavionix": 11, "planefinder": 3}   # common.source_identifier per source name
-OWN_GPS_TYPES = {1, 2, 3, 9, 10}   # ADS-B Exchange ADSB_ICAO, ADSB_ICAO_NT, ADSR_ICAO, ADSB_OTHER, ADSR_OTHER: the aircraft's own GPS position
+OWN_GPS_TYPES = {1, 2, 3}     # ADS-B Exchange ADSB_ICAO, ADSB_ICAO_NT, ADSR_ICAO: the aircraft's own GPS position
 MLAT_TYPE = 7                 # ADS-B Exchange MLAT: a position worked out on the ground from arrival times
 COPY_WINDOW_S = 10.0          # a PlaneFinder plot at a position already used for this aircraft this recently is a copy of that fix
+RADIUS_95_IN_SIGMAS = 2.45    # a circle of this many sigmas holds 95% of positions spread evenly in east and north
 NACP_95_M = {11: 3, 10: 10, 9: 30, 8: 92.6, 7: 185.2, 6: 555.6, 5: 926, 4: 1852, 3: 3704, 2: 7408, 1: 18520}
 H = np.hstack([np.eye(3), np.zeros((3, 3))])   # the measurement is the position part of the state
 
@@ -36,7 +37,6 @@ def accept(plot: RawPlot) -> Measurement | str:
     uAvionix and PlaneFinder ADS-B, and ADS-B Exchange MLAT.
     Anything else comes back as the reason it was skipped, a few words the viewer can show."""
     proto, common = plot.proto, plot.proto.common
-    hex_ = common.adshex
     nacp = None
     if plot.source == "adsbx":
         if proto.type in OWN_GPS_TYPES:
@@ -48,8 +48,6 @@ def accept(plot: RawPlot) -> Measurement | str:
         if proto.alt_baro == "ground":
             return "on the ground"
         nacp = proto.nac_p if proto.HasField("nac_p") else None
-        # ADSB_OTHER and ADSR_OTHER carry no ICAO address, only ADS-B Exchange's own one, which starts with ~
-        hex_ = hex_ or proto.hex
     elif plot.source == "uavionix":
         if proto.target_report_descriptor.is_ground_bit_set:
             return "on the ground"
@@ -63,11 +61,11 @@ def accept(plot: RawPlot) -> Measurement | str:
         kind = "planefinder"
     else:
         return f"source not used: {plot.source}"
-    if not hex_:
+    if not common.adshex:
         return "no hex"
     if not common.HasField("altitude_ft"):
         return "no altitude"
-    return Measurement(hex=hex_, timestamp_s=common.position_timestamp / 1e6, lat=common.latitude, lon=common.longitude,
+    return Measurement(hex=common.adshex, timestamp_s=common.position_timestamp / 1e6, lat=common.latitude, lon=common.longitude,
                        altitude_m=common.altitude_ft * FEET, nacp=nacp, kind=kind)
 
 
@@ -107,7 +105,8 @@ def process_noise(dt: float, q: float) -> np.ndarray:
 
 def measurement_sigma_m(m: Measurement, params: dict) -> float:
     """How far off this plot may be east and north, one sigma in metres.
-    Own GPS: NACp gives the 95% radius and half of it is the sigma. Without any NACp (most ADS-R plots carry none) the
+    Own GPS: NACp gives the radius of the circle that holds 95% of positions; for a round spread in the plane that radius is
+    2.45 sigma. Without any NACp (most ADS-R plots carry none) the
     own GPS default; NACp 0 means the aircraft does not know, so the general default.
     MLAT: one fixed sigma, it carries no NACp.
     PlaneFinder ADS-B: the aircraft's own GPS without NACp, so the own GPS default. Its time errors are not modelled yet."""
@@ -116,7 +115,7 @@ def measurement_sigma_m(m: Measurement, params: dict) -> float:
     if m.nacp is None:
         return params["own_gps_no_nacp_sigma_m"]
     radius = NACP_95_M.get(m.nacp)
-    return radius / 2 if radius else params["default_sigma_m"]
+    return radius / RADIUS_95_IN_SIGMAS if radius else params["default_sigma_m"]
 
 
 def measurement_noise(sigma: float, m: Measurement, params: dict) -> np.ndarray:
