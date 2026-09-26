@@ -149,7 +149,8 @@ class Kalman:
                                            # fits the median 60 s miss of a straight-line guess for aircraft under 195 kt
         spectral_density_vertical=0.02,    # process noise up; altitude strays far less, median 20 m in 60 s
         own_gps_no_nacp_sigma_m=15.0,  # position sigma of an own GPS plot without a usable NACp: none (most ADS-R, all PlaneFinder) or 0
-        mlat_sigma_m=75.0,            # position sigma of an ADS-B Exchange MLAT plot; 95% of them scatter less than 141 m across the flight
+        mlat_sigma_m=150.0,           # position sigma of an ADS-B Exchange MLAT plot; against a straight line over one minute its plots stray
+                                      # a median 42 m and 95% under 400 m, with slow errors that neighbouring plots share
         vertical_ratio=1.5,           # up sigma = horizontal sigma * this
         start_velocity_sigma_mps=300.0,   # how unsure a new track is about its velocity
     )
