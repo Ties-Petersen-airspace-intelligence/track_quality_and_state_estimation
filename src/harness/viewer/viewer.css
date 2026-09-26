@@ -159,8 +159,8 @@ select.asel-native { display:none; }
 .asel-item i { margin-left:auto; color:var(--dim); font-style:normal; }
 .asel-item.off { color:var(--dim); cursor:default; } .asel-item.off:hover { background:transparent; color:var(--dim); }
 
-/* a control the compare list overrides: dimmed, with the reason under it */
-.overridden { opacity:0.35; pointer-events:none; }
+/* a control the compare list overrides: greyed out but still usable, with the reason under it; the open list stays at full strength */
+.overridden .label, .overridden .asel-btn, .overridden .legend { opacity:0.35; }
 .override-note { display:none; font: 0.72rem/1.4 var(--sans); color:var(--accent); margin-top:0.45rem; }
 body.comparing .override-note { display:block; }
 
