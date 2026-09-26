@@ -84,21 +84,25 @@ def start(m: Measurement, z: np.ndarray, R: np.ndarray, params: dict) -> Track:
     return Track(hex=m.hex, timestamp_s=m.timestamp_s, x=x, P=P)
 
 
-def predict(track: Track, dt: float, spectral_density: float) -> None:
-    """Constant velocity for dt seconds: the position moves, the uncertainty grows."""
+def predict(track: Track, dt: float, params: dict, lat: float | None = None, lon: float | None = None) -> None:
+    """Constant velocity for dt seconds: the position moves, the uncertainty grows. The process noise is set in east, north
+    and up at (lat, lon), the track's own position when not given."""
+    if lat is None or lon is None:
+        lat, lon, _ = pymap3d.ecef2geodetic(*track.x[:3])
     F = np.eye(6)
     F[:3, 3:] = np.eye(3) * dt
     track.x = F @ track.x
-    track.P = F @ track.P @ F.T + process_noise(dt, spectral_density)
+    track.P = F @ track.P @ F.T + process_noise(dt, params, lat, lon)
 
 
-def process_noise(dt: float, q: float) -> np.ndarray:
-    """Q for a velocity that wanders like white noise with spectral density q, per axis."""
+def process_noise(dt: float, params: dict, lat: float, lon: float) -> np.ndarray:
+    """Q for a velocity that wanders like white noise, with one spectral density east and north and a smaller one up,
+    rotated from east, north, up at (lat, lon) into ECEF."""
+    q = np.diag([params["spectral_density_horizontal"]] * 2 + [params["spectral_density_vertical"]])
     Q = np.zeros((6, 6))
-    for i in range(3):
-        Q[i, i] = q * dt ** 3 / 3
-        Q[i, i + 3] = Q[i + 3, i] = q * dt ** 2 / 2
-        Q[i + 3, i + 3] = q * dt
+    Q[:3, :3] = enu_to_ecef(q * dt ** 3 / 3, lat, lon)
+    Q[:3, 3:] = Q[3:, :3] = enu_to_ecef(q * dt ** 2 / 2, lat, lon)
+    Q[3:, 3:] = enu_to_ecef(q * dt, lat, lon)
     return Q
 
 
@@ -143,7 +147,9 @@ def update(track: Track, z: np.ndarray, R: np.ndarray) -> tuple[float, float]:
 class Kalman:
     name = "kalman"
     params = dict(
-        spectral_density=0.5,         # process noise: how much the velocity may wander, (m/s^2)^2 * s
+        spectral_density_horizontal=1.0,   # process noise east and north: how much the velocity may wander, (m/s^2)^2 * s;
+                                           # fits the median 60 s miss of a straight-line guess for aircraft under 195 kt
+        spectral_density_vertical=0.02,    # process noise up; altitude strays far less, median 20 m in 60 s
         default_sigma_m=500.0,        # position sigma when the plot says NACp 0, accuracy unknown
         own_gps_no_nacp_sigma_m=15.0,  # position sigma of an own GPS plot that carries no NACp at all, like most ADS-R and all PlaneFinder
         mlat_sigma_m=75.0,            # position sigma of an ADS-B Exchange MLAT plot; 95% of them scatter less than 141 m across the flight
@@ -180,7 +186,7 @@ class Kalman:
             return []
 
         # move the track to the plot's time, then pull it toward the plot
-        predict(track, measurement.timestamp_s - track.timestamp_s, self.params["spectral_density"])
+        predict(track, measurement.timestamp_s - track.timestamp_s, self.params, measurement.lat, measurement.lon)
         distance_m, distance_sigmas = update(track, z, R)
         track.timestamp_s = measurement.timestamp_s
         self.record.used(track.hex, distance_m=distance_m, distance_sigmas=distance_sigmas, measurement_sigma_m=sigma)
@@ -195,7 +201,7 @@ class Kalman:
         """Where the filter expects the aircraft `seconds` after one of its fused plots, by the same constant velocity
         step and process noise it runs on, from the state it recorded there."""
         track = from_state(state)
-        predict(track, seconds, {**Kalman.params, **params}["spectral_density"])
+        predict(track, seconds, {**Kalman.params, **params})
         lat, lon, _ = pymap3d.ecef2geodetic(*track.x[:3])
         s = sigmas(track)
         return dict(latitude=float(lat), longitude=float(lon), sigma_east_m=s["sigma_east_m"], sigma_north_m=s["sigma_north_m"],
