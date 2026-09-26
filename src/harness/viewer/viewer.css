@@ -215,6 +215,8 @@ table.ref td.k, table.ref th.k { text-align:left; color:var(--body); }
 #dbg .kv { margin:0; gap:0.1rem 1rem; } #dbg .kv .k { font: 0.62rem var(--capsnorm); text-transform:uppercase; letter-spacing:0.06em; color:var(--muted); } #dbg .kv .v { font: 0.66rem var(--mono); color:var(--fg); text-align:right; }
 #tip { position:absolute; z-index:11; pointer-events:none; background:rgba(17,17,17,0.97); border:1px solid var(--line-strong); padding:0.45rem 0.6rem; font: 0.6875rem/1.5 var(--mono); display:none; max-width:24rem; box-shadow:0 4px 24px rgb(0 0 0 / 50%); }
 #tip b { color:var(--fg); font-weight:600; } #tip .muted { color:var(--muted); }
+#tip .tip-head { font: 500 0.66rem var(--capsnorm); text-transform:uppercase; letter-spacing:0.07em; color:var(--muted); margin-bottom:0.35rem; }
+#tip .tip-card + .tip-card { border-top:1px solid var(--line); margin-top:0.4rem; padding-top:0.4rem; }
 #pick { position:absolute; display:none; z-index:12; background:var(--chrome); border:1px solid var(--line-strong); box-shadow:0 4px 24px rgb(0 0 0 / 60%); min-width:17rem; max-width:26rem; }
 #pick .head { padding:0.6rem 0.8rem; font: 500 0.68rem var(--capsnorm); text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); border-bottom:1px solid var(--line); }
 #pick .item { display:flex; align-items:center; gap:0.55rem; padding:0.5rem 0.7rem; cursor:pointer; border-bottom:1px solid var(--line); font: 0.75rem var(--mono); }

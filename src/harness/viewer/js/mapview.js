@@ -262,13 +262,16 @@ function hoverAt(x, y) {
   lastPointer = x == null || x < 0 ? null : [x, y];
   if (map.isMoving()) return;
   if (!lastPointer) return setHover(null);
-  let candidates = pickables(overlay.pickMultipleObjects({ x, y, radius:1, depth:24 }));
+  let candidates = pickables(overlay.pickMultipleObjects({ x, y, radius:1, depth:60 }));
   if (!candidates.length) return setHover(null);
   // while looking ahead, a strategy point under the mouse wins over raw plots, which are nearly always smaller
   if (lookingAhead() && candidates.some(c => c.kind !== "raw")) candidates = candidates.filter(c => c.kind !== "raw");
   const pixels = c => { const size = c.kind === "raw" ? rawRadius(c.i) : pointRadius(c.kind, c.i); return size.units === "pixels" ? size.radius : size.radius / metresPerPixel(table(c.kind).lat[c.i]); };
   const best = candidates.reduce((a, b) => pixels(b) < pixels(a) ? b : a);
-  setHover(best, x, y);
+  // every plot at exactly the same position as the one under the mouse gets its own card in the same pop-up
+  const at = c => { const d = table(c.kind); return d.lat[c.i] + "," + d.lon[c.i]; };
+  const same = candidates.filter(c => c !== best && at(c) === at(best)).sort((a, b) => table(a.kind).t[a.i] - table(b.kind).t[b.i]);
+  setHover(best, x, y, false, [best, ...same]);
 }
 // the raw plots and strategy points among picks, as {kind, i}
 function pickables(picks) {
@@ -276,14 +279,22 @@ function pickables(picks) {
 }
 // metres per screen pixel at a latitude, for MapLibre's 512 pixel tiles
 const metresPerPixel = lat => 40075016.686 * Math.cos(lat * Math.PI / 180) / (512 * 2 ** map.getZoom());
-export function setHover(hover, x, y, fromChart) {
+const MAX_CARDS = 8;   // more plots at one position than this are counted, not shown
+export function setHover(hover, x, y, fromChart, stack) {
   const same = (S.hover && hover && S.hover.kind === hover.kind && S.hover.i === hover.i) || (!S.hover && !hover);
   S.hover = hover;
   if (!same) { drawHighlight(); bus.repaintCharts(); }
   const tip = $("tip");
   if (!hover || x == null) { tip.style.display = "none"; return; }
-  tip.innerHTML = describe(hover); tip.style.display = "block";
-  tip.style.left = Math.min(x + 12, $("mapwrap").clientWidth - tip.offsetWidth - 8) + "px"; tip.style.top = (fromChart ? y : y + 12) + "px";
+  const cards = stack && stack.length > 1 ? stack : [hover];
+  const head = cards.length > 1 ? `<div class="tip-head">${cards.length} plots at exactly this position</div>` : "";
+  const more = cards.length > MAX_CARDS ? `<div class="tip-card muted">and ${cards.length - MAX_CARDS} more</div>` : "";
+  tip.innerHTML = head + cards.slice(0, MAX_CARDS).map(c => `<div class="tip-card">${describe(c)}</div>`).join("") + more;
+  tip.style.display = "block";
+  // kept inside the map, so a tall pop-up of several cards moves up instead of running off the bottom
+  const wrap = $("mapwrap");
+  tip.style.left = Math.min(x + 12, wrap.clientWidth - tip.offsetWidth - 8) + "px";
+  tip.style.top = Math.max(8, Math.min(fromChart ? y : y + 12, wrap.clientHeight - tip.offsetHeight - 8)) + "px";
 }
 
 export function describe({ kind, i }) {
