@@ -109,16 +109,14 @@ def process_noise(dt: float, params: dict, lat: float, lon: float) -> np.ndarray
 def measurement_sigma_m(m: Measurement, params: dict) -> float:
     """How far off this plot may be east and north, one sigma in metres.
     Own GPS: NACp gives the radius of the circle that holds 95% of positions; for a round spread in the plane that radius is
-    2.45 sigma. Without any NACp (most ADS-R plots carry none) the
-    own GPS default; NACp 0 means the aircraft does not know, so the general default.
+    2.45 sigma. Without a usable NACp the own GPS default: no NACp at all (most ADS-R, all PlaneFinder) or NACp 0, which
+    means the aircraft does not say, for example every plot of an old version 0 transponder.
     MLAT: one fixed sigma, it carries no NACp.
     PlaneFinder ADS-B: the aircraft's own GPS without NACp, so the own GPS default. Its time errors are not modelled yet."""
     if m.kind == "mlat":
         return params["mlat_sigma_m"]
-    if m.nacp is None:
-        return params["own_gps_no_nacp_sigma_m"]
-    radius = NACP_95_M.get(m.nacp)
-    return radius / RADIUS_95_IN_SIGMAS if radius else params["default_sigma_m"]
+    radius = NACP_95_M.get(m.nacp) if m.nacp is not None else None
+    return radius / RADIUS_95_IN_SIGMAS if radius else params["own_gps_no_nacp_sigma_m"]
 
 
 def measurement_noise(sigma: float, m: Measurement, params: dict) -> np.ndarray:
@@ -150,8 +148,7 @@ class Kalman:
         spectral_density_horizontal=1.0,   # process noise east and north: how much the velocity may wander, (m/s^2)^2 * s;
                                            # fits the median 60 s miss of a straight-line guess for aircraft under 195 kt
         spectral_density_vertical=0.02,    # process noise up; altitude strays far less, median 20 m in 60 s
-        default_sigma_m=500.0,        # position sigma when the plot says NACp 0, accuracy unknown
-        own_gps_no_nacp_sigma_m=15.0,  # position sigma of an own GPS plot that carries no NACp at all, like most ADS-R and all PlaneFinder
+        own_gps_no_nacp_sigma_m=15.0,  # position sigma of an own GPS plot without a usable NACp: none (most ADS-R, all PlaneFinder) or 0
         mlat_sigma_m=75.0,            # position sigma of an ADS-B Exchange MLAT plot; 95% of them scatter less than 141 m across the flight
         vertical_ratio=1.5,           # up sigma = horizontal sigma * this
         start_velocity_sigma_mps=300.0,   # how unsure a new track is about its velocity
