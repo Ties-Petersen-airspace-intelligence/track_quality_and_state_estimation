@@ -1,0 +1,113 @@
+src/harness/strategies/kalman.py
+  5d8c03cd704cf024 112-113,118-119,151
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.5",
+  "base_commit_sha": "3554c16a89666a41645dc197302d219efb96ea47",
+  "prompts": {
+    "5d8c03cd704cf024": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0ce72c51-286a-4d23-a459-b651fcc70034",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Ties Petersen",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 220,
+      "overriden_lines": 1,
+      "context_window_samples": [
+        {
+          "used_tokens": 779785,
+          "timestamp": "2026-09-25T14:41:00.377Z"
+        },
+        {
+          "used_tokens": 780856,
+          "timestamp": "2026-09-25T14:41:07.641Z"
+        },
+        {
+          "used_tokens": 784477,
+          "timestamp": "2026-09-25T14:41:45.550Z"
+        },
+        {
+          "used_tokens": 786401,
+          "timestamp": "2026-09-25T14:41:51.578Z"
+        },
+        {
+          "used_tokens": 789954,
+          "timestamp": "2026-09-25T14:42:27.131Z"
+        },
+        {
+          "used_tokens": 809589,
+          "timestamp": "2026-09-25T15:02:49.623Z"
+        },
+        {
+          "used_tokens": 811602,
+          "timestamp": "2026-09-25T15:03:13.749Z"
+        },
+        {
+          "used_tokens": 817947,
+          "timestamp": "2026-09-25T15:08:58.744Z"
+        },
+        {
+          "used_tokens": 819145,
+          "timestamp": "2026-09-25T15:09:09.496Z"
+        },
+        {
+          "used_tokens": 833106,
+          "timestamp": "2026-09-25T15:10:37.705Z"
+        },
+        {
+          "used_tokens": 837276,
+          "timestamp": "2026-09-25T15:13:26.172Z"
+        },
+        {
+          "used_tokens": 843815,
+          "timestamp": "2026-09-25T15:15:16.780Z"
+        },
+        {
+          "used_tokens": 845350,
+          "timestamp": "2026-09-25T15:15:40.049Z"
+        },
+        {
+          "used_tokens": 847118,
+          "timestamp": "2026-09-25T15:15:59.150Z"
+        },
+        {
+          "used_tokens": 860567,
+          "timestamp": "2026-09-25T15:27:30.430Z"
+        },
+        {
+          "used_tokens": 861269,
+          "timestamp": "2026-09-25T15:27:43.663Z"
+        },
+        {
+          "used_tokens": 862688,
+          "timestamp": "2026-09-25T15:28:35.831Z"
+        },
+        {
+          "used_tokens": 919753,
+          "timestamp": "2026-09-26T13:24:59.316Z"
+        },
+        {
+          "used_tokens": 966406,
+          "timestamp": "2026-09-26T14:07:22.420Z"
+        }
+      ],
+      "skill_usages": [
+        {
+          "name": "office-task",
+          "timestamp": "2026-09-24T13:28:07.571Z",
+          "source": "slash_command"
+        },
+        {
+          "name": "master-textbook",
+          "timestamp": "2026-09-24T14:23:02.075Z",
+          "source": "skill_tool"
+        }
+      ]
+    }
+  }
+}
