@@ -316,7 +316,7 @@ function groups() {
     const out = Object.entries(S.RAW.schema).map(([src, fields]) => ({ title:SOURCE_NAME[src], color:SOURCE_COLOR[src], fields:fields.map(f => ({ ...f, source:src, label:`${src}.${f.name}` })) }));
     for (const id of S.runActive) {
       const o = S.OUTCOMES[id]; if (!o || !Object.keys(o.numbers || {}).length) continue;
-      const texts = [["state", "What the strategy did with the plot: used, skipped, dropped, rejected or unknown."], ["track_id", "The strategy's track the plot went into, or was checked against."], ["reason", "The strategy's few words on why it skipped, dropped or rejected the plot."]]
+      const texts = [["state", "What happened to the plot: removed by the normalizer, or what the strategy did with it: used, skipped or rejected; unknown when nobody says."], ["track_id", "The strategy's track the plot went into, or was checked against."], ["reason", "The normalizer's few words on why it removed the plot, or the strategy's on why it skipped or rejected it."]]
         .map(([name, doc]) => { const v = o[OUTCOME_TEXT[name]]; return { name, kind:"text", count:v.filter(x => x != null && x !== "").length, distinct:new Set(v).size, run:id, label:`${runName(id)} ${name}`, note:S.CASE.notes?.[name] || doc, doc:`Recorded by ${runName(id)} in its raw_plots.parquet; not part of any proto.` }; });
       out.push({ title:`recorded per raw plot by ${runName(id)}`, fields:[...texts, ...Object.keys(o.numbers).map(name => {
         // a loop, not Math.min(...values): a big case has a million values, more than a call can take as arguments

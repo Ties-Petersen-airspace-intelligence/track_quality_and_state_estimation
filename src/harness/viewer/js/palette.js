@@ -12,7 +12,7 @@ export const SOURCE_COLOR = { adsbx:CATEGORICAL[0], uavionix:CATEGORICAL[1], pla
 const STRATEGY_COLORS = ["#ffffff", "#ccff00", "#e87ba4", "#9085e9"].map(hex);
 export const COMPARE_COLORS = ["#3987e5", "#d95926", "#199e70", "#ffffff", "#ccff00", "#e87ba4", "#9085e9", "#c98500"].map(hex);
 // what a strategy did with a raw plot is a state, so it takes the status colours
-export const STATE_COLOR = { used:hex("#0ca30c"), dropped:hex("#fab219"), rejected:hex("#d03b3b"), skipped:hex("#6b6b6b"), unknown:hex("#3a3a3a") };
+export const STATE_COLOR = { used:hex("#0ca30c"), rejected:hex("#d03b3b"), skipped:hex("#6b6b6b"), removed:hex("#fab219"), unknown:hex("#3a3a3a") };
 export const OTHER = hex("#6b6b6b");
 export const GREY = [74, 74, 74];        // everything that is not compared, while the compare list has tracks
 export const FILTERED = [44, 44, 44];    // a raw plot that fails the filters, when not hidden
