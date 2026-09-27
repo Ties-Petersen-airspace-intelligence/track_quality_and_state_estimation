@@ -7,8 +7,10 @@ things only the source's own fields tell:
   ADS-B); mlat for ADS-B Exchange MLAT; radar for TFMS Track Information and STDDS; report for TFMS oceanic reports, United and
   Alaska; a plain label of its own for everything else
 - is_on_ground, for the sources that say: ADS-B Exchange, uAvionix and PlaneFinder
+- track_deg from the source's own field where the common block leaves it empty: ADS-B Exchange `track`, PlaneFinder `track_angle`
 - accuracy_95_m: own GPS with a NACp of 1 to 11 the NACp's radius; own GPS without a usable NACp (none, as in most ADS-R and
   all PlaneFinder, or 0, as in every plot of an old version 0 transponder) and MLAT a default from params; other kinds none
+- time_sigma_s: how far off the source's position times are, from params, per source; none for sources not measured yet
 """
 from __future__ import annotations
 
@@ -34,6 +36,12 @@ class Basic:
         own_gps_no_nacp_accuracy_95_m=36.75,  # own GPS without a usable NACp: 15 m sigma east and north, times 2.45
         mlat_accuracy_95_m=367.5,             # ADS-B Exchange MLAT: 150 m sigma times 2.45; against a straight line over one minute its
                                               # plots stray a median 42 m and 95% under 400 m, with slow errors that neighbouring plots share
+        # how far off a source's position time may be, one sigma in seconds, measured as the miss along the direction of flight
+        # divided by speed (experiment loop, iteration 1): uAvionix stamps the time of day to 1/128 s; ADS-B Exchange works the time
+        # out from a poll clock and a "seen" age that drifts; PlaneFinder writes whole seconds and its stations disagree by up to 0.5 s
+        uavionix_time_sigma_s=0.05,
+        adsbx_time_sigma_s=0.15,
+        planefinder_time_sigma_s=0.6,
     )
 
     def __init__(self, **overrides):
@@ -41,7 +49,7 @@ class Basic:
 
     def normalize(self, plot: RawPlot) -> NormalizationResult:
         proto, common = plot.proto, plot.proto.common
-        is_on_ground = nacp = vertical_rate = None
+        is_on_ground = nacp = vertical_rate = track_deg = None
         if plot.source == "adsbx":
             if proto.type not in ADSBX_KIND:
                 return NormalizationResult.removed(f"adsbx type removed: {T.Name(proto.type)}")
@@ -49,6 +57,7 @@ class Basic:
             is_on_ground = proto.alt_baro == "ground"
             nacp = proto.nac_p if proto.HasField("nac_p") else None
             vertical_rate = proto.baro_rate if proto.HasField("baro_rate") else None
+            track_deg = proto.track if proto.HasField("track") else None
         elif plot.source == "uavionix":
             kind = SOURCE_KIND[plot.source]
             is_on_ground = bool(proto.target_report_descriptor.is_ground_bit_set)
@@ -58,6 +67,7 @@ class Basic:
             kind = PLANEFINDER_KIND[proto.data_source]
             is_on_ground = bool(proto.is_on_ground)
             vertical_rate = float(proto.vert_rate) if proto.HasField("vert_rate") else None
+            track_deg = float(proto.track_angle) if proto.HasField("track_angle") else None
         else:
             kind = SOURCE_KIND[plot.source]
 
@@ -66,10 +76,10 @@ class Basic:
             source=plot.source, row=plot.row,
             position_us=common.position_timestamp, received_us=common.asi_received_timestamp, source_received_us=common.source_received_timestamp,
             lat=common.latitude, lon=common.longitude, altitude_ft=optional("altitude_ft"), is_on_ground=is_on_ground, kind=kind,
-            accuracy_95_m=self.accuracy_95_m(kind, nacp),
+            accuracy_95_m=self.accuracy_95_m(kind, nacp), time_sigma_s=self.params.get(f"{plot.source}_time_sigma_s"),
             hex=common.adshex, callsign=common.callsign, tail=common.tail_number, squawk=common.squawk,
             track_identifier=common.track_identifier, flight_number=common.flight_number, source_identifier=common.source_identifier,
-            ground_speed_kt=optional("ground_speed_kt"), track_deg=optional("track_deg"), heading_deg=optional("heading_deg"),
+            ground_speed_kt=optional("ground_speed_kt"), track_deg=optional("track_deg") if track_deg is None else track_deg, heading_deg=optional("heading_deg"),
             vertical_rate_fpm=vertical_rate,
         ))
 

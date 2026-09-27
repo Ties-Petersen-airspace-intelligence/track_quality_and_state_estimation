@@ -226,3 +226,4 @@ src/harness/viewer/fonts/
 
 # strategy runs: made locally with `uv run -m harness.run`, large, and not shared (see src/harness/README.md)
 src/data/cases/*/runs/
+src/experiments/cache/
