@@ -138,6 +138,15 @@ def correct(track: Track, z: np.ndarray, R: np.ndarray) -> None:
     track.P = (np.eye(6) - K @ H) @ track.P
 
 
+def reachable(track: Track, m: Measurement, z: np.ndarray, timestamp_s: float, params: dict) -> bool:
+    """Could the aircraft have flown from the track's last believed position to this plot in the time between them? The faster of
+    the track's speed and the plot's reported speed, times the time, times a margin for an aircraft that sped up."""
+    speed = float(np.linalg.norm(track.x[3:]))
+    if m.ground_speed_kt is not None:
+        speed = max(speed, m.ground_speed_kt / KNOTS)
+    return float(np.linalg.norm(z - track.x[:3])) <= params["restart_speed_margin"] * speed * (timestamp_s - track.timestamp_s)
+
+
 def along_across(vector: np.ndarray, velocity: np.ndarray) -> tuple[float, float]:
     """A horizontal vector split into its part along the velocity and its part across it (both in metres; across is unsigned).
     A track that is not moving has no direction, so both are nan."""
@@ -153,12 +162,14 @@ def along_across(vector: np.ndarray, velocity: np.ndarray) -> tuple[float, float
 class Kalman:
     name = "kalman"
     params = dict(
-        spectral_density_horizontal=1.0,   # process noise east and north: how much the velocity may wander, (m/s^2)^2 * s;
-                                           # fits the median 60 s miss of a straight-line guess for aircraft under 195 kt
+        spectral_density_horizontal=10.0,  # process noise east and north: how much the velocity may wander, (m/s^2)^2 * s.
+                                           # 1.0 fits the median 60 s miss of straight flight but cannot follow a turn: with the
+                                           # 5 sigma gate every turn became a 30 s loss; 10 follows turns at a rougher track
         spectral_density_vertical=0.02,    # process noise up; altitude strays far less, median 20 m in 60 s
         vertical_ratio=1.5,           # up sigma = horizontal sigma * this
         gate_sigmas=5.0,              # a plot farther than this from the prediction, in sigmas, is not believed
         restart_after_s=30.0,         # after refusing every plot for this long the filter has lost the aircraft and starts over
+        restart_speed_margin=2.0,     # a restart may land at most this many times speed x elapsed time from the last believed position
         reported_velocity_sigma_mps=10.0,  # how far off the ground speed and track a plot reports may be, per axis
         unknown_velocity_sigma_mps=300.0,  # a new track whose first plot reports no speed knows nothing about its velocity
     )
@@ -194,10 +205,11 @@ class Kalman:
         distances = distance(predicted, z, R)
 
         # a plot far from where the aircraft can be is not believed; after refusing every plot for a while the filter has lost the
-        # aircraft and starts over from this plot
+        # aircraft and starts over from this plot, but only where the aircraft could have flown since the last plot it believed
         if distances["distance_sigmas"] > self.params["gate_sigmas"]:
             track.rejected_since_s = track.rejected_since_s if track.rejected_since_s is not None else timestamp_s
-            if timestamp_s - track.rejected_since_s < self.params["restart_after_s"]:
+            lost = timestamp_s - track.rejected_since_s >= self.params["restart_after_s"]
+            if not lost or not reachable(track, m, z, timestamp_s, self.params):
                 return StrategyResult.rejected(track.hex, "far from the prediction", measurement_sigma_m=sigma, **distances)
             velocity = reported_velocity(m)
             track = self.tracks[m.hex] = start(m, z, measurement_noise(sigma, m, self.params, velocity if velocity is not None else np.zeros(3)), self.params)
