@@ -28,11 +28,11 @@ def run(data: dict, strategy_overrides: dict | None = None, normalizer_overrides
             raw_rows.append(row); continue
         row.update(kind=m.kind, accuracy_95_m=m.accuracy_95_m if m.accuracy_95_m is not None else np.nan)
         result = strategy.update(m)
-        row.update(state=result.state, reason=result.reason, track_id=result.track_id or "", **result.numbers)
+        row.update(state=result.state, reason=result.reason, **result.numbers)
         raw_rows.append(row)
         if result.update:
             for point in result.update.points:
-                track_rows.append(dict(track_id=result.update.track_id, position_us=point.position_us, received_us=point.received_us, lat=point.lat, lon=point.lon,
+                track_rows.append(dict(position_us=point.position_us, received_us=point.received_us, lat=point.lat, lon=point.lon,
                                        altitude_ft=point.altitude_ft, ground_speed_kt=point.ground_speed_kt, track_deg=point.track_deg,
                                        source=plot.source, **{k: v for k, v in point.numbers.items() if not k.startswith("state_")}))
     raw = pd.DataFrame(raw_rows)
@@ -51,8 +51,6 @@ def jumps(track: pd.DataFrame, lat0: float, lon0: float) -> pd.DataFrame:
     knots, and the altitude step in feet."""
     if len(track) < 2:
         return pd.DataFrame(columns=["position_us", "jump_m", "dt_s", "implied_kt", "altitude_step_ft"])
-    if "track_id" in track and track["track_id"].nunique() > 1:
-        return pd.concat([jumps(g, lat0, lon0) for _, g in track.groupby("track_id")], ignore_index=True)
     t = track.sort_values("position_us")
     east, north = local_xy(t["lat"], t["lon"], t["altitude_ft"], lat0, lon0)
     jump = np.hypot(np.diff(east), np.diff(north))
@@ -77,8 +75,6 @@ def numbers(result: dict, data: dict) -> dict:
     for name, frame in (("kalman", track), ("append", data["append"]), ("regular", data["regular"])):
         j = jumps(frame, lat0, lon0)
         out[f"{name}_points"] = len(frame)
-        if name == "kalman":
-            out["kalman_tracks"] = int(frame["track_id"].nunique()) if len(frame) else 0
         out[f"{name}_max_jump_m"] = round(float(j["jump_m"].max()), 0) if len(j) else np.nan
         out[f"{name}_max_implied_kt"] = round(float(j["implied_kt"].max()), 0) if len(j) else np.nan
         out[f"{name}_max_alt_step_ft"] = round(float(j["altitude_step_ft"].max()), 0) if len(j) else np.nan
