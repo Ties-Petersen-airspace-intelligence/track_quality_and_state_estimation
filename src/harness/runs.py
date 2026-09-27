@@ -2,8 +2,8 @@
 
 A run is one strategy applied to one case once, stored in <case>/runs/<strategy>/<label>/. Its run.json
 records the strategy, the label, the batch it belongs to, the git commit of this repo at the time, the
-strategy's parameters, a free note, and a few counts of what came out. Labels are r001, r002, ... per
-strategy per case, so nothing is ever overwritten. A batch is one invocation of a command, shared by every
+strategy's parameters, the normalizer with its parameters and what it removed, a free note, and a few counts of
+what came out. Labels are r001, r002, ... per strategy per case, so nothing is ever overwritten. A batch is one invocation of a command, shared by every
 run it produced, so the same code run on four cases can be found again as one group.
 """
 from __future__ import annotations
@@ -56,12 +56,12 @@ def new_run(case: pathlib.Path, strategy: str, label: str) -> pathlib.Path:
     return folder
 
 
-def write_manifest(folder: pathlib.Path, strategy: str, label: str, batch: str, case: pathlib.Path, *, params: dict, note: str, counts: dict, duration_s: float, git: dict) -> dict:
+def write_manifest(folder: pathlib.Path, strategy: str, label: str, batch: str, case: pathlib.Path, *, params: dict, normalization: dict, note: str, counts: dict, duration_s: float, git: dict) -> dict:
     manifest = dict(
         strategy=strategy, label=label, batch=batch, case=case.name,
         created=dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"), duration_s=round(duration_s, 1),
         command=shlex.join(["uv", "run", "-m", module_name(sys.argv[0]), *sys.argv[1:]]),
-        git=git, params=params, note=note, counts=counts,
+        git=git, params=params, normalization=normalization, note=note, counts=counts,
     )
     (folder / "run.json").write_text(json.dumps(manifest, indent=1))
     return manifest

@@ -1,35 +1,25 @@
-"""The dumb baseline: every raw plot becomes one fused plot, appended to a track per source track id.
+"""The dumb baseline: every measurement becomes one fused plot, appended to a track per source track id.
 
 No merging across sources, no filtering, no smoothing. This is the floor everything else is
 compared against.
 """
 from __future__ import annotations
 
-from .. import protos_path  # noqa: F401
-from uni.protobuf.uni_track_schemas.fusion.v1beta.fusion_changed_event_pb2 import APPEND_ONLY, FusionChangedEvent
-from ..raw_plots import RawPlot
-from ..strategy import Record
+from ..normalization.measurement import Measurement
+from ..strategy import StrategyResult, TrackPoint, TrackUpdate
 
 
 class Baseline:
     name = "baseline"
+    params: dict = {}
 
-    def __init__(self, record: Record):
-        self.record = record
-
-    def on_plot(self, plot: RawPlot) -> list[FusionChangedEvent]:
-        common = plot.proto.common
-
+    def update(self, m: Measurement) -> StrategyResult:
         # one track per source track id; the source name in front keeps ids from different sources apart
-        track_id = f"{plot.source}:{common.track_identifier}"
-        event = FusionChangedEvent(track_id=track_id, created_at=plot.received_us, quality=APPEND_ONLY)
+        track_id = f"{m.source}:{m.track_identifier}"
 
-        # one segment holding just this plot, copied field for field from the raw common block
-        segment = event.changed_segments.add(since=plot.position_us, until=plot.position_us)
-        fused = segment.fused_track.plots.add()
-        fused.common.ParseFromString(common.SerializeToString())
-        self.record.used(track_id)
-        return [event]
-
-    def finish(self) -> list[FusionChangedEvent]:
-        return []
+        # one point holding just this plot, copied field for field from the measurement
+        point = TrackPoint(position_us=m.position_us, source_received_us=m.source_received_us, received_us=m.received_us, lat=m.lat, lon=m.lon,
+                           altitude_ft=m.altitude_ft, ground_speed_kt=m.ground_speed_kt, track_deg=m.track_deg, heading_deg=m.heading_deg,
+                           vertical_rate_fpm=m.vertical_rate_fpm, hex=m.hex, callsign=m.callsign, tail=m.tail, squawk=m.squawk,
+                           track_identifier=m.track_identifier, flight_number=m.flight_number, source_identifier=m.source_identifier)
+        return StrategyResult.used(TrackUpdate.append(track_id, point))

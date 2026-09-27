@@ -5,67 +5,28 @@ from dataclasses import dataclass
 import numpy as np
 import pymap3d
 
-from .. import protos_path  # noqa: F401
-from uni.protobuf.uni_track_schemas.fusion.v1beta.fusion_changed_event_pb2 import APPEND_ONLY, FusionChangedEvent
-from uni_track_source_adsbx_plot_schema.proto.plot_pb2 import ADSBXPlotType
-from uni_track_source_planefinder_plot_schema.proto.plot_pb2 import DataSource
-from ..raw_plots import RawPlot
-from ..strategy import STATE_PREFIX, Record
+from ..normalization.measurement import Measurement
+from ..strategy import STATE_PREFIX, StrategyResult, TrackPoint, TrackUpdate
 
 FEET = 0.3048                 # metres per foot
 KNOTS = 1.943844              # knots per metre per second
-SOURCE_ID = {"adsbx": 4, "uavionix": 11, "planefinder": 3}   # common.source_identifier per source name
-OWN_GPS_TYPES = {1, 2, 3}     # ADS-B Exchange ADSB_ICAO, ADSB_ICAO_NT, ADSR_ICAO: the aircraft's own GPS position
-MLAT_TYPE = 7                 # ADS-B Exchange MLAT: a position worked out on the ground from arrival times
+KINDS = {"own_gps", "mlat"}   # the aircraft's own GPS position, and MLAT: a position worked out on the ground from arrival times
 RADIUS_95_IN_SIGMAS = 2.45    # a circle of this many sigmas holds 95% of positions spread evenly in east and north
-NACP_95_M = {11: 3, 10: 10, 9: 30, 8: 92.6, 7: 185.2, 6: 555.6, 5: 926, 4: 1852, 3: 3704, 2: 7408, 1: 18520}
 H = np.hstack([np.eye(3), np.zeros((3, 3))])   # the measurement is the position part of the state
 
-@dataclass
-class Measurement:
-    hex: str
-    timestamp_s: float  # seconds
-    lat: float
-    lon: float
-    altitude_m: float   # barometric altitude
-    nacp: int | None
-    kind: str           # own_gps, mlat or planefinder: decides the measurement noise
 
-def accept(plot: RawPlot) -> Measurement | str:
-    """Plots in the air with a hex and an altitude: the aircraft's own GPS position from ADS-B Exchange (ADS-B and ADS-R),
-    uAvionix and PlaneFinder ADS-B, and ADS-B Exchange MLAT.
-    Anything else comes back as the reason it was skipped, a few words the viewer can show."""
-    proto, common = plot.proto, plot.proto.common
-    nacp = None
-    if plot.source == "adsbx":
-        if proto.type in OWN_GPS_TYPES:
-            kind = "own_gps"
-        elif proto.type == MLAT_TYPE:
-            kind = "mlat"
-        else:
-            return f"adsbx type not used: {ADSBXPlotType.Name(proto.type)}"
-        if proto.alt_baro == "ground":
-            return "on the ground"
-        nacp = proto.nac_p if proto.HasField("nac_p") else None
-    elif plot.source == "uavionix":
-        if proto.target_report_descriptor.is_ground_bit_set:
-            return "on the ground"
-        kind = "own_gps"
-        nacp = proto.quality_indicators.nacp if proto.quality_indicators.HasField("nacp") else None
-    elif plot.source == "planefinder":
-        if proto.data_source != DataSource.ADSB:
-            return f"planefinder data_source not used: {DataSource.Name(proto.data_source)}"
-        if proto.is_on_ground:
-            return "on the ground"
-        kind = "planefinder"
-    else:
-        return f"source not used: {plot.source}"
-    if not common.adshex:
+def skip_reason(m: Measurement) -> str:
+    """Why a measurement is not for this filter, a few words the viewer can show, or "" when it is: it takes own GPS and MLAT
+    plots in the air with a hex and an altitude."""
+    if m.kind not in KINDS:
+        return f"kind not used: {m.kind}"
+    if m.is_on_ground:
+        return "on the ground"
+    if not m.hex:
         return "no hex"
-    if not common.HasField("altitude_ft"):
+    if m.altitude_ft is None:
         return "no altitude"
-    return Measurement(hex=common.adshex, timestamp_s=common.position_timestamp / 1e6, lat=common.latitude, lon=common.longitude,
-                       altitude_m=common.altitude_ft * FEET, nacp=nacp, kind=kind)
+    return ""
 
 
 @dataclass
@@ -81,7 +42,7 @@ def start(m: Measurement, z: np.ndarray, R: np.ndarray, params: dict) -> Track:
     P = np.zeros((6, 6))
     P[:3, :3] = R
     P[3:, 3:] = np.eye(3) * params["start_velocity_sigma_mps"] ** 2
-    return Track(hex=m.hex, timestamp_s=m.timestamp_s, x=x, P=P)
+    return Track(hex=m.hex, timestamp_s=m.position_us / 1e6, x=x, P=P)
 
 
 def predict(track: Track, dt: float, params: dict, lat: float | None = None, lon: float | None = None) -> None:
@@ -106,17 +67,10 @@ def process_noise(dt: float, params: dict, lat: float, lon: float) -> np.ndarray
     return Q
 
 
-def measurement_sigma_m(m: Measurement, params: dict) -> float:
-    """How far off this plot may be east and north, one sigma in metres.
-    Own GPS: NACp gives the radius of the circle that holds 95% of positions; for a round spread in the plane that radius is
-    2.45 sigma. Without a usable NACp the own GPS default: no NACp at all (most ADS-R, all PlaneFinder) or NACp 0, which
-    means the aircraft does not say, for example every plot of an old version 0 transponder.
-    MLAT: one fixed sigma, it carries no NACp.
-    PlaneFinder ADS-B: the aircraft's own GPS without NACp, so the own GPS default. Its time errors are not modelled yet."""
-    if m.kind == "mlat":
-        return params["mlat_sigma_m"]
-    radius = NACP_95_M.get(m.nacp) if m.nacp is not None else None
-    return radius / RADIUS_95_IN_SIGMAS if radius else params["own_gps_no_nacp_sigma_m"]
+def measurement_sigma_m(m: Measurement) -> float:
+    """How far off this plot may be east and north, one sigma in metres: the normalizer's 95% radius, which for a round spread in the
+    plane is 2.45 sigma."""
+    return m.accuracy_95_m / RADIUS_95_IN_SIGMAS
 
 
 def measurement_noise(sigma: float, m: Measurement, params: dict) -> np.ndarray:
@@ -131,7 +85,7 @@ def enu_to_ecef(matrix_enu: np.ndarray, lat: float, lon: float) -> np.ndarray:
     return rotation @ matrix_enu @ rotation.T
 
 
-def update(track: Track, z: np.ndarray, R: np.ndarray) -> tuple[float, float]:
+def correct(track: Track, z: np.ndarray, R: np.ndarray) -> tuple[float, float]:
     """Correct the state with a position measurement z of uncertainty R. Returns how far the plot was from
     where we expected it, in metres and in sigmas (below 3 in 97 of 100 plots if the noise is right; 10 is far off what we believed)."""
     innovation = z - H @ track.x                       # how far the plot is from where we expected it
@@ -148,51 +102,39 @@ class Kalman:
         spectral_density_horizontal=1.0,   # process noise east and north: how much the velocity may wander, (m/s^2)^2 * s;
                                            # fits the median 60 s miss of a straight-line guess for aircraft under 195 kt
         spectral_density_vertical=0.02,    # process noise up; altitude strays far less, median 20 m in 60 s
-        own_gps_no_nacp_sigma_m=15.0,  # position sigma of an own GPS plot without a usable NACp: none (most ADS-R, all PlaneFinder) or 0
-        mlat_sigma_m=150.0,           # position sigma of an ADS-B Exchange MLAT plot; against a straight line over one minute its plots stray
-                                      # a median 42 m and 95% under 400 m, with slow errors that neighbouring plots share
         vertical_ratio=1.5,           # up sigma = horizontal sigma * this
         start_velocity_sigma_mps=300.0,   # how unsure a new track is about its velocity
     )
 
-    def __init__(self, record: Record, **overrides):
-        self.record = record
+    def __init__(self, **overrides):
         self.params = {**Kalman.params, **overrides}
         self.tracks: dict[str, Track] = {}
 
-    def on_plot(self, plot: RawPlot) -> list[FusionChangedEvent]:
-        measurement = accept(plot)
-        if isinstance(measurement, str):
-            self.record.skipped(measurement)
-            return []
+    def update(self, m: Measurement) -> StrategyResult:
+        reason = skip_reason(m)
+        if reason:
+            return StrategyResult.skipped(reason)
 
-        z = np.array(pymap3d.geodetic2ecef(measurement.lat, measurement.lon, measurement.altitude_m))
-        sigma = measurement_sigma_m(measurement, self.params)
-        R = measurement_noise(sigma, measurement, self.params)
+        z = np.array(pymap3d.geodetic2ecef(m.lat, m.lon, m.altitude_ft * FEET))
+        sigma = measurement_sigma_m(m)
+        R = measurement_noise(sigma, m, self.params)
 
         # first plot of this aircraft: a new track that knows its position and nothing about its velocity
-        track = self.tracks.get(measurement.hex)
+        track = self.tracks.get(m.hex)
         if track is None:
-            track = self.tracks[measurement.hex] = start(measurement, z, R, self.params)
-            self.record.used(track.hex, measurement_sigma_m=sigma)
-            self.record.track(track.hex, **sigmas(track), **state_numbers(track))
-            return [make_event(track, plot)]
+            track = self.tracks[m.hex] = start(m, z, R, self.params)
+            return StrategyResult.used(track_update(track, m), measurement_sigma_m=sigma)
 
-        # an older plot, or one at the same position time as the last used plot, is dropped: the filter only moves forward in time
-        if measurement.timestamp_s <= track.timestamp_s:
-            self.record.dropped("same position time as the last used plot" if measurement.timestamp_s == track.timestamp_s else "out of order", track.hex)
-            return []
+        # an older plot, or one at the same position time as the last used plot, is rejected: the filter only moves forward in time
+        timestamp_s = m.position_us / 1e6
+        if timestamp_s <= track.timestamp_s:
+            return StrategyResult.rejected(track.hex, "same position time as the last used plot" if timestamp_s == track.timestamp_s else "out of order")
 
         # move the track to the plot's time, then pull it toward the plot
-        predict(track, measurement.timestamp_s - track.timestamp_s, self.params, measurement.lat, measurement.lon)
-        distance_m, distance_sigmas = update(track, z, R)
-        track.timestamp_s = measurement.timestamp_s
-        self.record.used(track.hex, distance_m=distance_m, distance_sigmas=distance_sigmas, measurement_sigma_m=sigma)
-        self.record.track(track.hex, **sigmas(track), **state_numbers(track))
-        return [make_event(track, plot)]
-
-    def finish(self) -> list[FusionChangedEvent]:
-        return []
+        predict(track, timestamp_s - track.timestamp_s, self.params, m.lat, m.lon)
+        distance_m, distance_sigmas = correct(track, z, R)
+        track.timestamp_s = timestamp_s
+        return StrategyResult.used(track_update(track, m), distance_m=distance_m, distance_sigmas=distance_sigmas, measurement_sigma_m=sigma)
 
     @staticmethod
     def predict(state: dict[str, float], seconds: float, params: dict) -> dict:
@@ -206,7 +148,7 @@ class Kalman:
                     cov_east_north_m2=s["cov_east_north_m2"])
 
 
-# the state x in ECEF, then P by its upper triangle, as named numbers for record.track
+# the state x in ECEF, then P by its upper triangle, as named numbers of a track point
 STATE_NAMES = ["x_m", "y_m", "z_m", "vx_mps", "vy_mps", "vz_mps"]
 
 
@@ -237,21 +179,13 @@ def sigmas(track: Track) -> dict[str, float]:
                 cov_east_north_m2=float(position[0, 1]), sigma_speed_mps=float(np.sqrt(np.mean(sigma_velocity[:2] ** 2))))
 
 
-def make_event(track: Track, plot: RawPlot) -> FusionChangedEvent:
-    """The corrected state as one fused plot, appended to the aircraft's track."""
-    common = plot.proto.common
+def track_update(track: Track, m: Measurement) -> TrackUpdate:
+    """The corrected state as one point appended to the aircraft's track, with the filter's sigmas and its state for predict()."""
     lat, lon, altitude_m = pymap3d.ecef2geodetic(*track.x[:3])
     east, north, _ = pymap3d.uvw2enu(*track.x[3:], lat, lon)
-
-    event = FusionChangedEvent(track_id=track.hex, created_at=plot.received_us, quality=APPEND_ONLY)
-    segment = event.changed_segments.add(since=plot.position_us, until=plot.position_us)
-    fused = segment.fused_track.plots.add()
-    c = fused.common
-    c.source_identifier = SOURCE_ID[plot.source]
-    c.track_identifier = common.track_identifier
-    c.position_timestamp, c.source_received_timestamp, c.asi_received_timestamp = common.position_timestamp, common.source_received_timestamp, common.asi_received_timestamp
-    c.latitude, c.longitude, c.altitude_ft = float(lat), float(lon), int(round(altitude_m / FEET))
-    c.ground_speed_kt = float(np.hypot(east, north) * KNOTS)
-    c.track_deg = float(np.degrees(np.arctan2(east, north)) % 360)
-    c.adshex, c.callsign, c.tail_number, c.squawk = common.adshex, common.callsign, common.tail_number, common.squawk
-    return event
+    point = TrackPoint(position_us=m.position_us, source_received_us=m.source_received_us, received_us=m.received_us,
+                       lat=float(lat), lon=float(lon), altitude_ft=int(round(altitude_m / FEET)),
+                       ground_speed_kt=float(np.hypot(east, north) * KNOTS), track_deg=float(np.degrees(np.arctan2(east, north)) % 360),
+                       hex=m.hex, callsign=m.callsign, tail=m.tail, squawk=m.squawk, track_identifier=m.track_identifier,
+                       source_identifier=m.source_identifier, numbers={**sigmas(track), **state_numbers(track)})
+    return TrackUpdate.append(track.hex, point)
