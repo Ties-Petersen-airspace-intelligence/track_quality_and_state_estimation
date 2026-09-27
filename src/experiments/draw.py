@@ -85,9 +85,9 @@ def map_panel(ax, r, t, p, lat0, lon0, title):
     if len(p):
         e, n = local_xy(p["lat"], p["lon"], p["altitude_ft"], lat0, lon0)
         ax.plot(e / 1000, n / 1000, color=PROD, lw=0.8, alpha=0.9, label=f"prod regular ({len(p)})", zorder=5)
-    if len(t):
-        e, n = local_xy(t["lat"], t["lon"], t["altitude_ft"], lat0, lon0)
-        ax.plot(e / 1000, n / 1000, color=KALMAN, lw=0.9, label=f"kalman ({len(t)})", zorder=6)
+    for k, (_, g) in enumerate(t.groupby("track_id") if "track_id" in t else [(None, t)]):
+        e, n = local_xy(g["lat"], g["lon"], g["altitude_ft"], lat0, lon0)
+        ax.plot(e / 1000, n / 1000, color=KALMAN if k % 2 == 0 else "#ccff00", lw=0.9, label=f"kalman ({len(t)}, {t['track_id'].nunique() if 'track_id' in t else 1} tracks)" if k == 0 else None, zorder=6)
     ax.set_xlabel("east km"); ax.set_ylabel("north km"); ax.legend(fontsize=6, loc="best", markerscale=1.5)
 
 
@@ -97,14 +97,14 @@ def altitude_panel(ax, r, t, p, title):
         scatter_raw(ax, r, pd.Series(clock(r["position_us"]), index=r.index), r["altitude_ft"])
     if len(p):
         ax.plot(clock(p["position_us"]), p["altitude_ft"], color=PROD, lw=0.8, label="prod regular", zorder=5)
-    if len(t):
-        ax.plot(clock(t["position_us"]), t["altitude_ft"], color=KALMAN, lw=0.9, label="kalman", zorder=6)
+    for k, (_, g) in enumerate(t.groupby("track_id") if "track_id" in t else [(None, t)]):
+        ax.plot(clock(g["position_us"]), g["altitude_ft"], color=KALMAN if k % 2 == 0 else "#ccff00", lw=0.9, label="kalman" if k == 0 else None, zorder=6)
     ax.set_ylabel("ft"); ax.legend(fontsize=6, loc="best"); ax.tick_params(axis="x", labelrotation=0)
     ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter("%H:%M"))
 
 
 def sigmas_panel(ax, raw, since, until):
-    ax.set_title("distance of each plot from the prediction, in sigmas (log); red rings: rejected as too far; lime line: restart")
+    ax.set_title("distance of each plot from the prediction, in sigmas (log); red rings: fit no track; lime line: a track confirmed")
     used = raw[(raw["state"] == "used") & raw.get("distance_sigmas", pd.Series(dtype=float)).notna()] if "distance_sigmas" in raw else raw.iloc[0:0]
     if len(used):
         x = pd.Series(clock(used["position_us"]), index=used.index)
@@ -113,9 +113,10 @@ def sigmas_panel(ax, raw, since, until):
     far = raw[(raw["state"] == "rejected") & raw.get("distance_sigmas", pd.Series(dtype=float)).notna()] if "distance_sigmas" in raw else raw.iloc[0:0]
     if len(far):
         ax.scatter(clock(far["position_us"]), far["distance_sigmas"].clip(lower=0.01), s=20, facecolors="none", edgecolors="#d03b3b", linewidths=0.6, label=f"rejected, far ({len(far)})", zorder=4)
-    if "restarted" in raw:
-        for t in raw.loc[raw["restarted"] == 1.0, "position_us"]:
-            ax.axvline(clock([t])[0], color="#ccff00", lw=0.8, alpha=0.8)
+    for column in ("restarted", "confirmed"):
+        if column in raw:
+            for t in raw.loc[raw[column] == 1.0, "position_us"]:
+                ax.axvline(clock([t])[0], color="#ccff00", lw=0.8, alpha=0.8)
     ax.axvspan(clock([since])[0], clock([until])[0], color="#ccff00", alpha=0.06, lw=0)
     ax.set_ylabel("sigmas"); ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter("%H:%M"))
     if len(used) or len(far):
@@ -128,7 +129,7 @@ def speed_panel(ax, raw, track, p, since, until):
         scatter_raw(ax, raw, pd.Series(clock(raw["position_us"]), index=raw.index), raw["ground_speed_kt"], size=4)
     if len(p):
         ax.plot(clock(p["position_us"]), p["ground_speed_kt"], color=PROD, lw=0.7, zorder=5)
-    if len(track):
-        ax.plot(clock(track["position_us"]), track["ground_speed_kt"], color=KALMAN, lw=0.8, zorder=6)
+    for k, (_, g) in enumerate(track.groupby("track_id") if "track_id" in track else [(None, track)]):
+        ax.plot(clock(g["position_us"]), g["ground_speed_kt"], color=KALMAN if k % 2 == 0 else "#ccff00", lw=0.8, zorder=6)
     ax.axvspan(clock([since])[0], clock([until])[0], color="#ccff00", alpha=0.06, lw=0)
     ax.set_ylabel("kt"); ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter("%H:%M"))
