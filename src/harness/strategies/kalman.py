@@ -90,7 +90,7 @@ def measurement_sigma_m(m: Measurement) -> float:
 
 
 def measurement_noise(sigma: float, m: Measurement, params: dict, velocity: np.ndarray) -> np.ndarray:
-    """R: the plot's sigma east and north, up a bit more, as a 3 by 3 matrix in ECEF. Along the direction of flight the plot may
+    """R: the plot's sigma east and north and the altitude sigma up, as a 3 by 3 matrix in ECEF. Along the direction of flight the plot may
     also be off by speed times its time error, because a plot whose time is off by t seconds shows where the aircraft was t
     seconds earlier or later; the two errors are independent, so their squares add."""
     east, north, _ = pymap3d.uvw2enu(*velocity, m.lat, m.lon)
@@ -101,7 +101,7 @@ def measurement_noise(sigma: float, m: Measurement, params: dict, velocity: np.n
         horizontal += (speed * m.time_sigma_s) ** 2 * np.outer(direction, direction)
     R = np.zeros((3, 3))
     R[:2, :2] = horizontal
-    R[2, 2] = (sigma * params["vertical_ratio"]) ** 2
+    R[2, 2] = params["altitude_sigma_m"] ** 2   # the altitude comes from the barometric altimeter, not from the position fix
     return enu_to_ecef(R, m.lat, m.lon)
 
 
@@ -165,8 +165,9 @@ class Kalman:
         spectral_density_horizontal=10.0,  # process noise east and north: how much the velocity may wander, (m/s^2)^2 * s.
                                            # 1.0 fits the median 60 s miss of straight flight but cannot follow a turn: with the
                                            # 5 sigma gate every turn became a 30 s loss; 10 follows turns at a rougher track
-        spectral_density_vertical=0.02,    # process noise up; altitude strays far less, median 20 m in 60 s
-        vertical_ratio=1.5,           # up sigma = horizontal sigma * this
+        spectral_density_vertical=0.5,     # process noise up. 0.02 fits the median 20 m altitude miss in 60 s but not the start of
+                                           # a 3,000 ft/min descent; with a 10 m altitude sigma those plots were refused
+        altitude_sigma_m=10.0,        # altitude error, one sigma: barometric altitude in 25 ft steps, the same whatever the position accuracy
         gate_sigmas=5.0,              # a plot farther than this from the prediction, in sigmas, is not believed
         restart_after_s=30.0,         # after refusing every plot for this long the filter has lost the aircraft and starts over
         restart_speed_margin=2.0,     # a restart may land at most this many times speed x elapsed time from the last believed position
