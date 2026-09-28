@@ -173,7 +173,7 @@ class Kalman:
         gate_sigmas=5.0,              # a plot farther than this from an object's prediction, in sigmas, does not belong to that object
         restart_after_s=30.0,         # after refusing every reachable plot for this long an object has lost its aircraft and starts over
         birth_speed_margin=2.0,       # a new object is born only where no live object could have flown: farther than this x speed x time
-        confirm_after_s=300.0,        # a candidate object is published once plots have agreed with it for this long (Ties, 28 Sep: 5 min)
+        confirm_after_s=300.0,        # a further object of a hex is published once plots have agreed with it for this long (Ties, 28 Sep: 5 min)
         die_after_s=300.0,            # an object, candidate or confirmed, without a plot for this long is over
         reported_velocity_sigma_mps=10.0,  # how far off the ground speed and track a plot reports may be, per axis
         unknown_velocity_sigma_mps=300.0,  # a new track whose first plot reports no speed knows nothing about its velocity
@@ -240,18 +240,21 @@ class Kalman:
                     return StrategyResult.rejected(nearest.id, "out of order")
                 nearest.rejected_since_s = nearest.rejected_since_s if nearest.rejected_since_s is not None else timestamp_s
                 if timestamp_s - nearest.rejected_since_s < self.params["restart_after_s"] or not nearest.confirmed:
-                    return StrategyResult.rejected(nearest.id, "far from the prediction", measurement_sigma_m=sigma)
+                    predicted = predict(nearest, timestamp_s - nearest.timestamp_s, self.params, m.lat, m.lon)
+                    distances = distance(predicted, z, measurement_noise(sigma, m, self.params, predicted.x[3:]))
+                    return StrategyResult.rejected(nearest.id, "far from the prediction", measurement_sigma_m=sigma, **distances)
                 velocity = reported_velocity(m)
                 restarted = start(m, z, measurement_noise(sigma, m, self.params, velocity if velocity is not None else np.zeros(3)), self.params)
                 restarted.id, restarted.born_s, restarted.confirmed = nearest.id, nearest.born_s, True
                 objects[objects.index(nearest)] = restarted
                 return self.record(restarted, m, dict(measurement_sigma_m=sigma, restarted=1.0))
 
-        # no live object could be here: the first plot of a candidate object, another aircraft under this hex until proven otherwise
+        # no live object could be here: a new object. The first object of a hex is published at once; a further one, another
+        # aircraft under this hex until proven otherwise, starts as a candidate that must earn publication
         velocity = reported_velocity(m)
         track = start(m, z, measurement_noise(sigma, m, self.params, velocity if velocity is not None else np.zeros(3)), self.params)
         self.births[m.hex] = self.births.get(m.hex, 0) + 1
-        track.id, track.born_s = f"{m.hex}:{self.births[m.hex]}", timestamp_s
+        track.id, track.born_s, track.confirmed = f"{m.hex}:{self.births[m.hex]}", timestamp_s, not objects
         objects.append(track)
         return self.record(track, m, dict(measurement_sigma_m=sigma))
 

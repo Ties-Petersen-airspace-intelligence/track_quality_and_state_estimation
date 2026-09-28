@@ -16,14 +16,17 @@ def case_folders() -> list[pathlib.Path]:
     return sorted(p for p in CASES.iterdir() if (p / "case.json").exists())
 
 
-def load(case: pathlib.Path) -> dict:
-    """info (case.json), plots (the suspect's raw plots in receipt order), append and regular (production's tracks for the hex)."""
+def load(case: pathlib.Path, hex: str | None = None) -> dict:
+    """info (case.json), plots (the raw plots of one aircraft in receipt order: the suspect, or the hex given), append and
+    regular (production's tracks for that hex)."""
     CACHE.mkdir(exist_ok=True)
-    cached = CACHE / f"{case.name}.pickle"
+    info = json.loads((case / "case.json").read_text())
+    hex = (hex or info["suspect"]["hex"]).upper()
+    cached = CACHE / f"{case.name}{'' if hex == info['suspect']['hex'].upper() else '-' + hex}.pickle"
     if cached.exists():
         return pickle.loads(cached.read_bytes())
-    info = json.loads((case / "case.json").read_text())
-    hex = info["suspect"]["hex"]
+    if hex != info["suspect"]["hex"].upper():
+        info = {**info, "name": f"{info['name']} {hex}", "suspect": {"hex": hex, "callsign": ""}, "event": None, "reason": f"aircraft {hex} of this case"}
     out = dict(info=info, plots=suspect_plots(case, hex), append=production(case, "append", hex), regular=production(case, "final", hex))
     cached.write_bytes(pickle.dumps(out))
     return out

@@ -25,6 +25,7 @@ def main():
     ap.add_argument("--note", default="")
     ap.add_argument("--against", type=int, default=None, help="earlier iteration to compare the numbers with")
     ap.add_argument("--case", default=None, help="only cases whose folder name contains this")
+    ap.add_argument("--hex", default=None, help="one aircraft of the case instead of its suspect (with --case)")
     ap.add_argument("--param", action="append", default=[], help="strategy parameter override name=value")
     ap.add_argument("--normalizer-param", action="append", default=[], help="normalizer parameter override name=value")
     a = ap.parse_args()
@@ -38,13 +39,14 @@ def main():
     for folder in cases.case_folders():
         if a.case and a.case not in folder.name:
             continue
-        data = cases.load(folder)
+        data = cases.load(folder, a.hex)
         result = run(data, overrides, normalizer_overrides)
         n = numbers(result, data)
         rows.append(n)
-        draw.draw(data, result, out / f"{short(folder.name)}.png", f"iteration {a.iteration}")
-        result["raw"].assign(case=short(folder.name)).to_parquet(out / f"{short(folder.name)}_raw.parquet")
-        result["track"].assign(case=short(folder.name)).to_parquet(out / f"{short(folder.name)}_track.parquet")
+        name = short(folder.name) + (f"-{a.hex.upper()}" if a.hex else "")
+        draw.draw(data, result, out / f"{name}.png", f"iteration {a.iteration}")
+        result["raw"].assign(case=name).to_parquet(out / f"{name}_raw.parquet")
+        result["track"].assign(case=name).to_parquet(out / f"{name}_track.parquet")
         print(f"{short(folder.name):10s} used {n['used']:5d} rej {n['rejected']:4d}  >5σ {n.get('over_5_sigma_pct', float('nan')):5.1f}%  "
               f"jump kalman {n['kalman_max_jump_m']:8.0f} m  regular {n['regular_max_jump_m']:8.0f} m  alt step kalman {n['kalman_max_alt_step_ft']:6.0f} ft")
     summary = pd.DataFrame(rows)

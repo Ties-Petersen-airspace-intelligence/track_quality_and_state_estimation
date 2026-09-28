@@ -28,6 +28,18 @@
         "--no-browser"
       ],
       "port": 8772
+    },
+    {
+      "name": "office-pages",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8790",
+        "--directory",
+        "/Users/tiespetersen/agent-office/tasks/kalman-experiment-loop"
+      ],
+      "port": 8790
     }
   ]
 }
