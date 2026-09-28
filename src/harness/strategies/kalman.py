@@ -12,7 +12,8 @@ FEET = 0.3048                 # metres per foot
 KNOTS = 1.943844              # knots per metre per second
 KINDS = {"own_gps", "mlat"}   # the aircraft's own GPS position, and MLAT: a position worked out on the ground from arrival times
 RADIUS_95_IN_SIGMAS = 2.45    # a circle of this many sigmas holds 95% of positions spread evenly in east and north
-H = np.hstack([np.eye(3), np.zeros((3, 3))])   # the measurement is the position part of the state
+N = 9                                           # the state: position, velocity, acceleration in ECEF
+H = np.hstack([np.eye(3), np.zeros((3, 6))])   # the measurement is the position part of the state
 
 
 def skip_reason(m: Measurement) -> str:
@@ -33,8 +34,8 @@ def skip_reason(m: Measurement) -> str:
 class Track:
     hex: str
     timestamp_s: float  # seconds, position time of the last used plot
-    x: np.ndarray       # state: x, y, z, vx, vy, vz in ECEF, metres and metres per second
-    P: np.ndarray       # uncertainty of the state, 6 by 6
+    x: np.ndarray       # state: position, velocity, acceleration in ECEF (9 numbers: m, m/s, m/s^2)
+    P: np.ndarray       # uncertainty of the state, 9 by 9
     id: str = ""        # hex:n, n counting the objects born for this hex
     born_s: float = 0.0                                   # position time of the first plot
     points: list[TrackPoint] = field(default_factory=list)  # a candidate's points, published together when it is confirmed
@@ -43,14 +44,15 @@ class Track:
 
 
 def start(m: Measurement, z: np.ndarray, R: np.ndarray, params: dict) -> Track:
-    """A new track at the plot's position, moving as the plot reports (ground speed, track angle, vertical rate); a plot that
-    reports no speed gives a track that knows nothing about its velocity."""
+    """A new track at the plot's position, moving as the plot reports (ground speed, track angle, vertical rate), not
+    accelerating; a plot that reports no speed gives a track that knows nothing about its velocity."""
     velocity = reported_velocity(m)
     sigma = params["reported_velocity_sigma_mps"] if velocity is not None else params["unknown_velocity_sigma_mps"]
-    x = np.concatenate([z, velocity if velocity is not None else np.zeros(3)])
-    P = np.zeros((6, 6))
+    x = np.concatenate([z, velocity if velocity is not None else np.zeros(3), np.zeros(3)])
+    P = np.zeros((N, N))
     P[:3, :3] = R
-    P[3:, 3:] = np.eye(3) * sigma ** 2
+    P[3:6, 3:6] = np.eye(3) * sigma ** 2
+    P[6:, 6:] = np.eye(3) * params["start_acceleration_sigma_mps2"] ** 2
     return Track(hex=m.hex, timestamp_s=m.position_us / 1e6, x=x, P=P)
 
 
@@ -65,25 +67,28 @@ def reported_velocity(m: Measurement) -> np.ndarray | None:
 
 
 def predict(track: Track, dt: float, params: dict, lat: float | None = None, lon: float | None = None) -> Track:
-    """The track dt seconds later at constant velocity (earlier when dt is negative): the position moves, the uncertainty grows
-    either way. Returns a new Track and leaves the given one as it is, so a plot that is then refused changes nothing. The process noise is set in east, north and up at
-    (lat, lon), the track's own position when not given."""
+    """The track dt seconds later at constant acceleration (earlier when dt is negative): the position and velocity move, the
+    uncertainty grows either way. Returns a new Track and leaves the given one as it is, so a plot that is then refused changes
+    nothing. The process noise is set in east, north and up at (lat, lon), the track's own position when not given."""
     if lat is None or lon is None:
         lat, lon, _ = pymap3d.ecef2geodetic(*track.x[:3])
-    F = np.eye(6)
-    F[:3, 3:] = np.eye(3) * dt
+    F = np.eye(N)
+    F[:3, 3:6] = np.eye(3) * dt
+    F[:3, 6:] = np.eye(3) * dt ** 2 / 2
+    F[3:6, 6:] = np.eye(3) * dt
     return Track(hex=track.hex, timestamp_s=track.timestamp_s + dt, x=F @ track.x, P=F @ track.P @ F.T + process_noise(abs(dt), params, lat, lon),
                  id=track.id, born_s=track.born_s, points=track.points, confirmed=track.confirmed, rejected_since_s=track.rejected_since_s)
 
 
 def process_noise(dt: float, params: dict, lat: float, lon: float) -> np.ndarray:
-    """Q for a velocity that wanders like white noise, with one spectral density east and north and a smaller one up,
-    rotated from east, north, up at (lat, lon) into ECEF."""
-    q = np.diag([params["spectral_density_horizontal"]] * 2 + [params["spectral_density_vertical"]])
-    Q = np.zeros((6, 6))
-    Q[:3, :3] = enu_to_ecef(q * dt ** 3 / 3, lat, lon)
-    Q[:3, 3:] = Q[3:, :3] = enu_to_ecef(q * dt ** 2 / 2, lat, lon)
-    Q[3:, 3:] = enu_to_ecef(q * dt, lat, lon)
+    """Q for an acceleration that wanders like white noise (its rate of change, the jerk, has one spectral density east and
+    north and a smaller one up), rotated from east, north, up at (lat, lon) into ECEF."""
+    q = np.diag([params["jerk_density_horizontal"]] * 2 + [params["jerk_density_vertical"]])
+    factors = [[dt ** 5 / 20, dt ** 4 / 8, dt ** 3 / 6], [dt ** 4 / 8, dt ** 3 / 3, dt ** 2 / 2], [dt ** 3 / 6, dt ** 2 / 2, dt]]
+    Q = np.zeros((N, N))
+    for i in range(3):
+        for j in range(3):
+            Q[3 * i:3 * i + 3, 3 * j:3 * j + 3] = enu_to_ecef(q * factors[i][j], lat, lon)
     return Q
 
 
@@ -122,7 +127,7 @@ def distance(track: Track, z: np.ndarray, R: np.ndarray) -> dict[str, float]:
     split along the direction of flight (along_m, positive when the plot is ahead) and across it (across_m)."""
     innovation = z - H @ track.x                       # how far the plot is from where we expected it
     S = H @ track.P @ H.T + R                          # how far off that difference may be
-    along, across = along_across(innovation, track.x[3:])
+    along, across = along_across(innovation, track.x[3:6])
     # the same miss split into horizontal and vertical, each in metres and in its own sigmas
     lat, lon, _ = pymap3d.ecef2geodetic(*track.x[:3])
     rotation = np.array(pymap3d.enu2uvw(np.eye(3)[0], np.eye(3)[1], np.eye(3)[2], lat, lon))
@@ -139,7 +144,7 @@ def correct(track: Track, z: np.ndarray, R: np.ndarray) -> None:
     S = H @ track.P @ H.T + R
     K = track.P @ H.T @ np.linalg.inv(S)               # how much of the difference to believe
     track.x = track.x + K @ innovation
-    track.P = (np.eye(6) - K @ H) @ track.P
+    track.P = (np.eye(N) - K @ H) @ track.P
 
 
 def horizontal_distance_m(z: np.ndarray, track: Track) -> float:
@@ -164,11 +169,9 @@ def along_across(vector: np.ndarray, velocity: np.ndarray) -> tuple[float, float
 class Kalman:
     name = "kalman"
     params = dict(
-        spectral_density_horizontal=10.0,  # process noise east and north: how much the velocity may wander, (m/s^2)^2 * s.
-                                           # 1.0 fits the median 60 s miss of straight flight but cannot follow a turn: with the
-                                           # 5 sigma gate every turn became a 30 s loss; 10 follows turns at a rougher track
-        spectral_density_vertical=0.5,     # process noise up. 0.02 fits the median 20 m altitude miss in 60 s but not the start of
-                                           # a 3,000 ft/min descent; with a 10 m altitude sigma those plots were refused
+        jerk_density_horizontal=1.0,       # process noise east and north: how much the acceleration may wander, (m/s^3)^2 * s
+        jerk_density_vertical=0.1,         # the same up
+        start_acceleration_sigma_mps2=3.0, # a new track is not accelerating, give or take this
         altitude_sigma_m=10.0,        # altitude error, one sigma: barometric altitude in 25 ft steps, the same whatever the position accuracy
         gate_sigmas=5.0,              # a plot farther than this from an object's prediction, in sigmas, does not belong to that object
         restart_after_s=30.0,         # after refusing every reachable plot for this long an object has lost its aircraft and starts over
@@ -200,7 +203,7 @@ class Kalman:
         fits, late = [], None
         for track in objects:
             predicted = predict(track, timestamp_s - track.timestamp_s, self.params, m.lat, m.lon)
-            R = measurement_noise(sigma, m, self.params, predicted.x[3:])
+            R = measurement_noise(sigma, m, self.params, predicted.x[3:6])
             distances = distance(predicted, z, R)
             within = distances["distance_sigmas"] <= self.params["gate_sigmas"]
             if timestamp_s <= track.timestamp_s:
@@ -232,7 +235,7 @@ class Kalman:
         # the plot fits no object. Could one of them have flown here since its last plot? Then the plot is an outlier or the
         # object is lagging: refused, and after 30 s of such refusals the nearest object admits it is lost and starts over here
         if objects:
-            speed = max(max(float(np.linalg.norm(t.x[3:])) for t in objects), (m.ground_speed_kt or 0.0) / KNOTS)
+            speed = max(max(float(np.linalg.norm(t.x[3:6])) for t in objects), (m.ground_speed_kt or 0.0) / KNOTS)
             nearest = min(objects, key=lambda t: horizontal_distance_m(z, t))
             elapsed_s = max(abs(timestamp_s - nearest.timestamp_s), 1.0)
             if horizontal_distance_m(z, nearest) <= self.params["birth_speed_margin"] * speed * elapsed_s:
@@ -281,19 +284,19 @@ class Kalman:
 
 
 # the state x in ECEF, then P by its upper triangle, as named numbers of a track point
-STATE_NAMES = ["x_m", "y_m", "z_m", "vx_mps", "vy_mps", "vz_mps"]
+STATE_NAMES = ["x_m", "y_m", "z_m", "vx_mps", "vy_mps", "vz_mps", "ax_mps2", "ay_mps2", "az_mps2"]
 
 
 def state_numbers(track: Track) -> dict[str, float]:
     out = {STATE_PREFIX + name: float(value) for name, value in zip(STATE_NAMES, track.x)}
-    out.update({f"{STATE_PREFIX}p_{i}_{j}": float(track.P[i, j]) for i in range(6) for j in range(i, 6)})
+    out.update({f"{STATE_PREFIX}p_{i}_{j}": float(track.P[i, j]) for i in range(N) for j in range(i, N)})
     return out
 
 
 def from_state(state: dict[str, float]) -> Track:
-    P = np.zeros((6, 6))
-    for i in range(6):
-        for j in range(i, 6):
+    P = np.zeros((N, N))
+    for i in range(N):
+        for j in range(i, N):
             P[i, j] = P[j, i] = state[f"{STATE_PREFIX}p_{i}_{j}"]
     return Track(hex="", timestamp_s=0.0, x=np.array([state[STATE_PREFIX + name] for name in STATE_NAMES]), P=P)
 
@@ -305,7 +308,7 @@ def sigmas(track: Track) -> dict[str, float]:
     lat, lon, _ = pymap3d.ecef2geodetic(*track.x[:3])
     rotation = np.array(pymap3d.enu2uvw(np.eye(3)[0], np.eye(3)[1], np.eye(3)[2], lat, lon))
     position = rotation.T @ track.P[:3, :3] @ rotation
-    velocity = rotation.T @ track.P[3:, 3:] @ rotation
+    velocity = rotation.T @ track.P[3:6, 3:6] @ rotation
     sigma = np.sqrt(np.diag(position)); sigma_velocity = np.sqrt(np.diag(velocity))
     return dict(sigma_east_m=float(sigma[0]), sigma_north_m=float(sigma[1]), sigma_up_m=float(sigma[2]),
                 cov_east_north_m2=float(position[0, 1]), sigma_speed_mps=float(np.sqrt(np.mean(sigma_velocity[:2] ** 2))))
@@ -314,7 +317,7 @@ def sigmas(track: Track) -> dict[str, float]:
 def track_point(track: Track, m: Measurement) -> TrackPoint:
     """The corrected state as one point of the track, with the filter's sigmas and its state for predict()."""
     lat, lon, altitude_m = pymap3d.ecef2geodetic(*track.x[:3])
-    east, north, _ = pymap3d.uvw2enu(*track.x[3:], lat, lon)
+    east, north, _ = pymap3d.uvw2enu(*track.x[3:6], lat, lon)
     point = TrackPoint(position_us=m.position_us, source_received_us=m.source_received_us, received_us=m.received_us,
                        lat=float(lat), lon=float(lon), altitude_ft=int(round(altitude_m / FEET)),
                        ground_speed_kt=float(np.hypot(east, north) * KNOTS), track_deg=float(np.degrees(np.arctan2(east, north)) % 360),
