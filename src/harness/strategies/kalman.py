@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 import pymap3d
@@ -29,12 +29,16 @@ def skip_reason(m: Measurement) -> str:
     return ""
 
 
-@dataclass
+@dataclass(eq=False)   # tracks are compared by identity, never by their arrays
 class Track:
     hex: str
     timestamp_s: float  # seconds, position time of the last used plot
     x: np.ndarray       # state: x, y, z, vx, vy, vz in ECEF, metres and metres per second
     P: np.ndarray       # uncertainty of the state, 6 by 6
+    id: str = ""        # hex:n, n counting the objects born for this hex
+    born_s: float = 0.0                                   # position time of the first plot
+    points: list[TrackPoint] = field(default_factory=list)  # a candidate's points, published together when it is confirmed
+    confirmed: bool = False
     rejected_since_s: float | None = None   # position time of the first plot refused since the last used one; None when none was
 
 
@@ -61,15 +65,15 @@ def reported_velocity(m: Measurement) -> np.ndarray | None:
 
 
 def predict(track: Track, dt: float, params: dict, lat: float | None = None, lon: float | None = None) -> Track:
-    """The track dt seconds later at constant velocity: the position moves, the uncertainty grows. Returns a new Track and leaves
-    the given one as it is, so a plot that is then refused changes nothing. The process noise is set in east, north and up at
+    """The track dt seconds later at constant velocity (earlier when dt is negative): the position moves, the uncertainty grows
+    either way. Returns a new Track and leaves the given one as it is, so a plot that is then refused changes nothing. The process noise is set in east, north and up at
     (lat, lon), the track's own position when not given."""
     if lat is None or lon is None:
         lat, lon, _ = pymap3d.ecef2geodetic(*track.x[:3])
     F = np.eye(6)
     F[:3, 3:] = np.eye(3) * dt
-    return Track(hex=track.hex, timestamp_s=track.timestamp_s + dt, x=F @ track.x, P=F @ track.P @ F.T + process_noise(dt, params, lat, lon),
-                 rejected_since_s=track.rejected_since_s)
+    return Track(hex=track.hex, timestamp_s=track.timestamp_s + dt, x=F @ track.x, P=F @ track.P @ F.T + process_noise(abs(dt), params, lat, lon),
+                 id=track.id, born_s=track.born_s, points=track.points, confirmed=track.confirmed, rejected_since_s=track.rejected_since_s)
 
 
 def process_noise(dt: float, params: dict, lat: float, lon: float) -> np.ndarray:
@@ -138,13 +142,11 @@ def correct(track: Track, z: np.ndarray, R: np.ndarray) -> None:
     track.P = (np.eye(6) - K @ H) @ track.P
 
 
-def reachable(track: Track, m: Measurement, z: np.ndarray, timestamp_s: float, params: dict) -> bool:
-    """Could the aircraft have flown from the track's last believed position to this plot in the time between them? The faster of
-    the track's speed and the plot's reported speed, times the time, times a margin for an aircraft that sped up."""
-    speed = float(np.linalg.norm(track.x[3:]))
-    if m.ground_speed_kt is not None:
-        speed = max(speed, m.ground_speed_kt / KNOTS)
-    return float(np.linalg.norm(z - track.x[:3])) <= params["restart_speed_margin"] * speed * (timestamp_s - track.timestamp_s)
+def horizontal_distance_m(z: np.ndarray, track: Track) -> float:
+    """How far a position z is from the track's position, over the ground."""
+    lat, lon, _ = pymap3d.ecef2geodetic(*track.x[:3])
+    east, north, _ = pymap3d.ecef2enu(*z, lat, lon, 0.0)
+    return float(np.hypot(east, north))
 
 
 def along_across(vector: np.ndarray, velocity: np.ndarray) -> tuple[float, float]:
@@ -168,16 +170,19 @@ class Kalman:
         spectral_density_vertical=0.5,     # process noise up. 0.02 fits the median 20 m altitude miss in 60 s but not the start of
                                            # a 3,000 ft/min descent; with a 10 m altitude sigma those plots were refused
         altitude_sigma_m=10.0,        # altitude error, one sigma: barometric altitude in 25 ft steps, the same whatever the position accuracy
-        gate_sigmas=5.0,              # a plot farther than this from the prediction, in sigmas, is not believed
-        restart_after_s=30.0,         # after refusing every plot for this long the filter has lost the aircraft and starts over
-        restart_speed_margin=2.0,     # a restart may land at most this many times speed x elapsed time from the last believed position
+        gate_sigmas=5.0,              # a plot farther than this from an object's prediction, in sigmas, does not belong to that object
+        restart_after_s=30.0,         # after refusing every reachable plot for this long an object has lost its aircraft and starts over
+        birth_speed_margin=2.0,       # a new object is born only where no live object could have flown: farther than this x speed x time
+        confirm_after_s=300.0,        # a candidate object is published once plots have agreed with it for this long (Ties, 28 Sep: 5 min)
+        die_after_s=300.0,            # an object, candidate or confirmed, without a plot for this long is over
         reported_velocity_sigma_mps=10.0,  # how far off the ground speed and track a plot reports may be, per axis
         unknown_velocity_sigma_mps=300.0,  # a new track whose first plot reports no speed knows nothing about its velocity
     )
 
     def __init__(self, **overrides):
         self.params = {**Kalman.params, **overrides}
-        self.tracks: dict[str, Track] = {}
+        self.tracks: dict[str, list[Track]] = {}   # per hex, the objects alive: confirmed ones and candidates
+        self.births: dict[str, int] = {}          # per hex, how many objects were ever born, for their ids
 
     def update(self, m: Measurement) -> StrategyResult:
         reason = skip_reason(m)
@@ -186,41 +191,83 @@ class Kalman:
 
         z = np.array(pymap3d.geodetic2ecef(m.lat, m.lon, m.altitude_ft * FEET))
         sigma = measurement_sigma_m(m)
-
-        # first plot of this aircraft: a new track at the plot's position, moving as the plot reports
-        track = self.tracks.get(m.hex)
-        if track is None:
-            velocity = reported_velocity(m)
-            R = measurement_noise(sigma, m, self.params, velocity if velocity is not None else np.zeros(3))
-            track = self.tracks[m.hex] = start(m, z, R, self.params)
-            return StrategyResult.used(track_update(track, m), measurement_sigma_m=sigma)
-
-        # an older plot, or one at the same position time as the last used plot, is rejected: the filter only moves forward in time
         timestamp_s = m.position_us / 1e6
-        if timestamp_s <= track.timestamp_s:
-            return StrategyResult.rejected(track.hex, "same position time as the last used plot" if timestamp_s == track.timestamp_s else "out of order")
 
-        # move the track to the plot's time; the plot's noise is longer along the track's direction
-        predicted = predict(track, timestamp_s - track.timestamp_s, self.params, m.lat, m.lon)
-        R = measurement_noise(sigma, m, self.params, predicted.x[3:])
-        distances = distance(predicted, z, R)
+        # the hex's objects still alive (a plot in the last die_after_s), and for each how far the plot is from where the object
+        # is at the plot's time: predicted forward for a plot newer than the object's last plot, backward for an older one
+        objects = [t for t in self.tracks.get(m.hex, []) if timestamp_s - t.timestamp_s < self.params["die_after_s"]]
+        self.tracks[m.hex] = objects
+        fits, late = [], None
+        for track in objects:
+            predicted = predict(track, timestamp_s - track.timestamp_s, self.params, m.lat, m.lon)
+            R = measurement_noise(sigma, m, self.params, predicted.x[3:])
+            distances = distance(predicted, z, R)
+            within = distances["distance_sigmas"] <= self.params["gate_sigmas"]
+            if timestamp_s <= track.timestamp_s:
+                if within and (late is None or track.timestamp_s > late.timestamp_s):
+                    late = track
+            elif within:
+                fits.append((track, predicted, distances, R))
 
-        # a plot far from where the aircraft can be is not believed; after refusing every plot for a while the filter has lost the
-        # aircraft and starts over from this plot, but only where the aircraft could have flown since the last plot it believed
-        if distances["distance_sigmas"] > self.params["gate_sigmas"]:
-            track.rejected_since_s = track.rejected_since_s if track.rejected_since_s is not None else timestamp_s
-            lost = timestamp_s - track.rejected_since_s >= self.params["restart_after_s"]
-            if not lost or not reachable(track, m, z, timestamp_s, self.params):
-                return StrategyResult.rejected(track.hex, "far from the prediction", measurement_sigma_m=sigma, **distances)
-            velocity = reported_velocity(m)
-            track = self.tracks[m.hex] = start(m, z, measurement_noise(sigma, m, self.params, velocity if velocity is not None else np.zeros(3)), self.params)
-            return StrategyResult.used(track_update(track, m), measurement_sigma_m=sigma, restarted=1.0, **distances)
+        # the plot fits an object: into the one it fits best; objects that fit the same plot are one aircraft, the oldest goes on
+        if fits:
+            fits.sort(key=lambda f: f[2]["distance_sigmas"])
+            track, predicted, distances, R = fits[0]
+            for other, *_ in fits[1:]:
+                if other.born_s < track.born_s:
+                    track, predicted, distances, R = other, *[f for f in fits if f[0] is other][0][1:]
+            for other, *_ in fits:
+                if other is not track:
+                    objects.remove(other)
+            correct(predicted, z, R)
+            predicted.rejected_since_s = None
+            objects[objects.index(track)] = predicted
+            numbers = dict(measurement_sigma_m=sigma, **distances, **(dict(merged=float(len(fits) - 1)) if len(fits) > 1 else {}))
+            return self.record(predicted, m, numbers)
 
-        # pull the track toward the plot
-        correct(predicted, z, R)
-        predicted.rejected_since_s = None
-        self.tracks[m.hex] = track = predicted
-        return StrategyResult.used(track_update(track, m), measurement_sigma_m=sigma, **distances)
+        # the plot fits where an object was: a late copy of a plot the object already has
+        if late is not None:
+            return StrategyResult.rejected(late.id, "same position time as the last used plot" if timestamp_s == late.timestamp_s else "out of order")
+
+        # the plot fits no object. Could one of them have flown here since its last plot? Then the plot is an outlier or the
+        # object is lagging: refused, and after 30 s of such refusals the nearest object admits it is lost and starts over here
+        if objects:
+            speed = max(max(float(np.linalg.norm(t.x[3:])) for t in objects), (m.ground_speed_kt or 0.0) / KNOTS)
+            nearest = min(objects, key=lambda t: horizontal_distance_m(z, t))
+            elapsed_s = max(abs(timestamp_s - nearest.timestamp_s), 1.0)
+            if horizontal_distance_m(z, nearest) <= self.params["birth_speed_margin"] * speed * elapsed_s:
+                if timestamp_s <= nearest.timestamp_s:
+                    return StrategyResult.rejected(nearest.id, "out of order")
+                nearest.rejected_since_s = nearest.rejected_since_s if nearest.rejected_since_s is not None else timestamp_s
+                if timestamp_s - nearest.rejected_since_s < self.params["restart_after_s"] or not nearest.confirmed:
+                    return StrategyResult.rejected(nearest.id, "far from the prediction", measurement_sigma_m=sigma)
+                velocity = reported_velocity(m)
+                restarted = start(m, z, measurement_noise(sigma, m, self.params, velocity if velocity is not None else np.zeros(3)), self.params)
+                restarted.id, restarted.born_s, restarted.confirmed = nearest.id, nearest.born_s, True
+                objects[objects.index(nearest)] = restarted
+                return self.record(restarted, m, dict(measurement_sigma_m=sigma, restarted=1.0))
+
+        # no live object could be here: the first plot of a candidate object, another aircraft under this hex until proven otherwise
+        velocity = reported_velocity(m)
+        track = start(m, z, measurement_noise(sigma, m, self.params, velocity if velocity is not None else np.zeros(3)), self.params)
+        self.births[m.hex] = self.births.get(m.hex, 0) + 1
+        track.id, track.born_s = f"{m.hex}:{self.births[m.hex]}", timestamp_s
+        objects.append(track)
+        return self.record(track, m, dict(measurement_sigma_m=sigma))
+
+    def record(self, track: Track, m: Measurement, numbers: dict) -> StrategyResult:
+        """The plot went into the object: published at once when the object is confirmed; held while it is a candidate, and
+        published with the candidate's earlier points when plots have agreed with it for confirm_after_s."""
+        point = track_point(track, m)
+        if track.confirmed:
+            return StrategyResult.used(TrackUpdate.append(track.id, point), **numbers)
+        track.points.append(point)
+        if track.timestamp_s - track.born_s < self.params["confirm_after_s"]:
+            return StrategyResult.rejected(track.id, f"candidate object, {track.timestamp_s - track.born_s:.0f} s old", **numbers)
+        track.confirmed = True
+        update = TrackUpdate(track.id, track.points[0].position_us, point.position_us, list(track.points))
+        track.points = []
+        return StrategyResult.used(update, confirmed=1.0, **numbers)
 
     @staticmethod
     def predict(state: dict[str, float], seconds: float, params: dict) -> dict:
@@ -264,8 +311,8 @@ def sigmas(track: Track) -> dict[str, float]:
                 cov_east_north_m2=float(position[0, 1]), sigma_speed_mps=float(np.sqrt(np.mean(sigma_velocity[:2] ** 2))))
 
 
-def track_update(track: Track, m: Measurement) -> TrackUpdate:
-    """The corrected state as one point appended to the aircraft's track, with the filter's sigmas and its state for predict()."""
+def track_point(track: Track, m: Measurement) -> TrackPoint:
+    """The corrected state as one point of the track, with the filter's sigmas and its state for predict()."""
     lat, lon, altitude_m = pymap3d.ecef2geodetic(*track.x[:3])
     east, north, _ = pymap3d.uvw2enu(*track.x[3:], lat, lon)
     point = TrackPoint(position_us=m.position_us, source_received_us=m.source_received_us, received_us=m.received_us,
@@ -273,4 +320,4 @@ def track_update(track: Track, m: Measurement) -> TrackUpdate:
                        ground_speed_kt=float(np.hypot(east, north) * KNOTS), track_deg=float(np.degrees(np.arctan2(east, north)) % 360),
                        hex=m.hex, callsign=m.callsign, tail=m.tail, squawk=m.squawk, track_identifier=m.track_identifier,
                        source_identifier=m.source_identifier, numbers={**sigmas(track), **state_numbers(track)})
-    return TrackUpdate.append(track.hex, point)
+    return point

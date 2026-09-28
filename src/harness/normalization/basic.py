@@ -8,6 +8,7 @@ things only the source's own fields tell:
   Alaska; a plain label of its own for everything else
 - is_on_ground, for the sources that say: ADS-B Exchange, uAvionix and PlaneFinder
 - track_deg from the source's own field where the common block leaves it empty: ADS-B Exchange `track`, PlaneFinder `track_angle`
+- hex: the identity, empty for values that cannot identify one aircraft (000000, 000001, FFFFFF, too short)
 - accuracy_95_m: own GPS with a NACp of 1 to 11 the NACp's radius; own GPS without a usable NACp (none, as in most ADS-R and
   all PlaneFinder, or 0, as in every plot of an old version 0 transponder) and MLAT a default from params; other kinds none
 - time_sigma_s: how far off the source's position times are, from params, per source; none for sources not measured yet
@@ -28,6 +29,15 @@ PLANEFINDER_KIND = {D.ADSB: "own_gps", D.PLANE_FINDER_MLAT: "planefinder_mlat", 
                     D.FLARM: "flarm", D.BLOCKED_DATA: "planefinder_blocked", D.UNKNOWN: "planefinder_unknown"}
 SOURCE_KIND = {"uavionix": "own_gps", "tfms_ti": "radar", "stdds": "radar", "tfms_or": "report", "ual": "report", "asa": "report"}
 NACP_95_M = {11: 3, 10: 10, 9: 30, 8: 92.6, 7: 185.2, 6: 555.6, 5: 926, 4: 1852, 3: 3704, 2: 7408, 1: 18520}
+
+
+def identity_hex(hex: str) -> str:
+    """The hex as an identity, or "" when it cannot be one: all zeros, all ones or shorter than six characters. A day of ADS-B
+    Exchange showed 000001 carrying many aircraft at once."""
+    h = hex.strip().upper()
+    if len(h) < 6 or set(h) <= {"0"} or set(h) <= {"F"} or h == "000001":
+        return ""
+    return h
 
 
 class Basic:
@@ -77,7 +87,7 @@ class Basic:
             position_us=common.position_timestamp, received_us=common.asi_received_timestamp, source_received_us=common.source_received_timestamp,
             lat=common.latitude, lon=common.longitude, altitude_ft=optional("altitude_ft"), is_on_ground=is_on_ground, kind=kind,
             accuracy_95_m=self.accuracy_95_m(kind, nacp), time_sigma_s=self.params.get(f"{plot.source}_time_sigma_s"),
-            hex=common.adshex, callsign=common.callsign, tail=common.tail_number, squawk=common.squawk,
+            hex=identity_hex(common.adshex), callsign=common.callsign, tail=common.tail_number, squawk=common.squawk,
             track_identifier=common.track_identifier, flight_number=common.flight_number, source_identifier=common.source_identifier,
             ground_speed_kt=optional("ground_speed_kt"), track_deg=optional("track_deg") if track_deg is None else track_deg, heading_deg=optional("heading_deg"),
             vertical_rate_fpm=vertical_rate,
