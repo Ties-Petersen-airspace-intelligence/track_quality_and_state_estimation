@@ -1,0 +1,109 @@
+src/harness/strategies/kalman.py
+  ef9d669f014f24e8 100-108,112-115,170-182,207-214
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.5",
+  "base_commit_sha": "9eaa353f4075e5ce76564062ed8f2833792bc406",
+  "prompts": {
+    "ef9d669f014f24e8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "11dff321-f83b-4bb9-9c2b-031bb0bfa9c3",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Ties Petersen",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 72,
+      "overriden_lines": 0,
+      "messages_url": "https://uni-git-ai-cas.sre.aws.ai-internal.com//cas/f01ac6bef58670fc91613871024c54d71147a72a300bb4885dc6484b15517183",
+      "context_window_samples": [
+        {
+          "used_tokens": 738404,
+          "timestamp": "2026-09-28T08:42:05.545Z"
+        },
+        {
+          "used_tokens": 753104,
+          "timestamp": "2026-09-28T08:48:43.486Z"
+        },
+        {
+          "used_tokens": 763675,
+          "timestamp": "2026-09-28T08:51:21.326Z"
+        },
+        {
+          "used_tokens": 771769,
+          "timestamp": "2026-09-28T08:52:13.450Z"
+        },
+        {
+          "used_tokens": 793349,
+          "timestamp": "2026-09-28T08:57:06.924Z"
+        },
+        {
+          "used_tokens": 800564,
+          "timestamp": "2026-09-28T09:08:28.047Z"
+        },
+        {
+          "used_tokens": 801705,
+          "timestamp": "2026-09-28T09:08:48.473Z"
+        },
+        {
+          "used_tokens": 804841,
+          "timestamp": "2026-09-28T09:10:14.745Z"
+        },
+        {
+          "used_tokens": 824143,
+          "timestamp": "2026-09-28T09:13:22.894Z"
+        },
+        {
+          "used_tokens": 837368,
+          "timestamp": "2026-09-28T09:18:17.014Z"
+        },
+        {
+          "used_tokens": 848458,
+          "timestamp": "2026-09-28T09:20:38.690Z"
+        },
+        {
+          "used_tokens": 852220,
+          "timestamp": "2026-09-28T09:21:00.899Z"
+        },
+        {
+          "used_tokens": 855740,
+          "timestamp": "2026-09-28T09:22:33.593Z"
+        },
+        {
+          "used_tokens": 858118,
+          "timestamp": "2026-09-28T09:23:41.983Z"
+        },
+        {
+          "used_tokens": 930493,
+          "timestamp": "2026-09-28T10:45:55.356Z"
+        }
+      ],
+      "skill_usages": [
+        {
+          "name": "office-task",
+          "timestamp": "2026-09-27T08:20:49.517Z",
+          "source": "slash_command"
+        },
+        {
+          "name": "office-pause",
+          "timestamp": "2026-09-27T10:30:55.059Z",
+          "source": "slash_command"
+        },
+        {
+          "name": "office-pause",
+          "timestamp": "2026-09-28T10:02:52.437Z",
+          "source": "slash_command"
+        }
+      ],
+      "token_usage": {
+        "input_tokens": 5824,
+        "output_tokens": 443540,
+        "cache_read_tokens": 130403064,
+        "cache_write_tokens": 1420073
+      }
+    }
+  }
+}
