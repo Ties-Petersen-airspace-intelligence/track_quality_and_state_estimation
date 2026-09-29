@@ -13,6 +13,8 @@ export const NACP_M = { 11:3, 10:10, 9:30, 8:92.6, 7:185.2, 6:555.6, 5:926, 4:18
 export const NIC_M = { 11:7.5, 10:25, 9:75, 8:185.2, 7:370.4, 6:1111.2, 5:1852, 4:3704, 3:7408, 2:14816, 1:37040 };
 const SIGMA_FACTOR = { s1:1, s2:2, s95:2.45 };
 // the measurement sigma a strategy run recorded for a raw plot it used, in metres, from a "sigma:<run>" size mode
+// a recorded number in a card: two decimals below one (weights, small sigmas), one decimal above
+const num = v => Math.abs(+v) < 1 ? (+v).toFixed(2) : (+v).toFixed(1);
 const runSigma = (mode, i) => { const v = S.OUTCOMES[mode.slice(6)]?.numbers?.measurement_sigma_m?.[i]; return v == null ? null : +v; };
 
 // how big a plot is drawn: { units:"pixels"|"meters", radius }, for the layers and for the hover ring
@@ -240,11 +242,17 @@ function lookAhead() {
   }
   if (got === "asking" || !got.length) return [];
   const d = table(h.kind);
-  const shapes = got.map(e => ({ seconds:e.seconds, path:ellipsePath(e.longitude, e.latitude, ellipseOf(e.sigma_east_m, e.sigma_north_m, e.cov_east_north_m2), factor) }));
+  const shape = e => ellipsePath(e.longitude, e.latitude, ellipseOf(e.sigma_east_m, e.sigma_north_m, e.cov_east_north_m2), factor);
+  const shapes = got.map(e => ({ seconds:e.seconds, path:shape(e) }));
+  // a strategy with several models inside (the Kalman's straight and manoeuvre models) also answers each model's own
+  // prediction and its weight: drawn in the model's colour, fainter the less the strategy believes it right now
+  const MODEL_COLOR = { straight:[57, 135, 229], manoeuvre:[217, 89, 38] };
+  const models = got.flatMap(e => (e.models || []).map(m => ({ path:shape(m), color:[...(MODEL_COLOR[m.name] || [200, 200, 200]), 60 + Math.round(170 * m.weight)] })));
   // the label sits at the northernmost point of its ellipse; a dashed line joins the point to the predicted centres
   const north = path => path.reduce((a, b) => b[1] > a[1] ? b : a);
   const dashed = { widthUnits:"pixels", getWidth:1.5, getColor:[255, 255, 255, 220], getDashArray:[5, 4], dashJustified:true, extensions:[new deck.PathStyleExtension({ dash:true })] };
   return [
+    new deck.PathLayer({ id:"ahead-models", data:models, getPath:s => s.path, ...dashed, getColor:s => s.color, getWidth:1 }),
     new deck.PathLayer({ id:"ahead", data:[{ path:[[d.lon[h.i], d.lat[h.i]], ...got.map(e => [e.longitude, e.latitude])] }, ...shapes], getPath:s => s.path, ...dashed }),
     new deck.TextLayer({ id:"ahead-labels", data:shapes, getPosition:s => north(s.path), getText:s => `+${s.seconds} s`, getSize:11, getColor:[255, 255, 255, 230],
       fontFamily:getComputedStyle(document.documentElement).getPropertyValue("--mono"), getTextAnchor:"middle", getAlignmentBaseline:"bottom", getPixelOffset:[0, -3] }),
@@ -320,12 +328,12 @@ function accuracyLine(i) {
   return `<span class="muted">${parts.length ? parts.join(" · ") : "no accuracy numbers on this plot"}</span>`;
 }
 function stateLine(run, i) {
-  const parts = (run.state_columns || []).filter(c => run[c][i] != null).map(c => `${c} ${(+run[c][i]).toFixed(1)}`);
+  const parts = (run.state_columns || []).filter(c => run[c][i] != null).map(c => `${c} ${num(run[c][i])}`);
   return parts.length ? `<span class="muted">${parts.join(" · ")}</span>` : "";
 }
 function outcomeLine(i) {
   const parts = Object.entries(S.OUTCOMES).filter(([id]) => S.runActive.has(id)).map(([id, o]) => {
-    const numbers = Object.entries(o.numbers || {}).filter(([, v]) => v[i] != null).map(([k, v]) => `${k} ${(+v[i]).toFixed(1)}`);
+    const numbers = Object.entries(o.numbers || {}).filter(([, v]) => v[i] != null).map(([k, v]) => `${k} ${num(v[i])}`);
     return `${escapeHtml(runName(id))}: ${o.state[i]}${o.reason[i] ? " (" + escapeHtml(o.reason[i]) + ")" : o.track[i] ? " into " + escapeHtml(o.track[i]) : ""}${numbers.length ? ", " + numbers.join(", ") : ""}`;
   });
   return parts.length ? `<span class="muted">${parts.join("<br>")}</span>` : "";

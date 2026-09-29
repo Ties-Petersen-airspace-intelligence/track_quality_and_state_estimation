@@ -261,7 +261,10 @@ class Case:
             return dict(ellipses=[])
         state = {c: float(fused.loc[i, c]) for c in own}
         params = next(r for r in self.run_list() if r["id"] == run_id).get("params") or {}
-        return dict(ellipses=[dict(seconds=t, **strategy.predict(state, t, params)) for t in seconds])
+        try:
+            return dict(ellipses=[dict(seconds=t, **strategy.predict(state, t, params)) for t in seconds])
+        except KeyError:   # a run made with an older version of the strategy recorded a state it no longer understands
+            return dict(ellipses=[])
 
     def run_field(self, run_id: str, column: str) -> dict | None:
         fused, _, _ = self.load_run(run_id)

@@ -88,7 +88,8 @@
       <div class="note" id="pointSizeNote"></div>
       <div id="predictRow">
         <div class="field"><span class="label">look ahead from the hovered point</span><label class="label"><input type="checkbox" id="predictOn">show</label></div>
-        <div class="note">Where the strategy expects the aircraft 5, 10, 20, 30 and 60 s later, by its own model, as dashed white ellipses at the size above. Only for strategies that record their state, Kalman today, and only where the run was made on this machine. While it is on, a strategy point under the mouse wins over raw plots.</div>
+            <div class="legend" id="predictLegend"><span class="item"><span class="sw" style="border:1.5px dashed #ffffff"></span>the object's prediction, the mix</span><span class="item"><span class="sw" style="border:1.5px dashed #3987e5"></span>straight model</span><span class="item"><span class="sw" style="border:1.5px dashed #d95926"></span>manoeuvre model</span><span class="n">fainter = less believed; the weights are in the point's hover card</span></div>
+        <div class="note">Where the strategy expects the aircraft 5, 10, 20, 30 and 60 s later, by its own model, as dashed ellipses at the size above: white for what it uses, and one per model inside it where it runs several. Only for strategies that record their state, Kalman today, and only where the run was made on this machine. While it is on, a strategy point under the mouse wins over raw plots.</div>
       </div>
     </div>
     <div class="block">
