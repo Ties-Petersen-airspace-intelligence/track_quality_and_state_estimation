@@ -40,6 +40,18 @@
         "/Users/tiespetersen/agent-office/tasks/kalman-experiment-loop"
       ],
       "port": 8790
+    },
+    {
+      "name": "team-update-pages",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8791",
+        "--directory",
+        "/Users/tiespetersen/agent-office/tasks/team-update"
+      ],
+      "port": 8791
     }
   ]
 }
