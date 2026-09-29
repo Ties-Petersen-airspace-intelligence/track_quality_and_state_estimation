@@ -7,7 +7,7 @@ import { buildFilters, syncOutcomeRuns } from "./filters.js";
 import { defaultActive, renderRunList, openRunsPanel, loadOutcomes } from "./runs.js";
 import { renderCompare, findTracks, clearCompare } from "./compare.js";
 import { initMap, draw, resizeMap, closePick } from "./mapview.js";
-import { rebuildCharts, redrawCharts, repaintCharts, resizeCharts, openFieldBrowser, closeFieldBrowser, wireFieldBrowser, loadRawSchema} from "./charts.js";
+import { rebuildCharts, redrawCharts, repaintCharts, resizeCharts, openFieldBrowser, closeFieldBrowser, wireFieldBrowser, loadRawSchema, applyDefaultCharts, wireChartDefaults } from "./charts.js";
 import { initTimeline, paintTimeline } from "./timeline.js";
 
 bus.draw = () => { paintTimeline(); draw(); redrawCharts(); };
@@ -62,6 +62,7 @@ async function init() {
   grips(() => { resizeMap(); resizeCharts(); });
   const done = () => { const el = $("splash"); if (!el) return; el.classList.add("gone"); setTimeout(() => el.remove(), 400); };
   initMap(done); setTimeout(done, 4000);
+  applyDefaultCharts();
   await rebuildCharts();
   bus.draw();
   loadRawSchema();
@@ -127,7 +128,7 @@ function wire() {
   $("tipOn").onchange = () => { if (!$("tipOn").checked) $("tip").style.display = "none"; };
   $("addRawChart").onclick = e => openFieldBrowser("raw", e.currentTarget);
   $("addStrategyChart").onclick = e => openFieldBrowser("strategy", e.currentTarget);
-  wireFieldBrowser();
+  wireFieldBrowser(); wireChartDefaults();
   document.querySelectorAll('input[name="chartZoom"]').forEach(r => r.onchange = () => { S.chartZoom = r.value; for (const spec of S.charts) spec.box = null; rebuildCharts(); });
   document.addEventListener("keydown", e => { if (e.key === "Escape") { closeSelects(); closePick(); closeFieldBrowser(); } });
 }

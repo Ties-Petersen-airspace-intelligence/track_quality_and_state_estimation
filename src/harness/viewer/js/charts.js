@@ -9,6 +9,46 @@ import { onZoom, resetZoom } from "./timeline.js";
 
 let built = [];          // {spec, u, full, points, xs, labels}
 let nextId = 1;
+
+// ---------- default charts: the charts every case opens with, kept in this browser ----------
+// a default names a group and a column; at case open a raw default becomes one field per source of the case, a strategy
+// default one field. Ties, 2026-09-28: altitude and ground speed of the raw plots and of the strategies, and a dialog to change it.
+const DEFAULTS_KEY = "defaultCharts";
+const BUILT_IN_DEFAULTS = [{ group:"raw", column:"common.altitude_ft" }, { group:"raw", column:"common.ground_speed_kt" }, { group:"strategy", column:"altitude_ft" }, { group:"strategy", column:"ground_speed_kt" }];
+export function defaultCharts() {
+  try { const kept = localStorage.getItem(DEFAULTS_KEY); if (kept) return JSON.parse(kept); } catch {}
+  return BUILT_IN_DEFAULTS.map(d => ({ ...d }));
+}
+function saveDefaultCharts(list) { try { localStorage.setItem(DEFAULTS_KEY, JSON.stringify(list)); } catch {} }
+export function applyDefaultCharts() {
+  if (S.charts.length || !S.RAW) return;
+  const sources = [...new Set(S.RAW.src)];
+  for (const d of defaultCharts()) {
+    const fields = d.group === "raw" ? sources.map(src => ({ source:src, column:d.column, label:`${src}.${d.column}` })) : [{ column:d.column, label:d.column }];
+    if (fields.length) S.charts.push({ id:nextId++, group:d.group, fields });
+  }
+}
+function renderDefaultsDialog() {
+  const list = defaultCharts();
+  $("cdList").innerHTML = list.length ? list.map((d, i) => `<div class="cd-row"><span class="mono">${escapeHtml(d.group)} · ${escapeHtml(d.column)}</span><button class="icon-btn small" data-i="${i}" title="remove this default">×</button></div>`).join("")
+    : `<div class="empty" style="padding:0.6rem 0.8rem">No default charts. Cases open without charts.</div>`;
+  $("cdList").querySelectorAll("button").forEach(b => b.onclick = () => { const l = defaultCharts(); l.splice(+b.dataset.i, 1); saveDefaultCharts(l); renderDefaultsDialog(); });
+}
+export function wireChartDefaults() {
+  const dialog = $("chartDefaults");
+  const open = button => { renderDefaultsDialog(); dialog.classList.add("open"); const r = button.getBoundingClientRect(); dialog.style.top = (r.bottom + 6) + "px"; dialog.style.right = (innerWidth - r.right) + "px"; };
+  for (const id of ["rawChartDefaults", "strategyChartDefaults"]) $(id).onclick = e => open(e.currentTarget);
+  $("cdClose").onclick = () => dialog.classList.remove("open");
+  $("cdAdd").onclick = () => {
+    const column = $("cdColumn").value.trim(); if (!column) return;
+    const l = defaultCharts(); l.push({ group:$("cdGroup").value, column }); saveDefaultCharts(l); $("cdColumn").value = ""; renderDefaultsDialog();
+  };
+  $("cdColumn").onkeydown = e => { if (e.key === "Enter") $("cdAdd").click(); };
+  // the charts open right now become the defaults: a raw chart by the column of its first field, a strategy chart likewise
+  $("cdFromOpen").onclick = () => { saveDefaultCharts(S.charts.map(spec => ({ group:spec.group, column:spec.fields[0].column }))); renderDefaultsDialog(); };
+  $("cdReset").onclick = () => { saveDefaultCharts(BUILT_IN_DEFAULTS.map(d => ({ ...d }))); renderDefaultsDialog(); };
+  document.addEventListener("mousedown", e => { if (dialog.classList.contains("open") && !e.target.closest("#chartDefaults, #rawChartDefaults, #strategyChartDefaults")) dialog.classList.remove("open"); });
+}
 const hiddenSeries = {}; // chart id -> labels switched off in its legend
 
 // ---------- values ----------

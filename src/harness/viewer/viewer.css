@@ -332,3 +332,12 @@ table.ref td.k, table.ref th.k { text-align:left; color:var(--body); }
 #fbInfo .fi-why { margin-top:0.5rem; font: 0.72rem/1.4 var(--sans); color:var(--accent); }
 #fieldBrowser .fb-foot { display:flex; align-items:center; gap:0.5rem; padding:0.55rem 0.7rem; border-top:1px solid var(--line); }
 #fieldBrowser .fb-foot .picked { flex:1; font: 0.625rem var(--mono); color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* the default charts dialog, a floating card under the "defaults" button */
+#chartDefaults { position:fixed; z-index:70; width:26rem; display:none; flex-direction:column; padding:0; background:var(--chrome); border:1px solid var(--line-strong); box-shadow:0 8px 32px rgb(0 0 0 / 60%); }
+#chartDefaults.open { display:flex; }
+#chartDefaults .cd-head { display:flex; flex-direction:column; gap:0.25rem; padding:0.6rem 0.8rem; border-bottom:1px solid var(--line); }
+#chartDefaults .cd-row { display:flex; align-items:center; justify-content:space-between; gap:0.6rem; padding:0.4rem 0.8rem; font: 0.74rem var(--mono); color:var(--body); border-bottom:1px solid var(--line); }
+#chartDefaults .cd-row .icon-btn { width:1.5rem; height:1.5rem; }
+#chartDefaults .cd-add { display:flex; gap:0.4rem; padding:0.6rem 0.8rem; border-bottom:1px solid var(--line); } #chartDefaults .cd-add input { flex:1; min-width:0; }
+#chartDefaults .cd-foot { display:flex; gap:0.4rem; padding:0.6rem 0.8rem; align-items:center; } #chartDefaults .cd-foot .spacer { flex:1; }

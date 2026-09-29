@@ -90,7 +90,7 @@
       <div class="note" id="pointSizeNote"></div>
       <div id="predictRow">
         <div class="field"><span class="label">look ahead from the hovered point</span><label class="label"><input type="checkbox" id="predictOn">show</label></div>
-            <div class="legend" id="predictLegend"><span class="item"><span class="sw" style="border:1.5px dashed #ffffff"></span>the object's prediction, the mix</span><span class="item"><span class="sw" style="border:1.5px dashed #3987e5"></span>straight model</span><span class="item"><span class="sw" style="border:1.5px dashed #d95926"></span>manoeuvre model</span><span class="n">fainter = less believed; the weights are in the point's hover card</span></div>
+        <div class="legend" id="predictLegend"><span class="item"><span class="sw" style="border:1.5px dashed #ffffff"></span>the object's prediction, the mix</span><span class="item"><span class="sw" style="border:1.5px dashed #3987e5"></span>straight model</span><span class="item"><span class="sw" style="border:1.5px dashed #d95926"></span>manoeuvre model</span><span class="n">fainter = less believed; the weights are in the point's hover card</span></div>
         <div class="note">Where the strategy expects the aircraft 5, 10, 20, 30 and 60 s later, by its own model, as dashed ellipses at the size above: white for what it uses, and one per model inside it where it runs several. Only for strategies that record their state, Kalman today, and only where the run was made on this machine. While it is on, a strategy point under the mouse wins over raw plots.</div>
       </div>
     </div>
@@ -200,17 +200,23 @@
     <div class="note">Double click a chart to reset: the time window for all charts, or a box for that chart alone.</div>
   </section>
   <div class="chart-group" id="rawChartGroup">
-    <div class="section-head"><h2>Raw plot charts</h2><span class="spacer"></span><button class="small" id="addRawChart" title="pick fields of the raw sources for a new chart">+ chart</button></div>
+    <div class="section-head"><h2>Raw plot charts</h2><span class="spacer"></span><button class="small" id="rawChartDefaults" title="the charts every case opens with">defaults</button><button class="small" id="addRawChart" title="pick fields of the raw sources for a new chart">+ chart</button></div>
     <div id="rawCharts"></div>
   </div>
   <div class="chart-group" id="strategyChartGroup">
-    <div class="section-head"><h2>Strategy charts</h2><span class="spacer"></span><button class="small" id="addStrategyChart" title="pick fields of the strategies' fused plots or recorded numbers for a new chart">+ chart</button></div>
+    <div class="section-head"><h2>Strategy charts</h2><span class="spacer"></span><button class="small" id="strategyChartDefaults" title="the charts every case opens with">defaults</button><button class="small" id="addStrategyChart" title="pick fields of the strategies' fused plots or recorded numbers for a new chart">+ chart</button></div>
     <div id="strategyCharts"></div>
   </div>
   </div>
 </aside>
 
 <div id="fbInfo"></div>
+<div id="chartDefaults" class="floating">
+  <div class="cd-head"><span class="label">default charts</span><span class="note" style="margin:0">the charts every case opens with, kept in this browser</span></div>
+  <div id="cdList"></div>
+  <div class="cd-add"><select id="cdGroup"><option value="raw">raw</option><option value="strategy">strategy</option></select><input type="text" id="cdColumn" placeholder="field, e.g. common.altitude_ft"><button class="small" id="cdAdd">add</button></div>
+  <div class="cd-foot"><button class="small" id="cdFromOpen" title="make the charts open right now the defaults">use the open charts</button><button class="small" id="cdReset">built-in</button><span class="spacer"></span><button class="small" id="cdClose">close</button></div>
+</div>
 <div id="fieldBrowser">
   <div class="fb-head"><span class="label" id="fbTitle">fields</span><input type="text" id="fbSearch" placeholder="search"></div>
   <div class="fb-list" id="fbList"></div>
