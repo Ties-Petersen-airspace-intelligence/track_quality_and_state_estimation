@@ -44,8 +44,9 @@ class Basic:
     name = "basic"
     params = dict(
         own_gps_no_nacp_accuracy_95_m=36.75,  # own GPS without a usable NACp: 15 m sigma east and north, times 2.45
-        mlat_accuracy_95_m=367.5,             # ADS-B Exchange MLAT: 150 m sigma times 2.45; against a straight line over one minute its
-                                              # plots stray a median 42 m and 95% under 400 m, with slow errors that neighbouring plots share
+        mlat_accuracy_95_m=1102.5,            # ADS-B Exchange MLAT: 450 m sigma times 2.45. Against a straight line over one minute its plots
+                                              # stray a median 42 m and 95% under 400 m (a 150 m sigma), but MLAT is trusted too much in the
+                                              # tracker (Ties, 28 Sep): its errors come in bursts of kilometres that a 150 m sigma lets through
         # how far off a source's position time may be, one sigma in seconds, measured as the miss along the direction of flight
         # divided by speed (experiment loop, iteration 1): uAvionix stamps the time of day to 1/128 s; ADS-B Exchange works the time
         # out from a poll clock and a "seen" age that drifts; PlaneFinder writes whole seconds and its stations disagree by up to 0.5 s
