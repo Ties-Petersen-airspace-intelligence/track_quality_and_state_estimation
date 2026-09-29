@@ -1,6 +1,6 @@
 // The compare list: tracks picked on the map or by hex, callsign or tail. Each gets its own colour, and while the
 // list has tracks those colours replace every colouring option.
-import { S, $, table, compareEntry, comparing, trackLabel, fmt, escapeHtml } from "./state.js";
+import { S, $, table, compareEntry, comparing, compareColoured, trackLabel, fmt, escapeHtml } from "./state.js";
 import { COMPARE_COLORS, rgb } from "./palette.js";
 import { bus } from "./bus.js";
 
@@ -43,7 +43,7 @@ export function clearCompare() { S.compare = []; changed(); }
 export function renderCompare() {
   document.body.classList.toggle("comparing", comparing());
   // only the colour menus are replaced by the compare colours; everything else keeps working
-  document.querySelectorAll(".colour-control").forEach(el => el.classList.toggle("overridden", comparing()));
+  document.querySelectorAll(".colour-control").forEach(el => el.classList.toggle("overridden", compareColoured()));
   if (!S.compare.length) { $("sel").innerHTML = `<p class="help" style="margin:0.6rem 0 0">Nothing to compare yet. Click plots on the map, or type a hex, callsign or tail above.</p>`; return; }
   const chips = S.compare.map((c, k) => {
     const d = table(c.kind); if (!d) return "";

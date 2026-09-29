@@ -1,5 +1,5 @@
 // The map: raw plots underneath, strategy points and lines on top, all as known at time now.
-import { S, $, api, runById, table, compareEntry, comparing, trackLabel, fadeWindowMs, fmt, fmtMs, fmtN, runName, SOURCE_NAME, SOURCE_BY_ID, escapeHtml, sliderMetres } from "./state.js";
+import { S, $, api, runById, table, compareEntry, comparing, compareColoured, trackLabel, fadeWindowMs, fmt, fmtMs, fmtN, runName, SOURCE_NAME, SOURCE_BY_ID, escapeHtml, sliderMetres } from "./state.js";
 import { rawColourFunction, strategyColourFunction, SOURCE_COLOR, GREY, FILTERED, rgb, runColour } from "./palette.js";
 import { hideFailed } from "./filters.js";
 import { toggleTrack } from "./compare.js";
@@ -103,7 +103,7 @@ const inWindow = t => !S.win || (t >= S.win[0] && t <= S.win[1]);
 
 export function draw() {
   if (!S.RAW || !map) return;
-  const alpha = fader(), shown = shownFilter(), isComparing = comparing();
+  const alpha = fader(), shown = shownFilter(), isComparing = compareColoured();   // whether the compare colours paint the map
   const layers = [boxLayer()];
   S.visible = { raw:[], runs:{} };
   if ($("rawOn").checked) layers.push(...rawLayers(alpha, shown, isComparing));
@@ -127,7 +127,7 @@ function rawLayers(alpha, shown, isComparing) {
   const idx = [];
   for (let i = 0; i < R.n && R.r[i] <= S.now; i++) if ((pass[i] || !hide) && inWindow(R.t[i]) && alpha(R.t[i]) > 0 && shown("raw", i)) idx.push(i);   // RAW is sorted by receipt time
   S.visible.raw = idx;
-  const stamp = [S.now, mode, sizeMode, px, sliderMetres("rawMetres"), comparing(), S.compare.map(c => c.color + c.hidden).join(), pass, fadeWindowMs()];
+  const stamp = [S.now, mode, sizeMode, px, sliderMetres("rawMetres"), compareColoured(), S.compare.map(c => c.color + c.hidden).join(), pass, fadeWindowMs()];
   const common = { getPosition:i => [R.lon[i], R.lat[i]], pickable:true };
   if (sizeMode === "fixed") return [new deck.ScatterplotLayer({ id:"raw", data:idx, ...common, radiusUnits:"pixels", getRadius:px, getFillColor:i => [...colour(i), alpha(R.t[i])], updateTriggers:{ getFillColor:stamp } })];
 
@@ -171,7 +171,7 @@ function strategyLayers(id, alpha, shown, isComparing) {
   S.visible.runs[id] = idx;
   const pointColour = strategyColourFunction($("pointColour").value, id), lineColour = strategyColourFunction($("lineColour").value, id);
   const override = (i, base) => { if (!isComparing) return base(i); const c = compareEntry(id, i); return c ? c.color : GREY; };
-  const stamp = [S.now, $("pointColour").value, $("lineColour").value, $("pointSize").value, $("pointPx").value, sliderMetres("pointMetres"), $("lineWidth").value, comparing(), S.compare.map(c => c.color + c.hidden).join(), fadeWindowMs()];
+  const stamp = [S.now, $("pointColour").value, $("lineColour").value, $("pointSize").value, $("pointPx").value, sliderMetres("pointMetres"), $("lineWidth").value, compareColoured(), S.compare.map(c => c.color + c.hidden).join(), fadeWindowMs()];
   let lines = null;
   if ($("linesOn").checked) {
     const data = Object.values(paths).map(ids => { ids.sort((a, b) => run.t[a] - run.t[b]); return { first:ids[0], newest:run.t[ids[ids.length - 1]], path:ids.map(i => [run.lon[i], run.lat[i]]) }; });
@@ -293,7 +293,7 @@ export function setHover(hover, x, y, fromChart, stack) {
   S.hover = hover;
   if (!same) { drawHighlight(); bus.repaintCharts(); }
   const tip = $("tip");
-  if (!hover || x == null) { tip.style.display = "none"; return; }
+  if (!hover || x == null || !$("tipOn").checked) { tip.style.display = "none"; return; }   // the card can be switched off; the highlight stays
   const cards = stack && stack.length > 1 ? stack : [hover];
   const head = cards.length > 1 ? `<div class="tip-head">${cards.length} plots at exactly this position</div>` : "";
   const more = cards.length > MAX_CARDS ? `<div class="tip-card muted">and ${cards.length - MAX_CARDS} more</div>` : "";

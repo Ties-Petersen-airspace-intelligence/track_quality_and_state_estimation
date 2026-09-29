@@ -7,7 +7,7 @@ import { buildFilters, syncOutcomeRuns } from "./filters.js";
 import { defaultActive, renderRunList, openRunsPanel, loadOutcomes } from "./runs.js";
 import { renderCompare, findTracks, clearCompare } from "./compare.js";
 import { initMap, draw, resizeMap, closePick } from "./mapview.js";
-import { rebuildCharts, redrawCharts, repaintCharts, resizeCharts, openFieldBrowser, closeFieldBrowser, wireFieldBrowser, loadRawSchema } from "./charts.js";
+import { rebuildCharts, redrawCharts, repaintCharts, resizeCharts, openFieldBrowser, closeFieldBrowser, wireFieldBrowser, loadRawSchema} from "./charts.js";
 import { initTimeline, paintTimeline } from "./timeline.js";
 
 bus.draw = () => { paintTimeline(); draw(); redrawCharts(); };
@@ -123,6 +123,8 @@ function wire() {
   $("find").onkeydown = e => { if (e.key === "Enter") { findTracks($("find").value.trim().toUpperCase()); $("find").value = ""; } };
   $("clear").onclick = clearCompare;
   $("compareOn").onchange = () => { S.compareOn = $("compareOn").checked; renderCompare(); bus.draw(); };
+  $("compareColours").onchange = () => { renderCompare(); legends(); bus.draw(); };
+  $("tipOn").onchange = () => { if (!$("tipOn").checked) $("tip").style.display = "none"; };
   $("addRawChart").onclick = e => openFieldBrowser("raw", e.currentTarget);
   $("addStrategyChart").onclick = e => openFieldBrowser("strategy", e.currentTarget);
   wireFieldBrowser();
