@@ -1,0 +1,45 @@
+src/harness/README.md
+  836528a898f9074a 96
+src/harness/strategies/kalman.py
+  836528a898f9074a 95,111-120,223-225
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.5",
+  "base_commit_sha": "e780a378db9a256c82a62f5cd93d1834545ef411",
+  "prompts": {
+    "836528a898f9074a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2bf18416-0341-47e1-a24f-94db1b08754d",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Ties Petersen",
+      "messages": [],
+      "total_additions": 15,
+      "total_deletions": 5,
+      "accepted_lines": 15,
+      "overriden_lines": 0,
+      "messages_url": "https://uni-git-ai-cas.sre.aws.ai-internal.com//cas/31efb340e919d0f425601cbd39b791e7807c0661eda0ec0568200158c39b7845",
+      "context_window_samples": [
+        {
+          "used_tokens": 313295,
+          "timestamp": "2026-09-30T10:32:30.510Z"
+        }
+      ],
+      "skill_usages": [
+        {
+          "name": "office-task",
+          "timestamp": "2026-09-30T07:36:34.629Z",
+          "source": "slash_command"
+        }
+      ],
+      "token_usage": {
+        "input_tokens": 278,
+        "output_tokens": 89716,
+        "cache_read_tokens": 27522975,
+        "cache_write_tokens": 395553
+      }
+    }
+  }
+}
