@@ -61,12 +61,12 @@
       <div class="field" id="rawMetresRow"><span class="label" id="rawMetresLabel">size without NACp</span><input type="range" class="slider" id="rawMetres" min="0" max="100" step="1" value="30"><span class="value" id="rawMetresValue"></span></div>
       <div class="legend" id="rawSizeLegend"></div>
     </div>
-    <div class="block">
-      <div class="group">filters<span class="spacer"></span><span class="count" id="filterCount"></span></div>
+    <details class="block fold" id="filtersFold">
+      <summary class="group">filters<span class="spacer"></span><span class="count" id="filterCount"></span></summary>
       <div class="choice"><span class="label">a plot that fails the filters is</span><span class="seg"><label><input type="radio" name="fail" value="grey">shown grey</label><label><input type="radio" name="fail" value="hide" checked>hidden</label></span></div>
       <div class="choice"><span class="label">a plot must pass</span><span class="seg" title="only the filters that are switched on count"><label><input type="radio" name="combine" value="and" checked>every filter</label><label><input type="radio" name="combine" value="or">at least one</label></span></div>
       <div id="filters"></div>
-    </div>
+    </details>
   </section>
   <div class="hatch"></div>
 

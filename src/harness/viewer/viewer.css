@@ -125,6 +125,8 @@ details > summary::before { content:""; width:1.6rem; height:1.6rem; flex:none; 
 details[open] > summary::before { transform:rotate(90deg); }
 details > summary:hover::before { border-color:var(--body); }
 details > summary .aside { font: 0.68rem var(--mono); color:var(--muted); letter-spacing:0; }
+/* a folded group inside a section: the same chevron, smaller, in front of the group heading */
+details.fold > summary.group { gap:0.65rem; } details.fold > summary::before { width:1.15rem; height:1.15rem; background-size:0.55rem; }
 
 /* segmented switch: a dark strip, the chosen option filled light, as the Flyways ALL / UAL tabs */
 .seg { display:flex; background:var(--raised); }
