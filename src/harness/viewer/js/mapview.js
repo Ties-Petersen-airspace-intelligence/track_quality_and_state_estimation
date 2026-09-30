@@ -243,7 +243,7 @@ function lookAhead() {
   const shape = e => ellipsePath(e.longitude, e.latitude, ellipseOf(e.sigma_east_m, e.sigma_north_m, e.cov_east_north_m2), factor);
   const shapes = got.map(e => ({ seconds:e.seconds, path:shape(e) }));
   // a strategy with several models inside (the Kalman's straight and manoeuvre models) also answers each model's own
-  // prediction and its weight: drawn in the model's colour, fainter the less the strategy believes it right now
+  // prediction and its weight: drawn in the model's colour, fainter the less weight the prediction gives it at that time
   const MODEL_COLOR = { straight:[57, 135, 229], manoeuvre:[217, 89, 38] };
   const models = got.flatMap(e => (e.models || []).map(m => ({ path:shape(m), color:[...(MODEL_COLOR[m.name] || [200, 200, 200]), 60 + Math.round(170 * m.weight)] })));
   // the label sits at the northernmost point of its ellipse; a dashed line joins the point to the predicted centres

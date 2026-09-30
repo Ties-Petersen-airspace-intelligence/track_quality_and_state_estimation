@@ -324,9 +324,8 @@ class Kalman:
         now = from_state(state)
         track = predict(now, seconds, {**Kalman.params, **params})
         out = ellipse(track.x, track.P)
-        # each model's weight is the one at the track point itself, the same number the point records as manoeuvre_weight;
-        # the prediction's own mixing weights are not shown
-        out["models"] = [dict(name=name, weight=float(w), **ellipse(model.x, model.P)) for name, w, model in zip(MODEL_NAMES, now.mu, track.models)]
+        # each model's weight is the one the prediction uses at that time, the same weights that make the mix
+        out["models"] = [dict(name=name, weight=float(w), **ellipse(model.x, model.P)) for name, w, model in zip(MODEL_NAMES, track.mu, track.models)]
         return out
 
 
