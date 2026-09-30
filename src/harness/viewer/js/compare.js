@@ -3,6 +3,7 @@
 import { S, $, table, compareEntry, comparing, trackLabel, fmt, escapeHtml } from "./state.js";
 import { COMPARE_COLORS, rgb } from "./palette.js";
 import { bus } from "./bus.js";
+import { refreshSelect } from "./controls.js";
 
 // the first colour no compared track uses yet, so a colour stays with its track when others leave
 function freeColour() {
@@ -13,7 +14,10 @@ function freeColour() {
 export function toggleTrack(kind, i, quiet) {
   const d = table(kind), existing = compareEntry(kind, i);
   if (existing) S.compare = S.compare.filter(c => c !== existing);
-  else S.compare.push(kind === "raw" ? { kind, src:d.src[i], tid:d.tid[i], color:freeColour() } : { kind, track:d.track[i], color:freeColour() });
+  else {
+    if (!S.compare.length) showOnlyCompared();
+    S.compare.push(kind === "raw" ? { kind, src:d.src[i], tid:d.tid[i], color:freeColour() } : { kind, track:d.track[i], color:freeColour() });
+  }
   if (!quiet) changed();
 }
 
@@ -36,6 +40,12 @@ export function findTracks(query) {
   for (const id of S.runShown) if (S.RUNS[id]) found += add(id);
   $("status").textContent = found ? `${found} tracks for ${query}` : `nothing carries ${query}`;
   changed();
+}
+
+// the first compared track switches the map to only the compared tracks; a later change of the menu stays
+function showOnlyCompared() {
+  const menu = $("mapShows");
+  if (menu.value !== "only") { menu.value = "only"; refreshSelect(menu); }
 }
 
 export function clearCompare() { S.compare = []; changed(); }

@@ -124,7 +124,7 @@ The viewer never decides which plots are one aircraft. The only groupings it kno
 
 **Left panel.** From the top: the case, time and comparing, raw plots, strategies, the NACp and NIC reference, and the controls. Inside raw plots and strategies each part is an indented block with its own heading.
 
-**Time and comparing.** Plots fade to nothing over a window: 10 s up to 1 h, never, or a custom number of seconds. It starts at 5 min: a longer window keeps more plots on screen, and on the big cases that makes panning and zooming far out slow. While the compare list has tracks, the map shows everything, only the compared tracks, or everything but them.
+**Time and comparing.** Plots fade to nothing over a window: 10 s up to 1 h, never, or a custom number of seconds. It starts at 5 min: a longer window keeps more plots on screen, and on the big cases that makes panning and zooming far out slow. While the compare list has tracks, the map shows everything, only the compared tracks, or everything but them. The first track put into an empty list switches this to only the compared tracks; a change after that stays.
 
 **Raw plots.** A show switch, then three parts:
 
