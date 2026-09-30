@@ -1,7 +1,7 @@
 // Colours, and the legends that say what they mean.
 // Checked with the dataviz palette validator on the map background #0a0a0a: the three ADS-B sources pass every pair
 // for colour-blind readers; the strategy colours sit brighter on purpose, so strategy output reads as a layer above the raw plots.
-import { S, $, SOURCE_NAME, runName, strategyOf, escapeHtml, fmtN } from "./state.js";
+import { S, $, SOURCE_NAME, runName, strategyOf, compareEntry, comparing, escapeHtml, fmtN } from "./state.js";
 
 const hex = h => [1, 3, 5].map(k => parseInt(h.slice(k, k + 2), 16));
 export const rgb = c => `rgb(${c})`;
@@ -14,7 +14,7 @@ export const COMPARE_COLORS = ["#3987e5", "#d95926", "#199e70", "#ffffff", "#ccf
 // what a strategy did with a raw plot is a state, so it takes the status colours
 export const STATE_COLOR = { used:hex("#0ca30c"), rejected:hex("#d03b3b"), skipped:hex("#6b6b6b"), removed:hex("#fab219"), unknown:hex("#3a3a3a") };
 export const OTHER = hex("#6b6b6b");
-export const GREY = [74, 74, 74];        // everything that is not compared, while the compare list has tracks
+export const GREY = [74, 74, 74];        // everything that is not compared, when a colour menu is set to the compare list
 export const FILTERED = [44, 44, 44];    // a raw plot that fails the filters, when not hidden
 
 // ---------- raw plots ----------
@@ -27,7 +27,7 @@ export function rawSizeOptions() {
 }
 
 export function rawColourOptions() {
-  const out = [["source", "source"], ["kind", "source and plot kind"], ["track", "source track id"], ["identity", "hex, else tail, else source track id"]];
+  const out = [["source", "source"], ["kind", "source and plot kind"], ["track", "source track id"], ["identity", "hex, else tail, else source track id"], ["compare", "the compare list, the rest grey"]];
   for (const id of [...S.runActive]) out.push(["outcome:" + id, `what ${runName(id)} did with it`]);
   return out;
 }
@@ -49,6 +49,7 @@ export function rawColourFunction(mode) {
   if (mode === "kind") { const k = kinds(); return i => k.get(R.src[i] + "|" + R.kind[i]).color; }
   if (mode === "track") return i => hashColor(R.src[i] + ":" + R.tid[i]);
   if (mode === "identity") return i => hashColor(R.hex[i] || R.tail[i] || R.src[i] + ":" + R.tid[i]);
+  if (mode === "compare") return compareColour("raw");
   if (mode.startsWith("outcome:")) {
     const o = S.OUTCOMES[mode.slice(8)];
     if (!o) return () => OTHER;
@@ -74,6 +75,7 @@ export function rawColourLegend(mode) {
     const counts = {}; for (const st of o.state) counts[st] = (counts[st] || 0) + 1;
     return legend(Object.keys(STATE_COLOR).filter(st => counts[st]).map(st => ({ color:STATE_COLOR[st], label:st, n:counts[st] })));
   }
+  if (mode === "compare") return compareLegend();
   return `<span class="item dim">one colour per track, too many for a legend</span>`;
 }
 
@@ -86,6 +88,7 @@ export const strategyColour = strategy => at([...new Set(S.CASE.runs.map(r => st
 
 export function strategyColourFunction(mode, id) {
   if (mode === "track") { const run = S.RUNS[id]; return i => hashColor(id + ":" + run.track[i]); }
+  if (mode === "compare") return compareColour(id);
   const c = mode === "strategy" ? strategyColour(strategyOf(id)) : runColour(id);
   return () => c;
 }
@@ -94,11 +97,19 @@ export function strategyLegend(mode, shape) {
   const shown = $("runsOn").checked ? [...S.runShown].filter(id => S.RUNS[id]) : [];
   if (!shown.length) return "";
   if (mode === "track") return `<span class="item dim">one colour per track, too many for a legend</span>`;
+  if (mode === "compare") return compareLegend();
   if (mode === "strategy") { const names = [...new Set(shown.map(strategyOf))]; return legend(names.map(s => ({ color:strategyColour(s), label:s.replace(/_/g, " "), shape }))); }
   return legend(shown.map(id => ({ color:runColour(id), label:runName(id), shape })));
 }
 
 // ---------- shared ----------
+
+// a compared track takes its colour from the compare list; everything else, and everything while nothing is compared, is grey
+function compareColour(kind) {
+  if (!comparing()) return () => GREY;
+  return i => { const c = compareEntry(kind, i); return c ? c.color : GREY; };
+}
+const compareLegend = () => `<span class="item dim">${comparing() ? "compared tracks in their colour, the rest grey" : "nothing compared, all grey"}</span>`;
 
 export function legend(items) {
   return items.map(it => `<span class="item">${swatch(it.color, it.shape)}${escapeHtml(it.label)}${it.n != null ? ` <span class="n">${fmtN(it.n)}</span>` : ""}</span>`).join("");

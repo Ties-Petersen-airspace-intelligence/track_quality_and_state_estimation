@@ -6,4 +6,5 @@ export const bus = {
   repaintCharts: () => {},   // only the hover changed: repaint the marks, leave data and axes alone
   renderCompare: () => {},
   renderStrategies: () => {},
+  legends: () => {},         // the colour and size legends on the left
 };

@@ -1,6 +1,6 @@
 // The map: raw plots underneath, strategy points and lines on top, all as known at time now.
-import { S, $, api, runById, table, compareEntry, comparing, compareColoured, trackLabel, fadeWindowMs, fmt, fmtMs, fmtN, runName, SOURCE_NAME, SOURCE_BY_ID, escapeHtml, sliderMetres } from "./state.js";
-import { rawColourFunction, strategyColourFunction, SOURCE_COLOR, GREY, FILTERED, rgb, runColour } from "./palette.js";
+import { S, $, api, runById, table, compareEntry, comparing, trackLabel, fadeWindowMs, fmt, fmtMs, fmtN, runName, SOURCE_NAME, SOURCE_BY_ID, escapeHtml, sliderMetres } from "./state.js";
+import { rawColourFunction, strategyColourFunction, SOURCE_COLOR, FILTERED, rgb, runColour } from "./palette.js";
 import { hideFailed } from "./filters.js";
 import { toggleTrack } from "./compare.js";
 import { bus } from "./bus.js";
@@ -103,13 +103,13 @@ const inWindow = t => !S.win || (t >= S.win[0] && t <= S.win[1]);
 
 export function draw() {
   if (!S.RAW || !map) return;
-  const alpha = fader(), shown = shownFilter(), isComparing = compareColoured();   // whether the compare colours paint the map
+  const alpha = fader(), shown = shownFilter();
   const layers = [boxLayer()];
   S.visible = { raw:[], runs:{} };
-  if ($("rawOn").checked) layers.push(...rawLayers(alpha, shown, isComparing));
+  if ($("rawOn").checked) layers.push(...rawLayers(alpha, shown));
   const pointLayers = [];
   // the show box on the Strategies heading hides every run at once and keeps which ones are ticked
-  if ($("runsOn").checked) for (const id of S.runShown) if (S.RUNS[id]) { const [lines, points] = strategyLayers(id, alpha, shown, isComparing); if (lines) layers.push(lines); pointLayers.push(...points); }
+  if ($("runsOn").checked) for (const id of S.runShown) if (S.RUNS[id]) { const [lines, points] = strategyLayers(id, alpha, shown); if (lines) layers.push(lines); pointLayers.push(...points); }
   baseLayers = [...layers, ...pointLayers];
   drawHighlight();
 }
@@ -119,15 +119,14 @@ function boxLayer() {
   return new deck.PathLayer({ id:"box", data:[{ path:[[b.lon_min, b.lat_min], [b.lon_max, b.lat_min], [b.lon_max, b.lat_max], [b.lon_min, b.lat_max], [b.lon_min, b.lat_min]] }], getPath:d => d.path, getColor:[183, 192, 202, 90], getWidth:1, widthUnits:"pixels" });
 }
 
-function rawLayers(alpha, shown, isComparing) {
+function rawLayers(alpha, shown) {
   const R = S.RAW, pass = S.rawPass, hide = hideFailed(), mode = $("rawColour").value, sizeMode = $("rawSize").value, px = +$("rawPx").value;
   const colourOf = rawColourFunction(mode);
-  // compared tracks take their own colour and everything else goes grey; a plot that fails the filters is darker still
-  const colour = i => { if (!pass[i]) return FILTERED; if (isComparing) { const c = compareEntry("raw", i); return c ? c.color : GREY; } return colourOf(i); };
+  const colour = i => pass[i] ? colourOf(i) : FILTERED;   // a plot that fails the filters is darker than grey
   const idx = [];
   for (let i = 0; i < R.n && R.r[i] <= S.now; i++) if ((pass[i] || !hide) && inWindow(R.t[i]) && alpha(R.t[i]) > 0 && shown("raw", i)) idx.push(i);   // RAW is sorted by receipt time
   S.visible.raw = idx;
-  const stamp = [S.now, mode, sizeMode, px, sliderMetres("rawMetres"), compareColoured(), S.compare.map(c => c.color + c.hidden).join(), pass, fadeWindowMs()];
+  const stamp = [S.now, mode, sizeMode, px, sliderMetres("rawMetres"), comparing(), S.compare.map(c => c.color + c.hidden).join(), pass, fadeWindowMs()];
   const common = { getPosition:i => [R.lon[i], R.lat[i]], pickable:true };
   if (sizeMode === "fixed") return [new deck.ScatterplotLayer({ id:"raw", data:idx, ...common, radiusUnits:"pixels", getRadius:px, getFillColor:i => [...colour(i), alpha(R.t[i])], updateTriggers:{ getFillColor:stamp } })];
 
@@ -161,7 +160,7 @@ function cross(lon, lat, metres, stroke) {
   return stroke === 0 ? [[lon - dLon, lat - dLat], [lon + dLon, lat + dLat]] : [[lon + dLon, lat - dLat], [lon - dLon, lat + dLat]];
 }
 
-function strategyLayers(id, alpha, shown, isComparing) {
+function strategyLayers(id, alpha, shown) {
   const run = S.RUNS[id], idx = [], paths = {};
   for (let i = 0; i < run.n && run.created[i] <= S.now; i++) {   // sorted by created
     const replaced = run.valid_to[i]; if (replaced != null && replaced <= S.now) continue;   // a later event replaced it
@@ -170,12 +169,11 @@ function strategyLayers(id, alpha, shown, isComparing) {
   }
   S.visible.runs[id] = idx;
   const pointColour = strategyColourFunction($("pointColour").value, id), lineColour = strategyColourFunction($("lineColour").value, id);
-  const override = (i, base) => { if (!isComparing) return base(i); const c = compareEntry(id, i); return c ? c.color : GREY; };
-  const stamp = [S.now, $("pointColour").value, $("lineColour").value, $("pointSize").value, $("pointPx").value, sliderMetres("pointMetres"), $("lineWidth").value, compareColoured(), S.compare.map(c => c.color + c.hidden).join(), fadeWindowMs()];
+  const stamp = [S.now, $("pointColour").value, $("lineColour").value, $("pointSize").value, $("pointPx").value, sliderMetres("pointMetres"), $("lineWidth").value, comparing(), S.compare.map(c => c.color + c.hidden).join(), fadeWindowMs()];
   let lines = null;
   if ($("linesOn").checked) {
     const data = Object.values(paths).map(ids => { ids.sort((a, b) => run.t[a] - run.t[b]); return { first:ids[0], newest:run.t[ids[ids.length - 1]], path:ids.map(i => [run.lon[i], run.lat[i]]) }; });
-    lines = new deck.PathLayer({ id:"lines-" + id, data, getPath:d => d.path, getColor:d => [...override(d.first, lineColour), Math.max(40, alpha(d.newest))], getWidth:+$("lineWidth").value, widthUnits:"pixels", updateTriggers:{ getColor:stamp, getWidth:stamp } });
+    lines = new deck.PathLayer({ id:"lines-" + id, data, getPath:d => d.path, getColor:d => [...lineColour(d.first), Math.max(40, alpha(d.newest))], getWidth:+$("lineWidth").value, widthUnits:"pixels", updateTriggers:{ getColor:stamp, getWidth:stamp } });
   }
   const points = [];
   if ($("pointsOn").checked) {
@@ -186,11 +184,11 @@ function strategyLayers(id, alpha, shown, isComparing) {
     const outlines = (run.outlines ||= {})[factor] ||= [], outline = i => outlines[i] ||= ellipsePath(run.lon[i], run.lat[i], ellipse(run, i), factor);
     const shape = { data:sized, getPolygon:outline, filled:true, stroked:true, lineWidthUnits:"pixels", getLineWidth:1 };
     if (sized.length) points.push(new deck.PolygonLayer({ id:"vpts-sized-" + id, ...shape, pickable:false,
-      getFillColor:i => [...override(i, pointColour), Math.round(alpha(run.t[i]) * 0.15)], getLineColor:i => [...override(i, pointColour), alpha(run.t[i])], updateTriggers:{ getFillColor:stamp, getLineColor:stamp, getPolygon:factor } }));
+      getFillColor:i => [...pointColour(i), Math.round(alpha(run.t[i]) * 0.15)], getLineColor:i => [...pointColour(i), alpha(run.t[i])], updateTriggers:{ getFillColor:stamp, getLineColor:stamp, getPolygon:factor } }));
     // a solid point with a thin black edge, so it stands out from the line through it: pixels in the fixed mode,
     // the size in metres from the slider for points without a sigma in the uncertainty modes
     if (fixed.length) points.push(new deck.ScatterplotLayer({ id:"vpts-" + id, data:fixed, ...common, radiusUnits:factor ? "meters" : "pixels", getRadius:i => pointRadius(id, i).radius, getLineWidth:1,
-      getFillColor:i => [...override(i, pointColour), alpha(run.t[i])], getLineColor:i => [0, 0, 0, alpha(run.t[i])], updateTriggers:{ getFillColor:stamp, getLineColor:stamp, getRadius:stamp } }));
+      getFillColor:i => [...pointColour(i), alpha(run.t[i])], getLineColor:i => [0, 0, 0, alpha(run.t[i])], updateTriggers:{ getFillColor:stamp, getLineColor:stamp, getRadius:stamp } }));
     // what the mouse finds: every point once, biggest first, so the smallest under the mouse wins; an ellipse is found by its own shape
     points.push(new deck.ScatterplotLayer({ id:"pts-" + id, data:fixed, getPosition:common.getPosition, pickable:true,
       radiusUnits:factor ? "meters" : "pixels", getRadius:radius, getFillColor:[0, 0, 0, 0], updateTriggers:{ getRadius:stamp } }));

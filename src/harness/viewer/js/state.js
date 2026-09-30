@@ -60,9 +60,6 @@ export function compareEntry(kind, i) {
 }
 // the compare list shapes the map only while comparing is switched on and the list has tracks
 export const comparing = () => S.compareOn && S.compare.length > 0;
-// the compare colours paint the map only while comparing and the "colours while comparing" switch says so; with "own"
-// every plot and strategy keeps the colour its own menu gives it, and the compare list still decides what is shown
-export const compareColoured = () => comparing() && $("compareColours").value === "compare";
 export const trackLabel = c => c.kind === "raw" ? `${SOURCE_NAME[c.src]} ${c.tid}` : `${runName(c.kind)} ${c.track}`;
 
 export function fadeWindowMs() {

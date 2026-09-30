@@ -16,6 +16,7 @@ bus.redrawCharts = redrawCharts;
 bus.repaintCharts = repaintCharts;
 bus.renderCompare = renderCompare;
 bus.renderStrategies = renderStrategies;
+bus.legends = legends;
 
 // the Controls cheat sheet is open for a new visitor; once closed it stays closed
 function rememberControls() {
@@ -124,7 +125,6 @@ function wire() {
   $("find").onkeydown = e => { if (e.key === "Enter") { findTracks($("find").value.trim().toUpperCase()); $("find").value = ""; } };
   $("clear").onclick = clearCompare;
   $("compareOn").onchange = () => { S.compareOn = $("compareOn").checked; renderCompare(); bus.draw(); };
-  $("compareColours").onchange = () => { renderCompare(); legends(); bus.draw(); };
   $("tipOn").onchange = () => { if (!$("tipOn").checked) $("tip").style.display = "none"; };
   $("addRawChart").onclick = e => openFieldBrowser("raw", e.currentTarget);
   $("addStrategyChart").onclick = e => openFieldBrowser("strategy", e.currentTarget);
