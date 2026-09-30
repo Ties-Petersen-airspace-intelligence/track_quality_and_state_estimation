@@ -92,8 +92,7 @@ def predict(track: Track, dt: float, params: dict, lat: float | None = None, lon
     one as it is, so a plot that is then refused changes nothing."""
     if lat is None or lon is None:
         lat, lon, _ = pymap3d.ecef2geodetic(*track.x[:3])
-    switch = 1 - np.exp(-abs(dt) / params["switch_time_s"])
-    transition = np.array([[1 - switch, switch], [switch, 1 - switch]])   # row: from, column: to
+    transition = switch_chances(abs(dt), params)
     mu_predicted = transition.T @ track.mu
     F = np.eye(6)
     F[:3, 3:] = np.eye(3) * dt
@@ -107,6 +106,16 @@ def predict(track: Track, dt: float, params: dict, lat: float | None = None, lon
         models.append(Model(F @ x0, F @ P0 @ F.T + process_noise(abs(dt), q, q_up, lat, lon)))
     return Track(hex=track.hex, timestamp_s=track.timestamp_s + dt, models=models, mu=mu_predicted,
                  id=track.id, born_s=track.born_s, points=track.points, confirmed=track.confirmed, rejected_since_s=track.rejected_since_s)
+
+
+def switch_chances(dt: float, params: dict) -> np.ndarray:
+    """The chance of flying straight or manoeuvring dt seconds later, given either now; row: from, column: to. Straight flight
+    ends on average after straight_time_s, a manoeuvre after manoeuvre_time_s. Over a long silence the chances settle at the
+    share of time aircraft spend in each, instead of swapping the two."""
+    into, out_of = 1 / params["straight_time_s"], 1 / params["manoeuvre_time_s"]
+    settled = 1 - np.exp(-(into + out_of) * dt)
+    to_manoeuvre, to_straight = into / (into + out_of) * settled, out_of / (into + out_of) * settled
+    return np.array([[1 - to_manoeuvre, to_manoeuvre], [to_straight, 1 - to_straight]])
 
 
 def process_noise(dt: float, horizontal: float, vertical: float, lat: float, lon: float) -> np.ndarray:
@@ -211,8 +220,9 @@ class Kalman:
                                            # not the start of a 3,000 ft/min descent; with a 10 m altitude sigma those plots were refused
         spectral_density_vertical_manoeuvre=20.0, # the same for the manoeuvre model: a manoeuvre changes the vertical rate too (a light
                                            # aircraft over Dubai dropped 675 ft in an 8 s gap; 0.5 refused every plot after it)
-        switch_time_s=120.0,               # how long straight flight or a manoeuvre typically lasts: the chance per second of a switch
-                                           # between the two models is 1 over this
+        straight_time_s=120.0,             # how long straight flight lasts on average before a manoeuvre, and how long a manoeuvre
+        manoeuvre_time_s=120.0,            # lasts, as the filter sees it. Measured on 3,797 aircraft: 280 s and 33 s, but those make
+                                           # the filter slow to believe a turn began (Dubai restarts 3 -> 8); 120 s both ways follows turns
         start_manoeuvre_weight=0.1,        # a new object is believed to fly straight with this much doubt
         altitude_sigma_m=10.0,        # altitude error, one sigma: barometric altitude in 25 ft steps, the same whatever the position accuracy
         gate_sigmas=5.0,              # a plot farther than this from an object's prediction, in sigmas, does not belong to that object
