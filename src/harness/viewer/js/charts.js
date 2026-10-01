@@ -1,7 +1,7 @@
 // Charts of the compared tracks against position time. Raw plot charts and strategy charts are kept apart, because
 // the two have different fields: a raw chart picks fields of the source protos, a strategy chart fields of the fused
 // plots or numbers the strategy recorded. Every chart starts from the field browser.
-import { S, $, api, table, trackLabel, runName, SOURCE_NAME, fmt, escapeHtml, fmtN } from "./state.js";
+import { S, $, api, table, trackLabel, runName, SOURCE_NAME, fmt, escapeHtml, fmtN, isProduction } from "./state.js";
 import { SOURCE_COLOR, rgb, swatch } from "./palette.js";
 import { loadOutcomes } from "./runs.js";
 import { setHover } from "./mapview.js";
@@ -342,7 +342,7 @@ export function openFieldBrowser(group, button) {
   // the list once it has loaded; the list opens without waiting for either
   if (group !== "raw") return;
   if (!S.RAW.schema) loadRawSchema().then(() => { if (browsing === "raw") renderFieldList(); });
-  const missing = [...S.runActive].filter(id => !id.startsWith("prod_fusion") && !S.OUTCOMES[id]);
+  const missing = [...S.runActive].filter(id => !isProduction(id) && !S.OUTCOMES[id]);
   if (missing.length) Promise.allSettled(missing.map(loadOutcomes)).then(() => { if (browsing === "raw") renderFieldList(); });
 }
 // the sources' fields: the server builds them in the background once the case is open; asked for right after the page

@@ -43,7 +43,8 @@ export const escapeHtml = t => String(t).replace(/[&<>"]/g, ch => ({ "&":"&amp;"
 export const SOURCE_NAME = { adsbx:"ADS-B Exchange", planefinder:"PlaneFinder", uavionix:"uAvionix", stdds:"STDDS", tfms_ti:"TFMS TI", tfms_or:"TFMS OR", ual:"United", asa:"Alaska" };
 export const SOURCE_BY_ID = { 4:"adsbx", 3:"planefinder", 11:"uavionix", 10:"stdds", 1:"tfms_ti", 2:"tfms_or", 6:"ual", 5:"asa" };
 
-// a run id is "strategy/label", production is "prod_fusion_append" or "prod_fusion_regular"
+// a run id is "strategy/label", production is "prod_fusion_append" or "prod_fusion_regular", or dev_fusion_* in a dev case
+export const isProduction = id => /^(prod|dev)_fusion_/.test(id);
 export const strategyOf = id => id.split("/")[0];
 export const runById = id => S.CASE.runs.find(r => r.id === id);
 export function runName(id) {

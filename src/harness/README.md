@@ -12,7 +12,7 @@ uv run -m harness.run --case data/cases/paris-tx-n464ae-2026-09-16 --strategy ba
 uv run -m harness.viewer.server --cases data/cases
 ```
 
-The first command feeds every raw plot of the case through the normalizer to the strategy and stores what came out under `runs/baseline/r001/`. The second opens the viewer at http://localhost:8770 with every case in the folder in a dropdown at the top. Production needs no command: the viewer reads the two production tables that came with the case and shows them as two more strategies, `prod_fusion_append` for what the append path first emitted and `prod_fusion_regular` for the result after the regular and recorrelation rewrites. `--port` picks another port and `--no-browser` keeps the server from opening a tab.
+The first command feeds every raw plot of the case through the normalizer to the strategy and stores what came out under `runs/baseline/r001/`. The second opens the viewer at http://localhost:8770 with every case in the folder in a dropdown at the top. Production needs no command: the viewer reads the two production tables that came with the case and shows them as two more strategies, `prod_fusion_append` for what the append path first emitted and `prod_fusion_regular` for the result after the regular and recorrelation rewrites. A case whose fusion tables came from dev (`env: "dev"` in `case.json`) names them `dev_fusion_append` and `dev_fusion_regular`. `--port` picks another port and `--no-browser` keeps the server from opening a tab.
 
 `--case` also takes a folder of cases, so `--case data/cases` runs the strategy on every case in one go. `--note` is free text kept with the run.
 

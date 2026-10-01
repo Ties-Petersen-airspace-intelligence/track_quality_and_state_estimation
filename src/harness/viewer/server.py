@@ -143,6 +143,7 @@ class Case:
         self.raw_payload: dict | None = None
         self.schema_job: Future | None = None   # the sources' fields for the field list, built in the background
         self.runs: dict[str, tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame | None]] = {}   # id -> fused, raw outcomes, track state
+        self.env = self.info.get("env", "prod")   # where the fusion tables came from; cases from pull_case.py are prod
 
     def ms(self, us: pd.Series) -> pd.Series:
         """Microseconds since the epoch to milliseconds after the case start, the page's time axis."""
@@ -153,7 +154,7 @@ class Case:
         out = runbook.list_runs(self.path)
         for r in out:
             r["predicts"] = hasattr(STRATEGIES.get(r.get("strategy")), "predict")   # the viewer can look ahead from its fused plots
-        for name, part in production.PARTS.items():
+        for name, part in production.names(self.env).items():
             path = self.path / "production" / f"{part}.parquet"
             if path.exists():
                 # one fused plot per row, counted from the file's footer so the list can show it before the run is loaded
@@ -216,7 +217,7 @@ class Case:
 
     def load_run(self, run_id: str) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame | None]:
         if run_id not in self.runs:
-            if run_id in production.PARTS:
+            if run_id in production.names(self.env):
                 fused, outcomes = production.load(self.path, run_id)
                 state = None
             else:

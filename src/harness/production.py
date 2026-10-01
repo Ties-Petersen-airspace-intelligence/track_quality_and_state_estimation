@@ -1,9 +1,10 @@
 """Production's output for a case, in the same shape as a strategy run, so the viewer can replay it like one.
 
 Nothing is stored: the viewer server calls load() on the two tables pulled with the case.
-prod_fusion_append: production/append.parquet, what production's append path first emitted (append_only_plots).
+The names say which environment the case's fusion tables came from (env in case.json): prod_fusion_* or dev_fusion_*.
+<env>_fusion_append: production/append.parquet, what production's append path first emitted (append_only_plots).
     Rows are never invalidated, the table has no such column, so every plot stays.
-prod_fusion_regular: production/final.parquet, production's result after the regular and recorrelation rewrites,
+<env>_fusion_regular: production/final.parquet, production's result after the regular and recorrelation rewrites,
     from the provider table (fused_plots_aws), with created_at and valid_to as BigQuery holds them, so rewrites
     replace the past exactly as consumers saw it.
 """
@@ -13,7 +14,7 @@ import pathlib
 
 import pandas as pd
 
-PARTS = {"prod_fusion_append": "append", "prod_fusion_regular": "final"}
+PARTS = {"append": "append", "regular": "final"}   # name suffix -> file in production/
 RAW_SOURCES = {4: "adsbx", 3: "planefinder", 11: "uavionix", 10: "stdds", 1: "tfms_ti", 2: "tfms_or", 6: "ual", 5: "asa"}
 TIMESTAMPS = ["position_timestamp", "source_received_timestamp", "asi_received_timestamp"]
 NUMBERS = ["source_identifier", "latitude", "longitude", "altitude_ft", "ground_speed_kt", "heading_deg", "track_deg", "above_ground_altitude_ft",
@@ -21,9 +22,14 @@ NUMBERS = ["source_identifier", "latitude", "longitude", "altitude_ft", "ground_
 TEXTS = ["callsign", "tail_number", "adshex", "squawk", "ac_type", "flight_number", "flight_ref", "original_callsign", "origin", "destination"]
 
 
+def names(env: str) -> dict[str, str]:
+    """The two production entries of a case whose fusion tables came from env, with their file in production/."""
+    return {f"{env}_fusion_{suffix}": part for suffix, part in PARTS.items()}
+
+
 def load(case: pathlib.Path, name: str) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """The fused plots and the raw plot outcomes of prod_fusion_append or prod_fusion_regular."""
-    part = PARTS[name]
+    """The fused plots and the raw plot outcomes of <env>_fusion_append or <env>_fusion_regular."""
+    part = PARTS[name.rsplit("_", 1)[1]]
     f = pd.read_parquet(case / "production" / f"{part}.parquet")
     micros = lambda column: pd.to_numeric(f[column + "_us"], errors="coerce").astype("Int64")
 

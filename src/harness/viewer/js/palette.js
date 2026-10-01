@@ -1,7 +1,7 @@
 // Colours, and the legends that say what they mean.
 // Checked with the dataviz palette validator on the map background #0a0a0a: the three ADS-B sources pass every pair
 // for colour-blind readers; the strategy colours sit brighter on purpose, so strategy output reads as a layer above the raw plots.
-import { S, $, SOURCE_NAME, runName, strategyOf, compareEntry, comparing, escapeHtml, fmtN } from "./state.js";
+import { S, $, SOURCE_NAME, runName, strategyOf, compareEntry, comparing, escapeHtml, fmtN, isProduction } from "./state.js";
 
 const hex = h => [1, 3, 5].map(k => parseInt(h.slice(k, k + 2), 16));
 export const rgb = c => `rgb(${c})`;
@@ -22,7 +22,7 @@ export const FILTERED = [44, 44, 44];    // a raw plot that fails the filters, w
 // sizes: the plot's own accuracy numbers, or the sigma a strategy run gave the plots it used
 export function rawSizeOptions() {
   const out = [["fixed", "fixed"], ["nacp", "NACp, 95 % radius in metres"], ["nic", "NIC, containment radius in metres"]];
-  for (const id of [...S.runActive]) if (!id.startsWith("prod_fusion")) out.push(["sigma:" + id, `sigma ${runName(id)} gave it, 95 % radius in metres`]);
+  for (const id of [...S.runActive]) if (!isProduction(id)) out.push(["sigma:" + id, `sigma ${runName(id)} gave it, 95 % radius in metres`]);
   return out;
 }
 
