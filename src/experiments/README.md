@@ -6,8 +6,8 @@ picture per case and a few cross-case evidence figures, and writes them with a s
 `~/agent-office/tasks/kalman-experiment-loop/research/iterNN/`. Nothing is written into the case folders.
 
 ```bash
-# from src/, with the main repo's venv (the worktree has none)
-../../track_quality_and_state_estimation/.venv/bin/python -m experiments.loop --iteration 5 --against 4 --note "what this tries" [--case fw20] [--param gate_sigmas=6]
+# from src/
+uv run python -m experiments.loop --iteration 5 --against 4 --note "what this tries" [--case fw20] [--param gate_sigmas=6]
 ```
 
 `cases.py` loads a case's suspect plots and production tracks (cached as a pickle under `experiments/cache/`; delete the cache when the
