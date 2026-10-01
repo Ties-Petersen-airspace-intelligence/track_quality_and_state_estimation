@@ -227,3 +227,9 @@ src/harness/viewer/fonts/
 # strategy runs: made locally with `uv run -m harness.run`, large, and not shared (see src/harness/README.md)
 src/data/cases/*/runs/
 src/experiments/cache/
+
+# bug ticket cases, kept local only (pulled with src/data/cases/pull_flight_case.py and add_aireon.py)
+src/data/cases/fdb1073-2026-09-30-*/
+src/data/cases/ts1987-voi1871-2026-09-17-*/
+src/data/cases/ts1988-ual2219-2026-09-25-*/
+src/data/cases/ts1997-tam8079-2026-09-25-*/
