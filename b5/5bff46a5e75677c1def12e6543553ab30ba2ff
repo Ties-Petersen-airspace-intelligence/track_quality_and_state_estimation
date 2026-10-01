@@ -1,0 +1,70 @@
+src/harness/normalization/basic.py
+  36acfd8f51e265f4 7,9,13,30,82-89
+src/harness/raw_plots.py
+  36acfd8f51e265f4 19,37
+src/harness/production.py
+  36acfd8f51e265f4 18
+src/harness/viewer/js/state.js
+  36acfd8f51e265f4 43-44
+src/harness/viewer/server.py
+  36acfd8f51e265f4 29,295,300-301
+src/harness/README.md
+  36acfd8f51e265f4 75-76
+src/harness/protos/README.md
+  36acfd8f51e265f4 13
+src/harness/viewer/js/palette.js
+  36acfd8f51e265f4 4-5,13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.5",
+  "base_commit_sha": "b55bff46a5e75677c1def12e6543553ab30ba2ff",
+  "prompts": {
+    "36acfd8f51e265f4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6a68286e-b0f7-462c-9b65-c26be5785fd0",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Ties Petersen",
+      "messages": [],
+      "total_additions": 176,
+      "total_deletions": 14,
+      "accepted_lines": 174,
+      "overriden_lines": 0,
+      "messages_url": "https://uni-git-ai-cas.sre.aws.ai-internal.com//cas/759465ffb26a37536b53beb9eb9b2f6be5d2e8e8c80e5641dd0b9b4f2caee8ec",
+      "context_window_samples": [
+        {
+          "used_tokens": 150146,
+          "timestamp": "2026-10-01T12:20:47.463Z"
+        },
+        {
+          "used_tokens": 156459,
+          "timestamp": "2026-10-01T12:25:14.542Z"
+        },
+        {
+          "used_tokens": 160518,
+          "timestamp": "2026-10-01T12:25:44.748Z"
+        }
+      ],
+      "skill_usages": [
+        {
+          "name": "office-task",
+          "timestamp": "2026-10-01T11:56:36.321Z",
+          "source": "slash_command"
+        },
+        {
+          "name": "dataviz",
+          "timestamp": "2026-10-01T12:17:49.609Z",
+          "source": "skill_tool"
+        }
+      ],
+      "token_usage": {
+        "input_tokens": 102,
+        "output_tokens": 33740,
+        "cache_read_tokens": 5863189,
+        "cache_write_tokens": 115080
+      }
+    }
+  }
+}
