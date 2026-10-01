@@ -1,0 +1,77 @@
+syntax = "proto3";
+
+// Source schema (AireonSTREAM Onboarding Guide, Rev 1.0, 4 May 2026).
+// Target messages are derived from ASTERIX CAT021 v2.4 and delivered as CSV
+// in the column order below.
+//
+//  #  Field                              Description
+//  -- ---------------------------------- ---------------------------------------------------
+//  1  Message Type                       Category Code (021/025/238/253), Aireon Internal
+//  2  Target Address                     Hex representation of 24-bit Mode S / ICAO address
+//  3  Target Identification              Aircraft ID / ACID, 8 characters
+//  4  Mode 3/A (4096 Code)               Octal representation of Mode 3/A
+//  5  Timestamp                          UTC YYYY-MM-DD hh:mm:ss.sss; ADS-B receipt time
+//  6  Ground Bit                         Set when aircraft is on the surface
+//  7  Latitude                           WGS-84
+//  8  Longitude                          WGS-84
+//  9  Flight Level (Barometric)          Barometric Altitude in 100s of feet
+//  10 Geometric Height                   Geometric Altitude in feet
+//  11 Barometric Vertical Rate           feet/minute (only one of #11 / #12 is present)
+//  12 Geometric Vertical Rate            feet/minute
+//  13 Ground Speed                       nautical miles/second
+//  14 Track Angle                        degrees
+//  15 Position Quality Enumerator        High/Medium/Low rollup of PIC (see below)
+//  16 Surface Ground Vector — N. Code    1 = Magnetic North, 0 = True North
+//  17 Surface Ground Vector — Speed      knots
+//  18 Surface Ground Vector — Track      degrees
+//  19 Position Integrity Category (PIC)  Horizontal position uncertainty, NIC rollup
+//
+// Quality Indicator (#15) — derived from CAT021 I021/090 PIC:
+//   High   (2): PIC >= 11   (< 0.1 NM aircraft-reported containment radius)
+//   Medium (1): PIC == 10   (< 0.2 NM)
+//   Low    (0): PIC <=  9   (see CAT021)
+//
+// Empirical note (Aireon stream sample, May 2026): fields #1 and #19 are not
+// delivered on the wire — the CSV has 17 columns, not 19 — and are therefore
+// not modelled in this proto.
+//
+// Documentation can be found in the project description:
+// https://linear.app/airspace-intelligence/project/integrate-aireonstream-global-data-source-720caf69d803/overview
+
+package uni_track_source_aireon_stream_global.proto;
+
+import "uni_track_plot_schema/proto/plot.proto";
+
+// High/Medium/Low tied to Position Integrity Category (PIC).
+enum PositionQuality {
+  POSITION_QUALITY_UNSPECIFIED = 0;
+  POSITION_QUALITY_LOW = 1; // source PIC <= 9
+  POSITION_QUALITY_MEDIUM = 2; // source PIC == 10
+  POSITION_QUALITY_HIGH = 3; // source PIC >= 11
+}
+
+// Reference frame for the surface ground track angle.
+enum GroundTrackReference {
+  GROUND_TRACK_REFERENCE_UNSPECIFIED = 0;
+  GROUND_TRACK_REFERENCE_TRUE_NORTH = 1; // source bit == 0
+  GROUND_TRACK_REFERENCE_MAGNETIC_NORTH = 2; // source bit == 1
+}
+
+message AireonStreamGlobalPlot {
+  uni_track_plot_schema.proto.plot.Common common = 1;
+
+  optional bool is_on_ground = 2;
+
+  optional int32 barometric_altitude_ft = 3;
+  optional int32 geometric_altitude_ft = 4;
+
+  optional float barometric_vertical_rate_ft_per_min = 5;
+  optional float geometric_vertical_rate_ft_per_min = 6;
+
+  PositionQuality position_quality = 7;
+
+  // Surface Ground Vector components
+  GroundTrackReference surface_track_reference = 8;
+  optional float surface_ground_speed_kt = 9;
+  optional float surface_track_angle_deg = 10;
+}

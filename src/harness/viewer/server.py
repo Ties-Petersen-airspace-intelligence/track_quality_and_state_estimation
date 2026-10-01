@@ -26,7 +26,7 @@ HERE = pathlib.Path(__file__).parent
 # our own plain description of every field, per source and for the strategy output ("fused"), written from the code
 NOTES_PATH = HERE.parent / "field_notes.json"
 NOTES = json.loads(NOTES_PATH.read_text()) if NOTES_PATH.exists() else {}
-RAW_SOURCES = ["adsbx", "planefinder", "uavionix", "stdds", "tfms_ti", "tfms_or", "ual", "asa"]
+RAW_SOURCES = ["adsbx", "planefinder", "uavionix", "stdds", "tfms_ti", "tfms_or", "ual", "asa", "aireon"]
 ADSBX_KIND = {1: "ADS-B", 2: "ADS-B, no position in message", 3: "ADS-R", 4: "TIS-B", 5: "TIS-B track file", 6: "ADS-C", 7: "MLAT", 8: "Mode S only", 9: "ADS-B other", 10: "ADS-R other", 11: "TIS-B other", 12: "other"}
 PLANEFINDER_KIND = {1: "ADS-B", 2: "PlaneFinder MLAT", 3: "FLARM", 4: "third party MLAT", 5: "blocked"}
 # ADS-B accuracy numbers where the source carries them
@@ -292,11 +292,13 @@ def plot_kind(f: pd.DataFrame, source: str) -> pd.Series:
 
 
 def on_ground(f: pd.DataFrame, source: str) -> pd.Series:
-    """On the ground, as the source says it: ADS-B Exchange writes "ground" into alt_baro, uAvionix sets the ground bit."""
+    """On the ground, as the source says it: ADS-B Exchange writes "ground" into alt_baro, uAvionix and Aireon set the ground bit."""
     if source == "adsbx" and "alt_baro" in f.columns:
         return (f["alt_baro"].astype("string") == "ground").fillna(False).astype(int)
     if source == "uavionix" and "target_report_descriptor.is_ground_bit_set" in f.columns:
         return (f["target_report_descriptor.is_ground_bit_set"].astype("string").str.lower() == "true").fillna(False).astype(int)
+    if source == "aireon" and "is_on_ground" in f.columns:
+        return (f["is_on_ground"].astype("string").str.lower() == "true").fillna(False).astype(int)
     return pd.Series([0] * len(f))
 
 

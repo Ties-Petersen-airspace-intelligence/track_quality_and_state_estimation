@@ -10,6 +10,7 @@ Copied on 2026-09-17 from these checkouts (repo: commit):
 - uni-track-source-tfms: aecd6c6
 - uni-track-source-ual: 8e5c020
 - uni-track-source-asa: ca65db0
+- uni-track-source-aireon-stream-global: caa37c0 (added 2026-10-01)
 
 `uni_track_plot_schema/proto/plot.proto` is a shim, see the comment in the file.
 Rebuild the Python modules with `uv run src/harness/build_protos.py`.

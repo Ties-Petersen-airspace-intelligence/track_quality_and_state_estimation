@@ -40,8 +40,8 @@ export const fmtMs = ms => fmt(ms) + "." + String(Math.round(((ms % 1000) + 1000
 export const fmtN = v => v == null ? "" : Number(v).toLocaleString();
 export const escapeHtml = t => String(t).replace(/[&<>"]/g, ch => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[ch]));
 
-export const SOURCE_NAME = { adsbx:"ADS-B Exchange", planefinder:"PlaneFinder", uavionix:"uAvionix", stdds:"STDDS", tfms_ti:"TFMS TI", tfms_or:"TFMS OR", ual:"United", asa:"Alaska" };
-export const SOURCE_BY_ID = { 4:"adsbx", 3:"planefinder", 11:"uavionix", 10:"stdds", 1:"tfms_ti", 2:"tfms_or", 6:"ual", 5:"asa" };
+export const SOURCE_NAME = { adsbx:"ADS-B Exchange", planefinder:"PlaneFinder", uavionix:"uAvionix", stdds:"STDDS", tfms_ti:"TFMS TI", tfms_or:"TFMS OR", ual:"United", asa:"Alaska", aireon:"Aireon" };
+export const SOURCE_BY_ID = { 4:"adsbx", 3:"planefinder", 11:"uavionix", 10:"stdds", 1:"tfms_ti", 2:"tfms_or", 6:"ual", 5:"asa", 13:"aireon" };
 
 // a run id is "strategy/label", production is "prod_fusion_append" or "prod_fusion_regular", or dev_fusion_* in a dev case
 export const isProduction = id => /^(prod|dev)_fusion_/.test(id);

@@ -15,7 +15,7 @@ import pathlib
 import pandas as pd
 
 PARTS = {"append": "append", "regular": "final"}   # name suffix -> file in production/
-RAW_SOURCES = {4: "adsbx", 3: "planefinder", 11: "uavionix", 10: "stdds", 1: "tfms_ti", 2: "tfms_or", 6: "ual", 5: "asa"}
+RAW_SOURCES = {4: "adsbx", 3: "planefinder", 11: "uavionix", 10: "stdds", 1: "tfms_ti", 2: "tfms_or", 6: "ual", 5: "asa", 13: "aireon"}
 TIMESTAMPS = ["position_timestamp", "source_received_timestamp", "asi_received_timestamp"]
 NUMBERS = ["source_identifier", "latitude", "longitude", "altitude_ft", "ground_speed_kt", "heading_deg", "track_deg", "above_ground_altitude_ft",
            "mean_sea_level_altitude_ft", "selected_altitude_ft", "vert_rate_fpm", "pressure_hpa"]

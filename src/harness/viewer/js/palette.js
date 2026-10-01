@@ -1,6 +1,8 @@
 // Colours, and the legends that say what they mean.
 // Checked with the dataviz palette validator on the map background #0a0a0a: the three ADS-B sources pass every pair
 // for colour-blind readers; the strategy colours sit brighter on purpose, so strategy output reads as a layer above the raw plots.
+// Aireon has no slot of its own: #e600ff is the colour in the band farthest from every source and strategy colour for normal
+// vision (at least 21 apart, the floor is 15); for colour-blind readers it sits close to ADS-B Exchange blue and United violet.
 import { S, $, SOURCE_NAME, runName, strategyOf, compareEntry, comparing, escapeHtml, fmtN, isProduction } from "./state.js";
 
 const hex = h => [1, 3, 5].map(k => parseInt(h.slice(k, k + 2), 16));
@@ -8,7 +10,7 @@ export const rgb = c => `rgb(${c})`;
 
 // the documented categorical order for dark surfaces; a colour follows its source, never its rank
 const CATEGORICAL = ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300", "#9085e9", "#e66767"].map(hex);
-export const SOURCE_COLOR = { adsbx:CATEGORICAL[0], uavionix:CATEGORICAL[1], planefinder:CATEGORICAL[2], tfms_ti:CATEGORICAL[3], stdds:CATEGORICAL[4], tfms_or:CATEGORICAL[5], ual:CATEGORICAL[6], asa:CATEGORICAL[7] };
+export const SOURCE_COLOR = { adsbx:CATEGORICAL[0], uavionix:CATEGORICAL[1], planefinder:CATEGORICAL[2], tfms_ti:CATEGORICAL[3], stdds:CATEGORICAL[4], tfms_or:CATEGORICAL[5], ual:CATEGORICAL[6], asa:CATEGORICAL[7], aireon:hex("#e600ff") };
 const STRATEGY_COLORS = ["#ffffff", "#ccff00", "#e87ba4", "#9085e9"].map(hex);
 export const COMPARE_COLORS = ["#3987e5", "#d95926", "#199e70", "#ffffff", "#ccff00", "#e87ba4", "#9085e9", "#c98500"].map(hex);
 // what a strategy did with a raw plot is a state, so it takes the status colours

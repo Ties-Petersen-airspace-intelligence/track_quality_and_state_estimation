@@ -16,6 +16,7 @@ from google.protobuf.message import Message
 
 from . import protos_path  # noqa: F401  (sys.path side effect)
 from uni_track_source_adsbx_plot_schema.proto import plot_pb2 as adsbx_pb2
+from uni_track_source_aireon_stream_global.proto import aireon_stream_global_pb2 as aireon_pb2
 from uni_track_source_asa_plot_schema.proto import plot_pb2 as asa_pb2
 from uni_track_source_planefinder_plot_schema.proto import plot_pb2 as planefinder_pb2
 from uni_track_source_stdds_plot_schema.proto import position_report_pb2 as stdds_pb2
@@ -33,6 +34,7 @@ SOURCE_MESSAGE = {
     "tfms_or": tfms_or_pb2.TFMSOceanicReportPlot,
     "ual": ual_pb2.UalPlot,
     "asa": asa_pb2.AsaPlot,
+    "aireon": aireon_pb2.AireonStreamGlobalPlot,
 }
 
 

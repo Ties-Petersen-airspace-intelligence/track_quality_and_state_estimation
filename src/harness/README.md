@@ -72,8 +72,8 @@ uv run -m harness.run --case data/cases --strategy kalman
 
 The basic normalizer removes ADS-B Exchange MODE_S plots, an old position filled in next to a Mode S reply, and ADS-B Exchange type UNKNOWN. For the rest it sets:
 
-- the kind: `own_gps` for the aircraft's own GPS position (ADS-B Exchange ADSB_ICAO, ADSB_ICAO_NT and ADSR_ICAO, uAvionix, PlaneFinder ADS-B), `mlat` for ADS-B Exchange MLAT, `radar` for TFMS Track Information and STDDS, `report` for TFMS oceanic reports, United and Alaska, and a plain label of its own for the rest (`tisb`, `adsc`, `adsb_other`, `planefinder_mlat`, `flarm`, ...)
-- whether it is on the ground, for ADS-B Exchange (alt_baro "ground"), uAvionix and PlaneFinder; empty for sources that do not say
+- the kind: `own_gps` for the aircraft's own GPS position (ADS-B Exchange ADSB_ICAO, ADSB_ICAO_NT and ADSR_ICAO, uAvionix, PlaneFinder ADS-B, Aireon), `mlat` for ADS-B Exchange MLAT, `radar` for TFMS Track Information and STDDS, `report` for TFMS oceanic reports, United and Alaska, and a plain label of its own for the rest (`tisb`, `adsc`, `adsb_other`, `planefinder_mlat`, `flarm`, ...)
+- whether it is on the ground, for ADS-B Exchange (alt_baro "ground"), uAvionix, PlaneFinder and Aireon (its ground bit, when it sends one); empty for sources that do not say
 - the kind's time error, `time_sigma_s`, per source: uAvionix 0.05 s, ADS-B Exchange 0.15 s, PlaneFinder 0.6 s (whole seconds, stations that disagree); measured as the miss along the direction of flight divided by speed
 - the track angle from the source's own field where the common block leaves it empty (ADS-B Exchange `track`, PlaneFinder `track_angle`)
 - the hex as an identity, empty for values that cannot name one aircraft (000000, 000001, FFFFFF, too short)

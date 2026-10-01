@@ -4,13 +4,13 @@ It removes plots that hold no position of their own: ADS-B Exchange MODE_S, an o
 and ADS-B Exchange type UNKNOWN. Every other raw plot becomes a Measurement: the common fields under plain names, and three
 things only the source's own fields tell:
 - kind: own_gps for the aircraft's own GPS position (ADS-B Exchange ADS-B and ADS-R with an ICAO address, uAvionix, PlaneFinder
-  ADS-B); mlat for ADS-B Exchange MLAT; radar for TFMS Track Information and STDDS; report for TFMS oceanic reports, United and
+  ADS-B, Aireon); mlat for ADS-B Exchange MLAT; radar for TFMS Track Information and STDDS; report for TFMS oceanic reports, United and
   Alaska; a plain label of its own for everything else
-- is_on_ground, for the sources that say: ADS-B Exchange, uAvionix and PlaneFinder
+- is_on_ground, for the sources that say: ADS-B Exchange, uAvionix, PlaneFinder and Aireon (where it sends the ground bit)
 - track_deg from the source's own field where the common block leaves it empty: ADS-B Exchange `track`, PlaneFinder `track_angle`
 - hex: the identity, empty for values that cannot identify one aircraft (000000, 000001, FFFFFF, too short)
 - accuracy_95_m: own GPS with a NACp of 1 to 11 the NACp's radius; own GPS without a usable NACp (none, as in most ADS-R and
-  all PlaneFinder, or 0, as in every plot of an old version 0 transponder) and MLAT a default from params; other kinds none
+  all PlaneFinder and Aireon, or 0, as in every plot of an old version 0 transponder) and MLAT a default from params; other kinds none
 - time_sigma_s: how far off the source's position times are, from params, per source; none for sources not measured yet
 """
 from __future__ import annotations
@@ -27,7 +27,7 @@ ADSBX_KIND = {T.ADSB_ICAO: "own_gps", T.ADSB_ICAO_NT: "own_gps", T.ADSR_ICAO: "o
               T.ADSB_OTHER: "adsb_other", T.ADSR_OTHER: "adsr_other", T.OTHER: "adsbx_other"}   # *_OTHER: no ICAO address
 PLANEFINDER_KIND = {D.ADSB: "own_gps", D.PLANE_FINDER_MLAT: "planefinder_mlat", D.THIRD_PARTY_DERIVED_MLAT: "third_party_mlat",
                     D.FLARM: "flarm", D.BLOCKED_DATA: "planefinder_blocked", D.UNKNOWN: "planefinder_unknown"}
-SOURCE_KIND = {"uavionix": "own_gps", "tfms_ti": "radar", "stdds": "radar", "tfms_or": "report", "ual": "report", "asa": "report"}
+SOURCE_KIND = {"uavionix": "own_gps", "aireon": "own_gps", "tfms_ti": "radar", "stdds": "radar", "tfms_or": "report", "ual": "report", "asa": "report"}
 NACP_95_M = {11: 3, 10: 10, 9: 30, 8: 92.6, 7: 185.2, 6: 555.6, 5: 926, 4: 1852, 3: 3704, 2: 7408, 1: 18520}
 
 
@@ -79,6 +79,14 @@ class Basic:
             is_on_ground = bool(proto.is_on_ground)
             vertical_rate = float(proto.vert_rate) if proto.HasField("vert_rate") else None
             track_deg = float(proto.track_angle) if proto.HasField("track_angle") else None
+        elif plot.source == "aireon":
+            kind = SOURCE_KIND[plot.source]
+            is_on_ground = proto.is_on_ground if proto.HasField("is_on_ground") else None
+            # Aireon sends one of the two rates
+            if proto.HasField("barometric_vertical_rate_ft_per_min"):
+                vertical_rate = proto.barometric_vertical_rate_ft_per_min
+            elif proto.HasField("geometric_vertical_rate_ft_per_min"):
+                vertical_rate = proto.geometric_vertical_rate_ft_per_min
         else:
             kind = SOURCE_KIND[plot.source]
 
