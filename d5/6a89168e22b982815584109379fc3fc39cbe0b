@@ -1,0 +1,48 @@
+.gitignore
+  36acfd8f51e265f4 2,6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.5",
+  "base_commit_sha": "d56a89168e22b982815584109379fc3fc39cbe0b",
+  "prompts": {
+    "36acfd8f51e265f4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6a68286e-b0f7-462c-9b65-c26be5785fd0",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Ties Petersen",
+      "messages": [],
+      "total_additions": 2,
+      "total_deletions": 222,
+      "accepted_lines": 2,
+      "overriden_lines": 0,
+      "messages_url": "https://uni-git-ai-cas.sre.aws.ai-internal.com//cas/364fe3afa0302c469c6d6f91cf5e940110d8a1f8b4d2eff2374a4f6721d442c3",
+      "context_window_samples": [
+        {
+          "used_tokens": 164196,
+          "timestamp": "2026-10-01T12:29:51.089Z"
+        }
+      ],
+      "skill_usages": [
+        {
+          "name": "office-task",
+          "timestamp": "2026-10-01T11:56:36.321Z",
+          "source": "slash_command"
+        },
+        {
+          "name": "dataviz",
+          "timestamp": "2026-10-01T12:17:49.609Z",
+          "source": "skill_tool"
+        }
+      ],
+      "token_usage": {
+        "input_tokens": 118,
+        "output_tokens": 36258,
+        "cache_read_tokens": 7160505,
+        "cache_write_tokens": 117949
+      }
+    }
+  }
+}
