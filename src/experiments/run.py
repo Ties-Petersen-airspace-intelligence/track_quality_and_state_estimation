@@ -23,10 +23,10 @@ def run(data: dict, strategy_overrides: dict | None = None, normalizer_overrides
                    lat=plot.proto.common.latitude, lon=plot.proto.common.longitude,
                    altitude_ft=plot.proto.common.altitude_ft if plot.proto.common.HasField("altitude_ft") else np.nan,
                    ground_speed_kt=plot.proto.common.ground_speed_kt if plot.proto.common.HasField("ground_speed_kt") else np.nan,
-                   state=normalized.state, reason=normalized.reason, kind="", accuracy_95_m=np.nan)
+                   state=normalized.state, reason=normalized.reason, kind="", position_sigma_m=np.nan)
         if m is None:
             raw_rows.append(row); continue
-        row.update(kind=m.kind, accuracy_95_m=m.accuracy_95_m if m.accuracy_95_m is not None else np.nan)
+        row.update(kind=m.kind, position_sigma_m=m.position_sigma_m if m.position_sigma_m is not None else np.nan)
         result = strategy.update(m)
         row.update(state=result.state, reason=result.reason, track_id=result.track_id or "", **result.numbers)
         raw_rows.append(row)

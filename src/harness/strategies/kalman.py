@@ -11,7 +11,6 @@ from ..strategy import STATE_PREFIX, StrategyResult, TrackPoint, TrackUpdate
 FEET = 0.3048                 # metres per foot
 KNOTS = 1.943844              # knots per metre per second
 KINDS = {"own_gps", "mlat"}   # the aircraft's own GPS position, and MLAT: a position worked out on the ground from arrival times
-RADIUS_95_IN_SIGMAS = 2.45    # a circle of this many sigmas holds 95% of positions spread evenly in east and north
 H = np.hstack([np.eye(3), np.zeros((3, 3))])   # the measurement is the position part of the state
 
 
@@ -130,9 +129,8 @@ def process_noise(dt: float, horizontal: float, vertical: float, lat: float, lon
 
 
 def measurement_sigma_m(m: Measurement) -> float:
-    """How far off this plot may be east and north, one sigma in metres: the normalizer's 95% radius, which for a round spread in the
-    plane is 2.45 sigma."""
-    return m.accuracy_95_m / RADIUS_95_IN_SIGMAS
+    """How far off this plot may be east and north, one sigma in metres, as the normalizer states it."""
+    return m.position_sigma_m
 
 
 def measurement_noise(sigma: float, m: Measurement, params: dict, velocity: np.ndarray) -> np.ndarray:

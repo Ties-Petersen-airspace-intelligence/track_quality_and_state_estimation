@@ -23,7 +23,7 @@ class Measurement:
     altitude_ft: int | None       # barometric
     is_on_ground: bool | None     # None: the source does not say
     kind: str                     # what produced the position: own_gps, mlat, radar, report, or a plain label of its own
-    accuracy_95_m: float | None   # radius of the circle that holds 95% of positions; None: not known
+    position_sigma_m: float | None  # how far off the position may be east and north, one sigma in metres; None: not known
     time_sigma_s: float | None    # how far off the position time may be, one sigma in seconds; None: not known
 
     # identity

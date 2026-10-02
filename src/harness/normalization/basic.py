@@ -9,8 +9,11 @@ things only the source's own fields tell:
 - is_on_ground, for the sources that say: ADS-B Exchange, uAvionix, PlaneFinder and Aireon (where it sends the ground bit)
 - track_deg from the source's own field where the common block leaves it empty: ADS-B Exchange `track`, PlaneFinder `track_angle`
 - hex: the identity, empty for values that cannot identify one aircraft (000000, 000001, FFFFFF, too short)
-- accuracy_95_m: own GPS with a NACp of 1 to 11 the NACp's radius; own GPS without a usable NACp (none, as in most ADS-R and
-  all PlaneFinder and Aireon, or 0, as in every plot of an old version 0 transponder) and MLAT a default from params; other kinds none
+- position_sigma_m: how far off the position may be east and north, one sigma in metres. Own GPS with a NACp of 1 to 11: the NACp's
+  95% radius (the aircraft's own accuracy figure, defined in the standard as the radius that holds the true position with 95%
+  probability) divided by 2.45, the factor between a 95% radius and one sigma for a round Gaussian spread. Own GPS without a usable
+  NACp (none, as in most ADS-R and all PlaneFinder and Aireon, or 0, as in every plot of an old version 0 transponder) and MLAT get a
+  default sigma from params; other kinds none
 - time_sigma_s: how far off the source's position times are, from params, per source; none for sources not measured yet
 
 Before any of that, a plot that is a copy of a plot already kept is removed: the same hex, a position within copy_distance_m and
@@ -40,7 +43,8 @@ ADSBX_KIND = {T.ADSB_ICAO: "own_gps", T.ADSB_ICAO_NT: "own_gps", T.ADSR_ICAO: "o
 PLANEFINDER_KIND = {D.ADSB: "own_gps", D.PLANE_FINDER_MLAT: "planefinder_mlat", D.THIRD_PARTY_DERIVED_MLAT: "third_party_mlat",
                     D.FLARM: "flarm", D.BLOCKED_DATA: "planefinder_blocked", D.UNKNOWN: "planefinder_unknown"}
 SOURCE_KIND = {"uavionix": "own_gps", "aireon": "own_gps", "tfms_ti": "radar", "stdds": "radar", "tfms_or": "report", "ual": "report", "asa": "report"}
-NACP_95_M = {11: 3, 10: 10, 9: 30, 8: 92.6, 7: 185.2, 6: 555.6, 5: 926, 4: 1852, 3: 3704, 2: 7408, 1: 18520}
+NACP_95_M = {11: 3, 10: 10, 9: 30, 8: 92.6, 7: 185.2, 6: 555.6, 5: 926, 4: 1852, 3: 3704, 2: 7408, 1: 18520}   # DO-260B, metres
+RADIUS_95_IN_SIGMAS = 2.45    # a circle of this many sigmas holds 95% of positions spread evenly in east and north
 
 
 def identity_hex(hex: str) -> str:
@@ -55,10 +59,10 @@ def identity_hex(hex: str) -> str:
 class Basic:
     name = "basic"
     params = dict(
-        own_gps_no_nacp_accuracy_95_m=36.75,  # own GPS without a usable NACp: 15 m sigma east and north, times 2.45
-        mlat_accuracy_95_m=1102.5,            # ADS-B Exchange MLAT: 450 m sigma times 2.45. Against a straight line over one minute its plots
-                                              # stray a median 42 m and 95% under 400 m (a 150 m sigma), but MLAT is trusted too much in the
-                                              # tracker (Ties, 28 Sep): its errors come in bursts of kilometres that a 150 m sigma lets through
+        own_gps_no_nacp_sigma_m=15.0,  # own GPS without a usable NACp: 15 m sigma east and north
+        mlat_sigma_m=450.0,            # ADS-B Exchange MLAT. Against a straight line over one minute its plots stray a median 42 m and 95%
+                                       # under 400 m (a 150 m sigma), but MLAT is trusted too much in the tracker (Ties, 28 Sep): its errors
+                                       # come in bursts of kilometres that a 150 m sigma lets through
         # how far off a source's position time may be, one sigma in seconds, measured as the miss along the direction of flight
         # divided by speed (experiment loop, iteration 1): uAvionix stamps the time of day to 1/128 s; ADS-B Exchange works the time
         # out from a poll clock and a "seen" age that drifts; PlaneFinder writes whole seconds and its stations disagree by up to 0.5 s
@@ -143,16 +147,17 @@ class Basic:
             source=plot.source, row=plot.row,
             position_us=common.position_timestamp, received_us=common.asi_received_timestamp, source_received_us=common.source_received_timestamp,
             lat=common.latitude, lon=common.longitude, altitude_ft=optional("altitude_ft"), is_on_ground=is_on_ground, kind=kind,
-            accuracy_95_m=self.accuracy_95_m(kind, nacp), time_sigma_s=self.params.get(f"{plot.source}_time_sigma_s"),
+            position_sigma_m=self.position_sigma_m(kind, nacp), time_sigma_s=self.params.get(f"{plot.source}_time_sigma_s"),
             hex=identity_hex(common.adshex), callsign=common.callsign, tail=common.tail_number, squawk=common.squawk,
             track_identifier=common.track_identifier, flight_number=common.flight_number, source_identifier=common.source_identifier,
             ground_speed_kt=optional("ground_speed_kt"), track_deg=optional("track_deg") if track_deg is None else track_deg, heading_deg=optional("heading_deg"),
             vertical_rate_fpm=vertical_rate,
         ))
 
-    def accuracy_95_m(self, kind: str, nacp: int | None) -> float | None:
+    def position_sigma_m(self, kind: str, nacp: int | None) -> float | None:
         if kind == "mlat":
-            return self.params["mlat_accuracy_95_m"]
+            return self.params["mlat_sigma_m"]
         if kind == "own_gps":
-            return NACP_95_M.get(nacp) or self.params["own_gps_no_nacp_accuracy_95_m"]
+            radius_95 = NACP_95_M.get(nacp)
+            return radius_95 / RADIUS_95_IN_SIGMAS if radius_95 else self.params["own_gps_no_nacp_sigma_m"]
         return None
