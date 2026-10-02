@@ -66,12 +66,15 @@ class Basic:
         mlat_sigma_m=450.0,            # MLAT of any source. Against a straight line over one minute ADS-B Exchange's plots stray a median 42 m
                                        # and 95% under 400 m (a 150 m sigma), but MLAT is trusted too much in the tracker (Ties, 28 Sep): its
                                        # errors come in bursts of kilometres that a 150 m sigma lets through
-        # how far off a source's position time may be, one sigma in seconds, measured as the miss along the direction of flight
-        # divided by speed (experiment loop, iteration 1): uAvionix stamps the time of day to 1/128 s; ADS-B Exchange works the time
-        # out from a poll clock and a "seen" age that drifts; PlaneFinder writes whole seconds and its stations disagree by up to 0.5 s
+        # how far off a source's position time may be, one sigma in seconds. uAvionix stamps the time of day to 1/128 s and is the
+        # steadiest clock. The others are not jitter around uAvionix's time but a bias: for the same fix ADS-B Exchange stamps 0.27 to
+        # 0.81 s later depending on the day and place (0.47 s median, steady to a few hundredths within an hour), PlaneFinder writes whole
+        # seconds and its stations differ by up to 0.5 s. The filter cannot tell a bias from noise, so the sigma covers the bias: with
+        # 0.5 and 0.8 s (run r010 against r009 on 17 cases) along-track refusals fell 74%, candidate births 60%, and the published speed
+        # got smoother (median step 0.69 -> 0.38 kt). Aligning the clocks instead would also fix the output's time; kept for later.
         uavionix_time_sigma_s=0.05,
-        adsbx_time_sigma_s=0.15,
-        planefinder_time_sigma_s=0.6,
+        adsbx_time_sigma_s=0.5,
+        planefinder_time_sigma_s=0.8,
         # copies of one fix: identical or one decoder grid step apart (2 m covers two steps; two different fixes are within 2 m
         # only below about 8 kt), stamps under 2.3 s apart in 99.9% of copies, the second copy received within 24 s in 99.9%
         copy_distance_m=2.0,
