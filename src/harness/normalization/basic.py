@@ -12,8 +12,20 @@ things only the source's own fields tell:
 - accuracy_95_m: own GPS with a NACp of 1 to 11 the NACp's radius; own GPS without a usable NACp (none, as in most ADS-R and
   all PlaneFinder and Aireon, or 0, as in every plot of an old version 0 transponder) and MLAT a default from params; other kinds none
 - time_sigma_s: how far off the source's position times are, from params, per source; none for sources not measured yet
+
+Before any of that, a plot that is a copy of a plot already kept is removed: the same hex, a position within copy_distance_m and
+a position time within copy_time_window_s of a plot kept in the last copy_memory_s of received time. An aircraft's transponder
+sends each GPS fix once, but several sources relay the same fix, each with its own stamp, and within one source several
+receivers do; the first received copy stays, the others go with the reason "copy of an earlier <source> plot" and the kept plot's
+source and row in the details. A plot is only ever a copy of a kept own-GPS plot or of a kept plot of its own kind, so a fix is
+never lost to a relay the strategies cannot use. Measured on 34 cases (agent-office, kalman-experiment-loop/dedup-design.html): copies have the
+identical position or one decoder grid step (0.7 m) apart, their stamps differ by under 2.3 s in 99.9% of cases, the second copy
+arrives within 24 s in 99.9% of cases; about one ADS-B plot in four is a copy. A plot without a hex is never a copy.
 """
 from __future__ import annotations
+
+import math
+from collections import deque
 
 from .. import protos_path  # noqa: F401
 from uni_track_source_adsbx_plot_schema.proto.plot_pb2 import ADSBXPlotType as T
@@ -53,12 +65,48 @@ class Basic:
         uavionix_time_sigma_s=0.05,
         adsbx_time_sigma_s=0.15,
         planefinder_time_sigma_s=0.6,
+        # copies of one fix: identical or one decoder grid step apart (2 m covers two steps; two different fixes are within 2 m
+        # only below about 8 kt), stamps under 2.3 s apart in 99.9% of copies, the second copy received within 24 s in 99.9%
+        copy_distance_m=2.0,
+        copy_time_window_s=2.5,
+        copy_memory_s=30.0,
     )
 
     def __init__(self, **overrides):
         self.params = {**Basic.params, **overrides}
+        self.kept: dict[str, deque] = {}   # per hex, the plots kept in the last copy_memory_s of received time: (position_us, lat, lon, source, row, received_us, kind)
+
+    def copy_of(self, m: Measurement) -> tuple[str, int] | None:
+        """The source and row of the kept plot this measurement is a copy of, or None. Also forgets kept plots older than the memory
+        and remembers this one when it is not a copy. A plot counts as a copy of a kept own-GPS plot (the fix itself, whatever relayed
+        it) or of a kept plot of its own kind (a repeat within a kind); never of a kept plot of another kind, because the first received
+        relay of a fix may be one the strategies cannot use (a radar feed passing an ADS-B fix on, 4,375 plots in fw15 and fw06) and
+        the fix must not be lost to it."""
+        if not m.hex:
+            return None
+        kept = self.kept.setdefault(m.hex, deque())
+        oldest_kept_us = m.received_us - int(self.params["copy_memory_s"] * 1e6)
+        while kept and kept[0][5] < oldest_kept_us:
+            kept.popleft()
+        window_us = int(self.params["copy_time_window_s"] * 1e6)
+        metres_per_degree_lon = 111_320.0 * math.cos(math.radians(m.lat))
+        for position_us, lat, lon, source, row, _, kind in kept:
+            if kind not in ("own_gps", m.kind):
+                continue
+            if abs(m.position_us - position_us) <= window_us and math.hypot((m.lat - lat) * 111_320.0, (m.lon - lon) * metres_per_degree_lon) <= self.params["copy_distance_m"]:
+                return source, row
+        kept.append((m.position_us, m.lat, m.lon, m.source, m.row, m.received_us, m.kind))
+        return None
 
     def normalize(self, plot: RawPlot) -> NormalizationResult:
+        result = self.measurement(plot)
+        if result.measurement is not None:
+            copy = self.copy_of(result.measurement)
+            if copy is not None:
+                return NormalizationResult.removed(f"copy of an earlier {copy[0]} plot", copy_of_source=copy[0], copy_of_row=copy[1])
+        return result
+
+    def measurement(self, plot: RawPlot) -> NormalizationResult:
         proto, common = plot.proto, plot.proto.common
         is_on_ground = nacp = vertical_rate = track_deg = None
         if plot.source == "adsbx":
