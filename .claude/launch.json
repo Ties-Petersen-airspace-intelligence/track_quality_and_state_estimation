@@ -52,6 +52,18 @@
         "/Users/tiespetersen/agent-office/tasks/team-update"
       ],
       "port": 8791
+    },
+    {
+      "name": "office-tasks",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8792",
+        "--directory",
+        "/Users/tiespetersen/agent-office/tasks"
+      ],
+      "port": 8792
     }
   ]
 }
