@@ -4,8 +4,11 @@ It removes plots that hold no position of their own: ADS-B Exchange MODE_S, an o
 and ADS-B Exchange type UNKNOWN. Every other raw plot becomes a Measurement: the common fields under plain names, and three
 things only the source's own fields tell:
 - kind: own_gps for the aircraft's own GPS position (ADS-B Exchange ADS-B and ADS-R with an ICAO address, uAvionix, PlaneFinder
-  ADS-B, Aireon); mlat for ADS-B Exchange MLAT; radar for TFMS Track Information and STDDS; report for TFMS oceanic reports, United and
-  Alaska; a plain label of its own for everything else
+  ADS-B, Aireon); mlat for every position computed by ground stations from signal timing (ADS-B Exchange MLAT, PlaneFinder's own
+  MLAT and the third-party MLAT it passes on; against ADS-B Exchange MLAT at the same moment PlaneFinder's two are 229 m and 451 m
+  off at the median, the same scatter, and in fw12 PlaneFinder's MLAT gives seven times the plots of ADS-B Exchange and is not late,
+  while in other cases it is minutes late, which the strategies' late-plot rules handle); radar for TFMS Track Information and
+  STDDS; report for TFMS oceanic reports, United and Alaska; a plain label of its own for everything else
 - is_on_ground, for the sources that say: ADS-B Exchange, uAvionix, PlaneFinder and Aireon (where it sends the ground bit)
 - track_deg from the source's own field where the common block leaves it empty: ADS-B Exchange `track`, PlaneFinder `track_angle`
 - hex: the identity, empty for values that cannot identify one aircraft (000000, 000001, FFFFFF, too short)
@@ -40,7 +43,7 @@ from .measurement import Measurement, NormalizationResult
 ADSBX_KIND = {T.ADSB_ICAO: "own_gps", T.ADSB_ICAO_NT: "own_gps", T.ADSR_ICAO: "own_gps", T.MLAT: "mlat",
               T.TISB_ICAO: "tisb", T.TISB_TRACKFILE: "tisb", T.TISB_OTHER: "tisb", T.ADSC: "adsc",
               T.ADSB_OTHER: "adsb_other", T.ADSR_OTHER: "adsr_other", T.OTHER: "adsbx_other"}   # *_OTHER: no ICAO address
-PLANEFINDER_KIND = {D.ADSB: "own_gps", D.PLANE_FINDER_MLAT: "planefinder_mlat", D.THIRD_PARTY_DERIVED_MLAT: "third_party_mlat",
+PLANEFINDER_KIND = {D.ADSB: "own_gps", D.PLANE_FINDER_MLAT: "mlat", D.THIRD_PARTY_DERIVED_MLAT: "mlat",
                     D.FLARM: "flarm", D.BLOCKED_DATA: "planefinder_blocked", D.UNKNOWN: "planefinder_unknown"}
 SOURCE_KIND = {"uavionix": "own_gps", "aireon": "own_gps", "tfms_ti": "radar", "stdds": "radar", "tfms_or": "report", "ual": "report", "asa": "report"}
 NACP_95_M = {11: 3, 10: 10, 9: 30, 8: 92.6, 7: 185.2, 6: 555.6, 5: 926, 4: 1852, 3: 3704, 2: 7408, 1: 18520}   # DO-260B, metres
@@ -60,9 +63,9 @@ class Basic:
     name = "basic"
     params = dict(
         own_gps_no_nacp_sigma_m=15.0,  # own GPS without a usable NACp: 15 m sigma east and north
-        mlat_sigma_m=450.0,            # ADS-B Exchange MLAT. Against a straight line over one minute its plots stray a median 42 m and 95%
-                                       # under 400 m (a 150 m sigma), but MLAT is trusted too much in the tracker (Ties, 28 Sep): its errors
-                                       # come in bursts of kilometres that a 150 m sigma lets through
+        mlat_sigma_m=450.0,            # MLAT of any source. Against a straight line over one minute ADS-B Exchange's plots stray a median 42 m
+                                       # and 95% under 400 m (a 150 m sigma), but MLAT is trusted too much in the tracker (Ties, 28 Sep): its
+                                       # errors come in bursts of kilometres that a 150 m sigma lets through
         # how far off a source's position time may be, one sigma in seconds, measured as the miss along the direction of flight
         # divided by speed (experiment loop, iteration 1): uAvionix stamps the time of day to 1/128 s; ADS-B Exchange works the time
         # out from a poll clock and a "seen" age that drifts; PlaneFinder writes whole seconds and its stations disagree by up to 0.5 s
