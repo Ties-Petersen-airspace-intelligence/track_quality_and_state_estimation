@@ -10,7 +10,8 @@ things only the source's own fields tell:
   while in other cases it is minutes late, which the strategies' late-plot rules handle); radar for TFMS Track Information and
   STDDS; report for TFMS oceanic reports, United and Alaska; a plain label of its own for everything else
 - is_on_ground, for the sources that say: ADS-B Exchange, uAvionix, PlaneFinder and Aireon (where it sends the ground bit)
-- track_deg from the source's own field where the common block leaves it empty: ADS-B Exchange `track`, PlaneFinder `track_angle`
+- track_deg from the source's own field where the common block leaves it empty: ADS-B Exchange `track`, PlaneFinder `heading` (its
+  `track_angle` is wrong by over 30 degrees on one plot in six)
 - hex: the identity, empty for values that cannot identify one aircraft (000000, 000001, FFFFFF, too short)
 - position_sigma_m: how far off the position may be east and north, one sigma in metres. Own GPS with a NACp of 1 to 11: the NACp's
   95% radius (the aircraft's own accuracy figure, defined in the standard as the radius that holds the true position with 95%
@@ -136,7 +137,9 @@ class Basic:
             kind = PLANEFINDER_KIND[proto.data_source]
             is_on_ground = bool(proto.is_on_ground)
             vertical_rate = float(proto.vert_rate) if proto.HasField("vert_rate") else None
-            track_deg = float(proto.track_angle) if proto.HasField("track_angle") else None
+            # PlaneFinder's `heading` is the ground track (0.5 degrees from ADS-B Exchange's track for the same fix, over 30 degrees off in
+            # 0.9% of plots); its `track_angle` is over 30 degrees off in 17% and over 90 in 14%, and started objects the wrong way (fw02 EXS64CC)
+            track_deg = float(proto.heading) if proto.HasField("heading") else (float(proto.track_angle) if proto.HasField("track_angle") else None)
         elif plot.source == "aireon":
             kind = SOURCE_KIND[plot.source]
             is_on_ground = proto.is_on_ground if proto.HasField("is_on_ground") else None
