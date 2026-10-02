@@ -1,0 +1,63 @@
+src/harness/normalization/basic.py
+  32baf0398278e02c 15-23,27-29,68-72,77-99,102-109
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.5",
+  "base_commit_sha": "dd92d82802cf724637d71ccbd23e98e58dee14dd",
+  "prompts": {
+    "32baf0398278e02c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "886c3ddf-41cd-4714-83bc-6b45d495d480",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Ties Petersen",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 221,
+      "overriden_lines": 0,
+      "messages_url": "https://uni-git-ai-cas.sre.aws.ai-internal.com//cas/7bea72ae550a5e7b4d6b12cfb77a7ab1a393fb0910373edaf217f15924773e5b",
+      "context_window_samples": [
+        {
+          "used_tokens": 433304,
+          "timestamp": "2026-10-01T14:00:07.878Z"
+        },
+        {
+          "used_tokens": 437349,
+          "timestamp": "2026-10-01T14:00:31.783Z"
+        },
+        {
+          "used_tokens": 439677,
+          "timestamp": "2026-10-01T14:03:45.378Z"
+        },
+        {
+          "used_tokens": 481510,
+          "timestamp": "2026-10-01T14:36:49.420Z"
+        },
+        {
+          "used_tokens": 488022,
+          "timestamp": "2026-10-01T14:37:34.909Z"
+        },
+        {
+          "used_tokens": 507209,
+          "timestamp": "2026-10-02T07:16:09.318Z"
+        }
+      ],
+      "skill_usages": [
+        {
+          "name": "office-task",
+          "timestamp": "2026-09-29T12:09:31.425Z",
+          "source": "slash_command"
+        }
+      ],
+      "token_usage": {
+        "input_tokens": 3936,
+        "output_tokens": 272675,
+        "cache_read_tokens": 44942642,
+        "cache_write_tokens": 2102349
+      }
+    }
+  }
+}
