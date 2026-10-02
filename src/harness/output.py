@@ -31,7 +31,7 @@ TRACK_COLUMNS = {"track_id", "position_timestamp", "created_at"}
 def raw_plot_row(plot: RawPlot, normalized: NormalizationResult, result: StrategyResult | None) -> dict:
     """What happened to one raw plot: removed by the normalizer, or what the strategy did with its measurement."""
     if result is None:
-        return dict(source=plot.source, row=plot.row, state=normalized.state, track_id=None, reason=normalized.reason)
+        return dict(source=plot.source, row=plot.row, state=normalized.state, track_id=None, reason=normalized.reason, **normalized.details)
     return dict(source=plot.source, row=plot.row, state=result.state, track_id=result.track_id, reason=result.reason, **checked(result.numbers, PLOT_COLUMNS))
 
 

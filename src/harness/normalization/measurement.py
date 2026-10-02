@@ -5,7 +5,7 @@ aircraft is on the ground, what the plot's accuracy is, which plots carry no rea
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
@@ -44,15 +44,17 @@ class Measurement:
 
 @dataclass
 class NormalizationResult:
-    """What the normalizer did with one raw plot: kept it, with its Measurement, or removed it, with the reason."""
+    """What the normalizer did with one raw plot: kept it, with its Measurement, or removed it, with the reason. details are
+    extra columns about a removed plot, for example which kept plot it is a copy of."""
     state: str                          # kept or removed
     reason: str = ""
     measurement: Measurement | None = None
+    details: dict = field(default_factory=dict)
 
     @staticmethod
     def kept(measurement: Measurement) -> NormalizationResult:
         return NormalizationResult("kept", "", measurement)
 
     @staticmethod
-    def removed(reason: str) -> NormalizationResult:
-        return NormalizationResult("removed", reason)
+    def removed(reason: str, **details) -> NormalizationResult:
+        return NormalizationResult("removed", reason, None, details)
